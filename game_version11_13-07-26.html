@@ -844,6 +844,7 @@
         let scene, camera, renderer, composer, controls, clock;
         let muzzleFlashTexture;
         const previewMode = new URLSearchParams(window.location.search).has("preview");
+        const detonatorTestMode = new URLSearchParams(window.location.search).has("detonator-test");
         const sprintTestMode = new URLSearchParams(window.location.search).has("sprint-test");
 
         // --- Weapon System ---
@@ -979,6 +980,7 @@
         const zombieHitMeshes = [];
         const tracers = [];
         const impactParticles = [];
+        const explosionEffects = [];
         const shellCasings = [];
         const environmentLights = [];
         const ammoPickups = [];
@@ -1048,6 +1050,27 @@
                 scale: 1.0,
                 scoreValue: 35,
                 isShooter: true
+            },
+            detonator: {
+                name: "Detonador",
+                bodyColor: 0x8a3518,
+                headColor: 0xc66b35,
+                eyeColor: 0xffe15c,
+                emissive: 0x4a1204,
+                healthMultiplier: 0.85,
+                speedBonus: 3.6,
+                damageMultiplier: 0,
+                attackInterval: 99,
+                scale: 0.92,
+                scoreValue: 28,
+                isExploder: true,
+                explosionTriggerRadius: 5.2,
+                fuseDuration: 2.5,
+                explosionRadius: 7,
+                explosionDamage: 65,
+                zombieSplashDamage: 26,
+                armedSpeedMultiplier: 0.55,
+                maxActive: 2
             }
         };
 
@@ -1329,7 +1352,7 @@
             });
             window.addEventListener("resize", onWindowResize);
 
-            if (previewMode || sprintTestMode) {
+            if (previewMode || detonatorTestMode || sprintTestMode) {
                 overlay.style.display = "none";
                 crosshair.style.display = "block";
             }
@@ -1339,8 +1362,13 @@
                     [zombieTypeConfigs.normal, -4.5],
                     [zombieTypeConfigs.runner, -1.5],
                     [zombieTypeConfigs.brute, 1.5],
-                    [zombieTypeConfigs.shooter, 4.5]
+                    [zombieTypeConfigs.shooter, 4.5],
+                    [zombieTypeConfigs.detonator, 7.5]
                 ].forEach(([config, x]) => createZombie(new THREE.Vector3(x, 0, -10), config));
+            }
+
+            if (detonatorTestMode) {
+                createZombie(new THREE.Vector3(0, 0, -10), zombieTypeConfigs.detonator);
             }
 
             if (sprintTestMode) {
@@ -2833,18 +2861,31 @@
         }
 
         function getZombieTypeConfig() {
-            const roll = Math.random();
+            const candidates = [
+                { config: zombieTypeConfigs.normal, weight: 52 }
+            ];
 
-            if (wave >= 3 && roll > 0.75) {
-                return zombieTypeConfigs.shooter;
+            if (wave >= 2) candidates.push({ config: zombieTypeConfigs.runner, weight: 27 });
+            if (wave >= 3) {
+                candidates.push({ config: zombieTypeConfigs.brute, weight: 14 });
+                candidates.push({ config: zombieTypeConfigs.shooter, weight: 10 });
             }
 
-            if (wave >= 3 && roll > 0.55) {
-                return zombieTypeConfigs.brute;
+            const activeDetonators = zombies.filter(zombie => zombie.userData.isExploder).length;
+            const detonator = zombieTypeConfigs.detonator;
+            if (wave >= 4 && activeDetonators < detonator.maxActive) {
+                candidates.push({
+                    config: detonator,
+                    weight: Math.min(8 + (wave - 4) * 1.25, 18)
+                });
             }
 
-            if (wave >= 2 && roll < Math.min(0.26 + wave * 0.015, 0.38)) {
-                return zombieTypeConfigs.runner;
+            const totalWeight = candidates.reduce((total, candidate) => total + candidate.weight, 0);
+            let roll = Math.random() * totalWeight;
+
+            for (const candidate of candidates) {
+                roll -= candidate.weight;
+                if (roll <= 0) return candidate.config;
             }
 
             return zombieTypeConfigs.normal;
@@ -2979,6 +3020,25 @@
                     crystal.rotation.x = Math.PI;
                     zombie.add(crystal);
                 }
+            } else if (typeConfig.isExploder) {
+                const explosiveMat = new THREE.MeshStandardMaterial({
+                    color: 0xff7a18,
+                    emissive: 0x8a1b00,
+                    emissiveIntensity: 1.2,
+                    roughness: 0.38,
+                    metalness: 0.12
+                });
+                const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 1), explosiveMat);
+                core.position.set(0, 1.35, 0.4);
+                core.userData.explosionCore = true;
+                zombie.add(core);
+
+                [-0.28, 0.28].forEach(x => {
+                    const canister = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.42, 8), explosiveMat);
+                    canister.position.set(x, 1.02, -0.18);
+                    canister.rotation.z = x < 0 ? 0.28 : -0.28;
+                    zombie.add(canister);
+                });
             }
 
             zombie.traverse(child => {
@@ -3005,6 +3065,16 @@
                 attackCooldown: Math.random() * 0.3,
                 swing: Math.random() * Math.PI * 2,
                 isShooter: typeConfig.isShooter || false,
+                isExploder: typeConfig.isExploder || false,
+                isArmed: false,
+                fuseTime: typeConfig.fuseDuration || 0,
+                fuseDuration: typeConfig.fuseDuration || 0,
+                warningCooldown: 0,
+                explosionTriggerRadius: typeConfig.explosionTriggerRadius || 0,
+                explosionRadius: typeConfig.explosionRadius || 0,
+                explosionDamage: typeConfig.explosionDamage || 0,
+                zombieSplashDamage: typeConfig.zombieSplashDamage || 0,
+                armedSpeedMultiplier: typeConfig.armedSpeedMultiplier || 1,
                 legHealth: legMaxHealth,
                 legMaxHealth: legMaxHealth,
                 legsDestroyed: false,
@@ -3014,6 +3084,7 @@
                 armR: armR,
                 head: head,
                 energyCore: zombie.children.find(child => child.userData.energyCore) || null,
+                explosionCore: zombie.children.find(child => child.userData.explosionCore) || null,
                 hitMeshes,
                 healthBarGroup: healthBar.group,
                 healthBarFill: healthBar.fill,
@@ -3776,6 +3847,24 @@
         }
 
         function updateCombatEffects(delta) {
+            for (let i = explosionEffects.length - 1; i >= 0; i--) {
+                const effect = explosionEffects[i];
+                effect.userData.life -= delta;
+                const progress = 1 - Math.max(0, effect.userData.life) / effect.userData.maxLife;
+                const ringScale = 0.4 + progress * effect.userData.radius;
+                effect.userData.ring.scale.setScalar(ringScale);
+                effect.userData.flash.scale.setScalar(0.7 + progress * 3.2);
+                effect.userData.ring.material.opacity = Math.max(0, (1 - progress) * 0.9);
+                effect.userData.flash.material.opacity = Math.max(0, (1 - progress) * 0.9);
+                effect.userData.light.intensity = Math.max(0, (1 - progress) * 8);
+
+                if (effect.userData.life <= 0) {
+                    scene.remove(effect);
+                    disposeObject3D(effect);
+                    explosionEffects.splice(i, 1);
+                }
+            }
+
             for (let i = impactParticles.length - 1; i >= 0; i--) {
                 const effect = impactParticles[i];
                 effect.userData.life -= delta;
@@ -4427,7 +4516,120 @@
             noise.stop(now + 0.11);
         }
 
-        function killZombie(zombie) {
+        function playDetonatorBeep(progress) {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "square";
+            osc.frequency.setValueAtTime(300 + progress * 420, now);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.045, now + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+        }
+
+        function playDetonatorExplosionSound() {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(38, now + 0.32);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.38);
+        }
+
+        function armDetonator(zombie) {
+            if (zombie.userData.isArmed) return;
+
+            zombie.userData.isArmed = true;
+            zombie.userData.fuseTime = zombie.userData.fuseDuration;
+            zombie.userData.warningCooldown = 0;
+            showWaveMessage("⚠️ Detonador armado!");
+        }
+
+        function createExplosionEffect(position, radius) {
+            const group = new THREE.Group();
+            const flashMat = new THREE.MeshBasicMaterial({
+                color: 0xffb13b,
+                transparent: true,
+                opacity: 0.95,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: 0xff5a16,
+                transparent: true,
+                opacity: 0.9,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const flash = new THREE.Mesh(new THREE.SphereGeometry(0.35, 14, 10), flashMat);
+            const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.34, 32), ringMat);
+            const light = new THREE.PointLight(0xff6a1a, 8, radius * 2.1, 2);
+            ring.rotation.x = -Math.PI / 2;
+            group.position.copy(position);
+            group.add(flash, ring, light);
+            group.userData = { life: 0.48, maxLife: 0.48, flash, ring, light, radius };
+            scene.add(group);
+            explosionEffects.push(group);
+        }
+
+        function explodeDetonator(zombie) {
+            if (!zombie || zombie.userData.hasExploded) return;
+
+            zombie.userData.hasExploded = true;
+            const position = zombie.position.clone();
+            const { explosionRadius, explosionDamage, zombieSplashDamage } = zombie.userData;
+            const playerDX = camera.position.x - position.x;
+            const playerDZ = camera.position.z - position.z;
+            const playerDistance = Math.sqrt(playerDX * playerDX + playerDZ * playerDZ);
+
+            createExplosionEffect(position.clone().add(new THREE.Vector3(0, 1.15, 0)), explosionRadius);
+            playDetonatorExplosionSound();
+            screenShakeAmount = Math.min(1.4, screenShakeAmount + 0.72);
+
+            if (playerDistance < explosionRadius) {
+                const falloff = 1 - playerDistance / explosionRadius;
+                applyDamage(explosionDamage * falloff * falloff);
+            }
+
+            [...zombies].forEach(target => {
+                if (target === zombie) return;
+
+                const dx = target.position.x - position.x;
+                const dz = target.position.z - position.z;
+                const distance = Math.sqrt(dx * dx + dz * dz);
+                if (distance >= explosionRadius) return;
+
+                const damage = zombieSplashDamage * (1 - distance / explosionRadius);
+                target.userData.health -= damage;
+                createZombieHitEffect(target.position.clone().add(new THREE.Vector3(0, 1.25, 0)), false, 0xff8a24);
+                updateZombieHealthBar(target);
+                if (target.userData.health <= 0) {
+                    killZombie(target, { awardScore: false, allowPowerup: false });
+                }
+            });
+
+            killZombie(zombie, { awardScore: false, allowPowerup: false });
+        }
+
+        function killZombie(zombie, { awardScore = true, allowPowerup = true } = {}) {
             const idx = zombies.indexOf(zombie);
             if (idx !== -1) zombies.splice(idx, 1);
 
@@ -4442,10 +4644,12 @@
             disposeObject3D(zombie);
             disposeObject3D(zombie.userData.healthBarGroup);
 
-            score += (doublePointsTimer > 0 ? (zombie.userData.scoreValue ?? 10) * 2 : (zombie.userData.scoreValue ?? 10));
+            if (awardScore) {
+                score += (doublePointsTimer > 0 ? (zombie.userData.scoreValue ?? 10) * 2 : (zombie.userData.scoreValue ?? 10));
+            }
             updateUI();
 
-            if (Math.random() < 0.09) {
+            if (allowPowerup && Math.random() < 0.09) {
                 spawnPowerup(zombie.position);
             }
         }
@@ -4499,6 +4703,52 @@
                     const pulse = 1 + Math.sin(performance.now() * 0.009 + i) * 0.16;
                     zombie.userData.energyCore.scale.setScalar(pulse);
                     zombie.userData.energyCore.rotation.y += delta * 2.4;
+                }
+
+                if (zombie.userData.isExploder) {
+                    if (!zombie.userData.isArmed && dist <= zombie.userData.explosionTriggerRadius) {
+                        armDetonator(zombie);
+                    }
+
+                    if (zombie.userData.isArmed) {
+                        zombie.userData.fuseTime -= delta;
+                        zombie.userData.warningCooldown -= delta;
+                        const fuseProgress = 1 - Math.max(0, zombie.userData.fuseTime) / zombie.userData.fuseDuration;
+                        const core = zombie.userData.explosionCore;
+
+                        if (core) {
+                            const pulse = 1 + Math.sin(performance.now() * (0.012 + fuseProgress * 0.028)) * (0.12 + fuseProgress * 0.24);
+                            core.scale.setScalar(pulse);
+                            core.rotation.y += delta * (3 + fuseProgress * 8);
+                            core.material.emissiveIntensity = 1.2 + fuseProgress * 3.4;
+                        }
+
+                        if (zombie.userData.warningCooldown <= 0) {
+                            playDetonatorBeep(fuseProgress);
+                            zombie.userData.warningCooldown = Math.max(0.1, 0.4 - fuseProgress * 0.26);
+                        }
+
+                        if (zombie.userData.fuseTime <= 0) {
+                            explodeDetonator(zombie);
+                            continue;
+                        }
+                    }
+
+                    if (dist > 0.95) {
+                        const speedMultiplier = zombie.userData.isArmed ? zombie.userData.armedSpeedMultiplier : 1;
+                        const moveX = (dx / dist) * zombie.userData.speed * speedMultiplier * delta;
+                        const moveZ = (dz / dist) * zombie.userData.speed * speedMultiplier * delta;
+                        moveObjectWithCollisions(zombie, moveX, moveZ, zombie.userData.radius || zombieRadius);
+                    }
+
+                    const detonatorBar = zombie.userData.healthBarGroup;
+                    detonatorBar.position.set(
+                        zombie.position.x,
+                        zombie.position.y + zombie.userData.barHeight,
+                        zombie.position.z
+                    );
+                    detonatorBar.lookAt(camera.position);
+                    continue;
                 }
 
                 if (dist > 1.8) {
@@ -4903,6 +5153,12 @@
                 effect.material.dispose();
             }
             impactParticles.length = 0;
+
+            for (let i = explosionEffects.length - 1; i >= 0; i--) {
+                scene.remove(explosionEffects[i]);
+                disposeObject3D(explosionEffects[i]);
+            }
+            explosionEffects.length = 0;
 
             for (let i = shellCasings.length - 1; i >= 0; i--) {
                 const casing = shellCasings[i];
