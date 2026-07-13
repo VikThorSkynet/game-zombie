@@ -5223,9 +5223,11 @@
             const beforeX = zombie.position.x;
             const beforeZ = zombie.position.z;
             const collisionResult = moveObjectWithCollisions(zombie, steeringX * moveDistance, steeringZ * moveDistance, radius);
-            const movedDistance = Math.sqrt((zombie.position.x - beforeX) ** 2 + (zombie.position.z - beforeZ) ** 2);
+            const actualMoveX = zombie.position.x - beforeX;
+            const actualMoveZ = zombie.position.z - beforeZ;
+            const movedDistance = Math.sqrt(actualMoveX * actualMoveX + actualMoveZ * actualMoveZ);
             if (movedDistance > 0.001) {
-                faceZombieHorizontally(zombie, zombie.position.x + steeringX, zombie.position.z + steeringZ);
+                faceZombieHorizontally(zombie, zombie.position.x + actualMoveX, zombie.position.z + actualMoveZ);
             }
             updateZombieNavigationProgress(zombie, playerPos, delta, movedDistance, collisionResult, true);
         }
