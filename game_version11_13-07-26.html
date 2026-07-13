@@ -845,6 +845,7 @@
         let muzzleFlashTexture;
         const previewMode = new URLSearchParams(window.location.search).has("preview");
         const detonatorTestMode = new URLSearchParams(window.location.search).has("detonator-test");
+        const navDebugMode = new URLSearchParams(window.location.search).has("nav-debug");
         const sprintTestMode = new URLSearchParams(window.location.search).has("sprint-test");
 
         // --- Weapon System ---
@@ -995,6 +996,30 @@
 
         const staticColliders = [];
         const bulletBlockers = [];
+        const navigationConfig = {
+            cellSize: 2,
+            clearance: 0.95,
+            waypointReachDistance: 1.05,
+            directPathSample: 0.8,
+            repathInterval: 0.45,
+            maxPathsPerFrame: 3,
+            stuckSampleInterval: 0.65,
+            stuckDistanceThreshold: 0.12,
+            repathAfter: 0.75,
+            recoverAfter: 2.4,
+            maxExpandedNodes: 6500
+        };
+        const navigationSteeringAngles = [0, Math.PI / 6, -Math.PI / 6, Math.PI / 3, -Math.PI / 3, Math.PI / 2, -Math.PI / 2, Math.PI];
+        const navigationDirections = [
+            { dc: 1, dr: 0, cost: 1 }, { dc: -1, dr: 0, cost: 1 },
+            { dc: 0, dr: 1, cost: 1 }, { dc: 0, dr: -1, cost: 1 },
+            { dc: 1, dr: 1, cost: Math.SQRT2 }, { dc: 1, dr: -1, cost: Math.SQRT2 },
+            { dc: -1, dr: 1, cost: Math.SQRT2 }, { dc: -1, dr: -1, cost: Math.SQRT2 }
+        ];
+        const navigationStats = { pathsBuilt: 0, failedPaths: 0, stuckEvents: 0, recoveries: 0, pathsThisFrame: 0 };
+        let navigationGrid = null;
+        let navigationPathBudget = 0;
+        let navigationDebugPoints = null;
 
         const zombieTypeConfigs = {
             normal: {
@@ -1258,6 +1283,7 @@
             createPerkMachines();
             createPackAPunchMachine();
             createArena();
+            buildNavigationGrid();
 
             playerWeapons.forEach(pw => {
                 if (pw.configId) {
@@ -1948,6 +1974,278 @@
             }
 
             return result;
+        }
+
+        class NavigationMinHeap {
+            constructor() {
+                this.items = [];
+            }
+
+            get size() {
+                return this.items.length;
+            }
+
+            push(index, priority) {
+                const item = { index, priority };
+                this.items.push(item);
+                let child = this.items.length - 1;
+
+                while (child > 0) {
+                    const parent = Math.floor((child - 1) / 2);
+                    if (this.items[parent].priority <= priority) break;
+                    this.items[child] = this.items[parent];
+                    child = parent;
+                }
+
+                this.items[child] = item;
+            }
+
+            pop() {
+                if (this.items.length === 0) return null;
+                const root = this.items[0];
+                const last = this.items.pop();
+                if (this.items.length === 0) return root;
+
+                let parent = 0;
+                while (true) {
+                    const left = parent * 2 + 1;
+                    const right = left + 1;
+                    if (left >= this.items.length) break;
+                    const smallest = right < this.items.length && this.items[right].priority < this.items[left].priority ? right : left;
+                    if (this.items[smallest].priority >= last.priority) break;
+                    this.items[parent] = this.items[smallest];
+                    parent = smallest;
+                }
+
+                this.items[parent] = last;
+                return root;
+            }
+        }
+
+        function buildNavigationGrid() {
+            const { cellSize, clearance } = navigationConfig;
+            const min = -arenaInnerLimit + clearance;
+            const max = arenaInnerLimit - clearance;
+            const cols = Math.floor((max - min) / cellSize) + 1;
+            const rows = cols;
+            const blocked = new Uint8Array(cols * rows);
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const x = min + col * cellSize;
+                    const z = min + row * cellSize;
+                    blocked[row * cols + col] = isPositionBlocked(x, z, clearance) ? 1 : 0;
+                }
+            }
+
+            navigationGrid = { min, max, cols, rows, cellSize, blocked };
+            if (navDebugMode) createNavigationDebugView();
+        }
+
+        function createNavigationDebugView() {
+            if (!navigationGrid || navigationDebugPoints) return;
+
+            const positions = [];
+            const colors = [];
+            for (let index = 0; index < navigationGrid.blocked.length; index++) {
+                const point = getNavigationCellCenter(index);
+                positions.push(point.x, 0.035, point.z);
+                if (navigationGrid.blocked[index]) {
+                    colors.push(0.95, 0.12, 0.08);
+                } else {
+                    colors.push(0.12, 0.55, 0.95);
+                }
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+            const material = new THREE.PointsMaterial({
+                size: 0.13,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.38,
+                depthWrite: false
+            });
+            navigationDebugPoints = new THREE.Points(geometry, material);
+            scene.add(navigationDebugPoints);
+        }
+
+        function worldToNavigationCell(x, z) {
+            if (!navigationGrid) return null;
+            const col = THREE.MathUtils.clamp(Math.round((x - navigationGrid.min) / navigationGrid.cellSize), 0, navigationGrid.cols - 1);
+            const row = THREE.MathUtils.clamp(Math.round((z - navigationGrid.min) / navigationGrid.cellSize), 0, navigationGrid.rows - 1);
+            return { col, row, index: row * navigationGrid.cols + col };
+        }
+
+        function getNavigationCellCenter(index) {
+            const col = index % navigationGrid.cols;
+            const row = Math.floor(index / navigationGrid.cols);
+            return new THREE.Vector3(
+                navigationGrid.min + col * navigationGrid.cellSize,
+                0,
+                navigationGrid.min + row * navigationGrid.cellSize
+            );
+        }
+
+        function isNavigationCellWalkable(col, row) {
+            if (!navigationGrid || col < 0 || row < 0 || col >= navigationGrid.cols || row >= navigationGrid.rows) return false;
+            return navigationGrid.blocked[row * navigationGrid.cols + col] === 0;
+        }
+
+        function findNearestWalkableCell(cell, maxRadius = 7) {
+            if (!cell) return null;
+            if (isNavigationCellWalkable(cell.col, cell.row)) return cell;
+
+            for (let radius = 1; radius <= maxRadius; radius++) {
+                let best = null;
+                let bestDistance = Infinity;
+                for (let row = cell.row - radius; row <= cell.row + radius; row++) {
+                    for (let col = cell.col - radius; col <= cell.col + radius; col++) {
+                        if (Math.abs(col - cell.col) !== radius && Math.abs(row - cell.row) !== radius) continue;
+                        if (!isNavigationCellWalkable(col, row)) continue;
+                        const distance = (col - cell.col) ** 2 + (row - cell.row) ** 2;
+                        if (distance < bestDistance) {
+                            bestDistance = distance;
+                            best = { col, row, index: row * navigationGrid.cols + col };
+                        }
+                    }
+                }
+                if (best) return best;
+            }
+
+            return null;
+        }
+
+        function hasClearNavigationLine(from, to, radius) {
+            const dx = to.x - from.x;
+            const dz = to.z - from.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance <= 0.001) return true;
+
+            const steps = Math.max(1, Math.ceil(distance / navigationConfig.directPathSample));
+            for (let step = 1; step <= steps; step++) {
+                const t = step / steps;
+                const x = from.x + dx * t;
+                const z = from.z + dz * t;
+                if (Math.abs(x) > arenaInnerLimit - radius || Math.abs(z) > arenaInnerLimit - radius) return false;
+                if (isPositionBlocked(x, z, radius)) return false;
+            }
+
+            return true;
+        }
+
+        function navigationHeuristic(col, row, goalCol, goalRow) {
+            const dx = Math.abs(col - goalCol);
+            const dz = Math.abs(row - goalRow);
+            return Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz);
+        }
+
+        function findNavigationPath(from, to, radius) {
+            if (!navigationGrid) return [];
+            const rawStart = worldToNavigationCell(from.x, from.z);
+            const rawGoal = worldToNavigationCell(to.x, to.z);
+            const start = findNearestWalkableCell(rawStart, 4);
+            const goal = findNearestWalkableCell(rawGoal, 7);
+            if (!start || !goal) return [];
+            if (start.index === goal.index) return [getNavigationCellCenter(goal.index)];
+
+            const total = navigationGrid.cols * navigationGrid.rows;
+            const gScore = new Float32Array(total);
+            gScore.fill(Infinity);
+            const cameFrom = new Int32Array(total);
+            cameFrom.fill(-1);
+            const closed = new Uint8Array(total);
+            const open = new NavigationMinHeap();
+            gScore[start.index] = 0;
+            open.push(start.index, navigationHeuristic(start.col, start.row, goal.col, goal.row));
+            let expanded = 0;
+
+            while (open.size > 0 && expanded < navigationConfig.maxExpandedNodes) {
+                const current = open.pop();
+                if (!current || closed[current.index]) continue;
+                if (current.index === goal.index) {
+                    const indices = [];
+                    let cursor = goal.index;
+                    while (cursor !== -1 && cursor !== start.index) {
+                        indices.push(cursor);
+                        cursor = cameFrom[cursor];
+                    }
+                    indices.reverse();
+                    const points = indices.map(getNavigationCellCenter);
+                    return smoothNavigationPath(from, points, radius);
+                }
+
+                closed[current.index] = 1;
+                expanded++;
+                const currentCol = current.index % navigationGrid.cols;
+                const currentRow = Math.floor(current.index / navigationGrid.cols);
+
+                for (const direction of navigationDirections) {
+                    const col = currentCol + direction.dc;
+                    const row = currentRow + direction.dr;
+                    if (!isNavigationCellWalkable(col, row)) continue;
+                    if (direction.dc !== 0 && direction.dr !== 0) {
+                        if (!isNavigationCellWalkable(currentCol + direction.dc, currentRow) || !isNavigationCellWalkable(currentCol, currentRow + direction.dr)) continue;
+                    }
+
+                    const index = row * navigationGrid.cols + col;
+                    if (closed[index]) continue;
+                    const tentative = gScore[current.index] + direction.cost;
+                    if (tentative >= gScore[index]) continue;
+
+                    cameFrom[index] = current.index;
+                    gScore[index] = tentative;
+                    const priority = tentative + navigationHeuristic(col, row, goal.col, goal.row);
+                    open.push(index, priority);
+                }
+            }
+
+            return [];
+        }
+
+        function smoothNavigationPath(from, points, radius) {
+            if (points.length <= 1) return points;
+            const smoothed = [];
+            let anchor = from;
+            let index = 0;
+
+            while (index < points.length) {
+                let furthest = index;
+                for (let candidate = points.length - 1; candidate > index; candidate--) {
+                    if (hasClearNavigationLine(anchor, points[candidate], radius)) {
+                        furthest = candidate;
+                        break;
+                    }
+                }
+                smoothed.push(points[furthest]);
+                anchor = points[furthest];
+                index = furthest + 1;
+            }
+
+            return smoothed;
+        }
+
+        function clearZombieDebugPath(zombie) {
+            const line = zombie.userData.navDebugLine;
+            if (!line) return;
+            scene.remove(line);
+            line.geometry.dispose();
+            line.material.dispose();
+            zombie.userData.navDebugLine = null;
+        }
+
+        function updateZombieDebugPath(zombie) {
+            if (!navDebugMode) return;
+            clearZombieDebugPath(zombie);
+            if (!zombie.userData.navPath.length) return;
+
+            const points = [zombie.position.clone().setY(0.13), ...zombie.userData.navPath.map(point => point.clone().setY(0.13))];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const color = zombie.userData.isExploder ? 0xff7a18 : zombie.userData.isShooter ? 0xbb55ff : 0x48ff8b;
+            const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.82, depthWrite: false });
+            zombie.userData.navDebugLine = new THREE.Line(geometry, material);
+            scene.add(zombie.userData.navDebugLine);
         }
 
         function distanceSquaredXZ(ax, az, bx, bz) {
@@ -3091,7 +3389,21 @@
                 healthBarWidth: healthBar.width,
                 scoreValue: typeConfig.scoreValue,
                 barHeight: 2.9 * typeConfig.scale + 0.15,
-                radius: zombieRadius * typeConfig.scale * 0.92
+                radius: zombieRadius * typeConfig.scale * 0.92,
+                navPath: [],
+                navPathIndex: 0,
+                navTargetCell: -1,
+                navRepathTimer: Math.random() * navigationConfig.repathInterval,
+                navForceRepath: false,
+                navDirectCheckTimer: Math.random() * 0.18,
+                navHasDirectPath: false,
+                navSampleTimer: 0,
+                navSampleDistance: 0,
+                navStuckTime: 0,
+                navBlockedFrames: 0,
+                navRecoveryCooldown: 0,
+                navLastPosition: zombie.position.clone(),
+                navDebugLine: null
             };
 
             hitMeshes.forEach(mesh => {
@@ -4638,6 +4950,7 @@
                 if (i !== -1) zombieHitMeshes.splice(i, 1);
             });
 
+            clearZombieDebugPath(zombie);
             scene.remove(zombie);
             scene.remove(zombie.userData.healthBarGroup);
 
@@ -4672,10 +4985,251 @@
             updateUI();
         }
 
+        function getZombieNavigationTarget(zombie, playerPos, delta) {
+            const data = zombie.userData;
+            const radius = data.radius || zombieRadius;
+            data.navRepathTimer -= delta;
+            data.navDirectCheckTimer -= delta;
+            data.navRecoveryCooldown = Math.max(0, data.navRecoveryCooldown - delta);
+
+            if (data.navDirectCheckTimer <= 0) {
+                data.navHasDirectPath = hasClearNavigationLine(zombie.position, playerPos, radius);
+                data.navDirectCheckTimer = 0.18 + Math.random() * 0.08;
+            }
+
+            if (data.navHasDirectPath) {
+                if (data.navPath.length > 0) {
+                    data.navPath = [];
+                    data.navPathIndex = 0;
+                    updateZombieDebugPath(zombie);
+                }
+                const directCell = worldToNavigationCell(playerPos.x, playerPos.z);
+                data.navTargetCell = directCell ? directCell.index : -1;
+                data.navForceRepath = false;
+                return playerPos;
+            }
+
+            const goalCell = findNearestWalkableCell(worldToNavigationCell(playerPos.x, playerPos.z), 7);
+            if (!goalCell) return playerPos;
+            const targetChanged = goalCell.index !== data.navTargetCell;
+            const pathFinished = data.navPathIndex >= data.navPath.length;
+            const shouldRepath = data.navForceRepath || pathFinished || (targetChanged && data.navRepathTimer <= 0);
+
+            if (shouldRepath && navigationPathBudget > 0) {
+                navigationPathBudget--;
+                navigationStats.pathsThisFrame++;
+                const path = findNavigationPath(zombie.position, playerPos, radius);
+                if (path.length > 0) {
+                    data.navPath = path;
+                    data.navPathIndex = 0;
+                    data.navTargetCell = goalCell.index;
+                    data.navForceRepath = false;
+                    data.navRepathTimer = navigationConfig.repathInterval + Math.random() * 0.28;
+                    navigationStats.pathsBuilt++;
+                    updateZombieDebugPath(zombie);
+                } else {
+                    data.navRepathTimer = 0.3;
+                    navigationStats.failedPaths++;
+                }
+            }
+
+            const reachDistanceSq = navigationConfig.waypointReachDistance ** 2;
+            while (data.navPathIndex < data.navPath.length) {
+                const waypoint = data.navPath[data.navPathIndex];
+                if (distanceSquaredXZ(zombie.position.x, zombie.position.z, waypoint.x, waypoint.z) > reachDistanceSq) break;
+                data.navPathIndex++;
+            }
+
+            if (data.navPathIndex < data.navPath.length - 1) {
+                for (let index = data.navPath.length - 1; index > data.navPathIndex; index--) {
+                    if (hasClearNavigationLine(zombie.position, data.navPath[index], radius)) {
+                        data.navPathIndex = index;
+                        break;
+                    }
+                }
+            }
+
+            return data.navPathIndex < data.navPath.length ? data.navPath[data.navPathIndex] : playerPos;
+        }
+
+        function recoverStuckZombie(zombie, playerPos) {
+            if (!navigationGrid) return false;
+            const data = zombie.userData;
+            const center = worldToNavigationCell(zombie.position.x, zombie.position.z);
+            if (!center) return false;
+
+            const cameraForward = new THREE.Vector3();
+            camera.getWorldDirection(cameraForward);
+            cameraForward.y = 0;
+            cameraForward.normalize();
+            const toZombie = new THREE.Vector3(zombie.position.x - camera.position.x, 0, zombie.position.z - camera.position.z);
+            const distanceToCamera = toZombie.length();
+            if (distanceToCamera > 0.001) toZombie.normalize();
+            const visibleToPlayer = distanceToCamera < 45 && cameraForward.dot(toZombie) > 0.38;
+            const maxRadius = visibleToPlayer ? 1 : 4;
+            let best = null;
+            let bestScore = Infinity;
+
+            for (let ring = 1; ring <= maxRadius; ring++) {
+                for (let row = center.row - ring; row <= center.row + ring; row++) {
+                    for (let col = center.col - ring; col <= center.col + ring; col++) {
+                        if (Math.abs(col - center.col) !== ring && Math.abs(row - center.row) !== ring) continue;
+                        if (!isNavigationCellWalkable(col, row)) continue;
+                        const index = row * navigationGrid.cols + col;
+                        const candidate = getNavigationCellCenter(index);
+                        if (isPositionBlocked(candidate.x, candidate.z, data.radius || zombieRadius)) continue;
+                        const playerDistance = distanceSquaredXZ(candidate.x, candidate.z, playerPos.x, playerPos.z);
+                        const relocationDistance = distanceSquaredXZ(candidate.x, candidate.z, zombie.position.x, zombie.position.z);
+                        const score = playerDistance + relocationDistance * 0.35;
+                        if (score < bestScore) {
+                            bestScore = score;
+                            best = candidate;
+                        }
+                    }
+                }
+                if (best) break;
+            }
+
+            if (!best) return false;
+            zombie.position.x = best.x;
+            zombie.position.z = best.z;
+            data.navPath = [];
+            data.navPathIndex = 0;
+            data.navTargetCell = -1;
+            data.navForceRepath = true;
+            data.navHasDirectPath = false;
+            data.navDirectCheckTimer = 0;
+            data.navStuckTime = 0;
+            data.navBlockedFrames = 0;
+            data.navSampleDistance = 0;
+            data.navLastPosition.copy(zombie.position);
+            data.navRecoveryCooldown = 4;
+            navigationStats.recoveries++;
+            updateZombieDebugPath(zombie);
+            return true;
+        }
+
+        function updateZombieNavigationProgress(zombie, playerPos, delta, movedDistance, collisionResult, shouldMove) {
+            const data = zombie.userData;
+            data.navSampleTimer += delta;
+            data.navSampleDistance += movedDistance;
+            if (collisionResult.blockedX || collisionResult.blockedZ) {
+                data.navBlockedFrames++;
+            } else {
+                data.navBlockedFrames = Math.max(0, data.navBlockedFrames - 2);
+            }
+
+            if (data.navBlockedFrames >= 12) {
+                data.navForceRepath = true;
+                data.navRepathTimer = 0;
+                data.navHasDirectPath = false;
+                data.navDirectCheckTimer = 0;
+            }
+
+            if (data.navSampleTimer < navigationConfig.stuckSampleInterval) return;
+            const wasStuck = data.navStuckTime >= navigationConfig.repathAfter;
+            if (shouldMove && data.navSampleDistance < navigationConfig.stuckDistanceThreshold) {
+                data.navStuckTime += data.navSampleTimer;
+            } else {
+                data.navStuckTime = Math.max(0, data.navStuckTime - data.navSampleTimer * 1.5);
+            }
+
+            if (!wasStuck && data.navStuckTime >= navigationConfig.repathAfter) {
+                navigationStats.stuckEvents++;
+            }
+            if (data.navStuckTime >= navigationConfig.repathAfter) {
+                data.navForceRepath = true;
+                data.navRepathTimer = 0;
+            }
+            if (data.navStuckTime >= navigationConfig.recoverAfter && data.navRecoveryCooldown <= 0) {
+                if (!recoverStuckZombie(zombie, playerPos)) data.navRecoveryCooldown = 0.75;
+            }
+
+            data.navLastPosition.copy(zombie.position);
+            data.navSampleTimer = 0;
+            data.navSampleDistance = 0;
+        }
+
+        function moveZombieWithNavigation(zombie, playerPos, delta, speedMultiplier = 1) {
+            const data = zombie.userData;
+            const target = getZombieNavigationTarget(zombie, playerPos, delta);
+            let desiredX = target.x - zombie.position.x;
+            let desiredZ = target.z - zombie.position.z;
+            const targetDistance = Math.sqrt(desiredX * desiredX + desiredZ * desiredZ);
+            const shouldMove = targetDistance > 0.08;
+
+            if (!shouldMove) {
+                updateZombieNavigationProgress(zombie, playerPos, delta, 0, { blockedX: false, blockedZ: false }, false);
+                return;
+            }
+
+            desiredX /= targetDistance;
+            desiredZ /= targetDistance;
+            let separationX = 0;
+            let separationZ = 0;
+            const radius = data.radius || zombieRadius;
+
+            for (const other of zombies) {
+                if (other === zombie) continue;
+                const offsetX = zombie.position.x - other.position.x;
+                const offsetZ = zombie.position.z - other.position.z;
+                const distanceSq = offsetX * offsetX + offsetZ * offsetZ;
+                const separationRange = (radius + (other.userData.radius || zombieRadius)) * 1.45;
+                if (distanceSq >= separationRange * separationRange) continue;
+
+                if (distanceSq < 0.0001) {
+                    separationX += Math.cos(data.swing);
+                    separationZ += Math.sin(data.swing);
+                } else {
+                    const distance = Math.sqrt(distanceSq);
+                    const strength = 1 - distance / separationRange;
+                    separationX += (offsetX / distance) * strength;
+                    separationZ += (offsetZ / distance) * strength;
+                }
+            }
+
+            desiredX += separationX * 0.72;
+            desiredZ += separationZ * 0.72;
+            const combinedLength = Math.sqrt(desiredX * desiredX + desiredZ * desiredZ) || 1;
+            desiredX /= combinedLength;
+            desiredZ /= combinedLength;
+
+            const moveDistance = data.speed * speedMultiplier * delta;
+            const lookAhead = Math.max(radius * 1.65, moveDistance * 2.4);
+            let steeringX = desiredX;
+            let steeringZ = desiredZ;
+
+            for (const angle of navigationSteeringAngles) {
+                const cosine = Math.cos(angle);
+                const sine = Math.sin(angle);
+                const candidateX = desiredX * cosine - desiredZ * sine;
+                const candidateZ = desiredX * sine + desiredZ * cosine;
+                const probeX = zombie.position.x + candidateX * lookAhead;
+                const probeZ = zombie.position.z + candidateZ * lookAhead;
+                const insideArena = Math.abs(probeX) <= arenaInnerLimit - radius && Math.abs(probeZ) <= arenaInnerLimit - radius;
+                if (insideArena && !isPositionBlocked(probeX, probeZ, radius)) {
+                    steeringX = candidateX;
+                    steeringZ = candidateZ;
+                    break;
+                }
+            }
+
+            const beforeX = zombie.position.x;
+            const beforeZ = zombie.position.z;
+            const collisionResult = moveObjectWithCollisions(zombie, steeringX * moveDistance, steeringZ * moveDistance, radius);
+            const movedDistance = Math.sqrt((zombie.position.x - beforeX) ** 2 + (zombie.position.z - beforeZ) ** 2);
+            if (movedDistance > 0.001) {
+                zombie.lookAt(zombie.position.x + steeringX, zombie.position.y + 1, zombie.position.z + steeringZ);
+            }
+            updateZombieNavigationProgress(zombie, playerPos, delta, movedDistance, collisionResult, true);
+        }
+
         function updateZombies(delta) {
             if (!controls.isLocked || gameOver) return;
 
             const playerPos = camera.position;
+            navigationPathBudget = navigationConfig.maxPathsPerFrame;
+            navigationStats.pathsThisFrame = 0;
 
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
@@ -4736,9 +5290,9 @@
 
                     if (dist > 0.95) {
                         const speedMultiplier = zombie.userData.isArmed ? zombie.userData.armedSpeedMultiplier : 1;
-                        const moveX = (dx / dist) * zombie.userData.speed * speedMultiplier * delta;
-                        const moveZ = (dz / dist) * zombie.userData.speed * speedMultiplier * delta;
-                        moveObjectWithCollisions(zombie, moveX, moveZ, zombie.userData.radius || zombieRadius);
+                        moveZombieWithNavigation(zombie, playerPos, delta, speedMultiplier);
+                    } else {
+                        updateZombieNavigationProgress(zombie, playerPos, delta, 0, { blockedX: false, blockedZ: false }, false);
                     }
 
                     const detonatorBar = zombie.userData.healthBarGroup;
@@ -4752,9 +5306,7 @@
                 }
 
                 if (dist > 1.8) {
-                    const moveX = (dx / dist) * zombie.userData.speed * delta;
-                    const moveZ = (dz / dist) * zombie.userData.speed * delta;
-                    moveObjectWithCollisions(zombie, moveX, moveZ, zombie.userData.radius || zombieRadius);
+                    moveZombieWithNavigation(zombie, playerPos, delta);
 
                     if (zombie.userData.isShooter && dist < 40 && zombie.userData.attackCooldown <= 0) {
                         const startPos = new THREE.Vector3(zombie.position.x, zombie.position.y + 1.5, zombie.position.z);
@@ -4763,9 +5315,12 @@
                         createZombieProjectile(startPos, targetPos, zombie.userData.attackDamage);
                         zombie.userData.attackCooldown = zombie.userData.attackInterval;
                     }
-                } else if (zombie.userData.attackCooldown <= 0) {
-                    applyDamage(zombie.userData.attackDamage);
-                    zombie.userData.attackCooldown = zombie.userData.attackInterval;
+                } else {
+                    updateZombieNavigationProgress(zombie, playerPos, delta, 0, { blockedX: false, blockedZ: false }, false);
+                    if (zombie.userData.attackCooldown <= 0) {
+                        applyDamage(zombie.userData.attackDamage);
+                        zombie.userData.attackCooldown = zombie.userData.attackInterval;
+                    }
                 }
 
                 const bar = zombie.userData.healthBarGroup;
@@ -4775,6 +5330,13 @@
                     zombie.position.z
                 );
                 bar.lookAt(camera.position);
+            }
+
+            if (navDebugMode) {
+                document.body.dataset.navPaths = String(navigationStats.pathsBuilt);
+                document.body.dataset.navFailedPaths = String(navigationStats.failedPaths);
+                document.body.dataset.navStuckEvents = String(navigationStats.stuckEvents);
+                document.body.dataset.navRecoveries = String(navigationStats.recoveries);
             }
         }
 
@@ -5122,6 +5684,7 @@
         function resetGame() {
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
+                clearZombieDebugPath(zombie);
                 scene.remove(zombie);
                 scene.remove(zombie.userData.healthBarGroup);
                 disposeObject3D(zombie);
@@ -5129,6 +5692,10 @@
             }
             zombies.length = 0;
             zombieHitMeshes.length = 0;
+            navigationStats.pathsBuilt = 0;
+            navigationStats.failedPaths = 0;
+            navigationStats.stuckEvents = 0;
+            navigationStats.recoveries = 0;
 
             for (let i = tracers.length - 1; i >= 0; i--) {
                 const t = tracers[i];
