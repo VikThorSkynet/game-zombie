@@ -5151,9 +5151,10 @@
         }
 
         function faceZombieHorizontally(zombie, targetX, targetZ) {
-            zombie.lookAt(targetX, zombie.position.y, targetZ);
-            zombie.rotation.x = 0;
-            zombie.rotation.z = 0;
+            const directionX = targetX - zombie.position.x;
+            const directionZ = targetZ - zombie.position.z;
+            if (directionX * directionX + directionZ * directionZ <= 0.000001) return;
+            zombie.rotation.set(0, Math.atan2(directionX, directionZ), 0);
         }
 
         function moveZombieWithNavigation(zombie, playerPos, delta, speedMultiplier = 1) {
