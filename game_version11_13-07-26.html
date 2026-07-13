@@ -5150,6 +5150,12 @@
             data.navSampleDistance = 0;
         }
 
+        function faceZombieHorizontally(zombie, targetX, targetZ) {
+            zombie.lookAt(targetX, zombie.position.y, targetZ);
+            zombie.rotation.x = 0;
+            zombie.rotation.z = 0;
+        }
+
         function moveZombieWithNavigation(zombie, playerPos, delta, speedMultiplier = 1) {
             const data = zombie.userData;
             const target = getZombieNavigationTarget(zombie, playerPos, delta);
@@ -5219,7 +5225,7 @@
             const collisionResult = moveObjectWithCollisions(zombie, steeringX * moveDistance, steeringZ * moveDistance, radius);
             const movedDistance = Math.sqrt((zombie.position.x - beforeX) ** 2 + (zombie.position.z - beforeZ) ** 2);
             if (movedDistance > 0.001) {
-                zombie.lookAt(zombie.position.x + steeringX, zombie.position.y + 1, zombie.position.z + steeringZ);
+                faceZombieHorizontally(zombie, zombie.position.x + steeringX, zombie.position.z + steeringZ);
             }
             updateZombieNavigationProgress(zombie, playerPos, delta, movedDistance, collisionResult, true);
         }
@@ -5240,7 +5246,7 @@
                 const dz = playerPos.z - zombie.position.z;
                 const dist = Math.sqrt(dx * dx + dz * dz);
 
-                zombie.lookAt(playerPos.x, zombie.position.y + 1, playerPos.z);
+                faceZombieHorizontally(zombie, playerPos.x, playerPos.z);
 
                 const legL = zombie.userData.legL;
                 const legR = zombie.userData.legR;
