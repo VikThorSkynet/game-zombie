@@ -29,7 +29,16 @@
             top: 0;
             left: 0;
             z-index: 1;
-            filter: saturate(1.08) contrast(1.04);
+        }
+
+        body.performance-low #ui,
+        body.performance-low #mission-ui,
+        body.performance-low #weapon-ui {
+            backdrop-filter: none;
+        }
+
+        body.performance-low #crosshair {
+            mix-blend-mode: normal;
         }
 
         body::after {
@@ -551,10 +560,12 @@
         #sprint-fill {
             position: absolute;
             inset: 0 auto 0 0;
-            width: 70%;
+            width: 100%;
+            transform: scaleX(0.7);
+            transform-origin: left center;
             background: linear-gradient(90deg, color-mix(in srgb, var(--sprint-color) 72%, #0b3250), var(--sprint-color));
             box-shadow: 0 0 16px color-mix(in srgb, var(--sprint-color) 62%, transparent);
-            transition: width 0.08s linear, background 0.16s ease;
+            transition: transform 0.08s linear, background 0.16s ease;
         }
 
         .sprint-shine {
@@ -775,7 +786,8 @@
                 <span class="resource-label"><span class="sprint-icon">»</span> FÔLEGO</span>
                 <span id="sprint-state">PRONTO</span>
             </div>
-            <div class="sprint-track">
+            <div class="sprint-track" role="progressbar" aria-label="Fôlego para sprint"
+                aria-valuemin="0" aria-valuemax="100" aria-valuenow="70">
                 <div id="sprint-fill"></div>
                 <div class="sprint-shine"></div>
                 <div class="sprint-ticks"></div>
@@ -841,12 +853,37 @@
         import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
         import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
-        let scene, camera, renderer, composer, controls, clock;
+        let scene, camera, renderer, composer, bloomPass, controls, clock;
         let muzzleFlashTexture;
-        const previewMode = new URLSearchParams(window.location.search).has("preview");
-        const detonatorTestMode = new URLSearchParams(window.location.search).has("detonator-test");
-        const navDebugMode = new URLSearchParams(window.location.search).has("nav-debug");
-        const sprintTestMode = new URLSearchParams(window.location.search).has("sprint-test");
+        const urlParams = new URLSearchParams(window.location.search);
+        const previewMode = urlParams.has("preview");
+        const detonatorTestMode = urlParams.has("detonator-test");
+        const navDebugMode = urlParams.has("nav-debug");
+        const sprintTestMode = urlParams.has("sprint-test");
+        const requestedQuality = urlParams.get("quality") || "auto";
+        const lowPowerDevice = window.matchMedia("(pointer: coarse), (max-width: 800px)").matches
+            || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
+            || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+        const lowQuality = requestedQuality === "low" || (requestedQuality === "auto" && lowPowerDevice);
+        const highQuality = requestedQuality === "high";
+        const renderPerformance = {
+            dynamic: requestedQuality === "auto",
+            minPixelRatio: lowQuality ? 0.7 : 0.85,
+            maxPixelRatio: Math.min(window.devicePixelRatio || 1, highQuality ? 2 : lowQuality ? 1 : 1.5),
+            pixelRatio: Math.min(window.devicePixelRatio || 1, highQuality ? 2 : lowQuality ? 1 : 1.35),
+            bloomEnabled: !lowQuality,
+            shadowsEnabled: !lowQuality,
+            shadowMapSize: highQuality ? 2048 : 1024,
+            sampleTime: 0,
+            sampleFrames: 0,
+            slowSamples: 0,
+            fastSamples: 0
+        };
+        let frameTimeSeconds = 0;
+        let pausedRenderTimer = 0;
+        let resizePending = false;
+
+        document.body.classList.toggle("performance-low", lowQuality);
 
         // --- Weapon System ---
         const weaponConfigs = {
@@ -979,6 +1016,9 @@
 
         const zombies = [];
         const zombieHitMeshes = [];
+        const zombieSpatialGrid = new Map();
+        const zombieSpatialBucketPool = [];
+        const zombieSpatialCellSize = 3.5;
         const tracers = [];
         const impactParticles = [];
         const explosionEffects = [];
@@ -993,9 +1033,41 @@
         const powerupTypes = ["max_ammo", "nuke", "insta_kill", "double_points"];
 
         let audioContext = null;
+        let audioMasterGain = null;
+        let audioSfxGain = null;
+        let audioZombieGain = null;
+        let sharedNoiseBuffer = null;
+        let activeZombieVoices = 0;
+        let lastPlayerHurtSoundTime = -Infinity;
+        const maxZombieVoices = 6;
+        const zombieVoicePitchByType = { Normal: 76, Corredor: 105, Bruto: 53, Atirador: 125, Detonador: 88 };
+        const audioForwardScratch = new THREE.Vector3();
+        const audioAssetPaths = Object.freeze({
+            pistol: "pistol-sound-effect_zejYI9w.mp3",
+            shotgun: "shotgun-read-the-description.mp3",
+            reload: "gun-load_abJphmJ.mp3",
+            mystery: "mystery-box-jingle-full.mp3",
+            playerHurt: "Quando eu tomar dano.mp3",
+            nuke: "Quando pega a nuke vemelha que mata todos os zombies.mp3",
+            gameOver: "GAME OVER SOUND.mp3",
+            zombieNormal: "ZOMBIE VERDE.mp3",
+            zombieBrute: "zombie grande azul.mp3",
+            zombieDetonator: "ZOMBIE QUE CORRE E EXPLODE.mp3"
+        });
+        const audioAssetDataPromises = new Map();
+        const audioAssetDecodePromises = new Map();
+        const audioAssetBuffers = new Map();
+        const audioAssetUrls = new Map();
+        const audioAssetElements = new Map();
+        const activeAudioElements = new Set();
+        const audioAssetPlaybackWarnings = new Set();
 
         const staticColliders = [];
+        const staticColliderGrid = new Map();
+        const staticColliderCellSize = 12;
         const bulletBlockers = [];
+        const collisionResultScratch = { blockedX: false, blockedZ: false };
+        const noCollisionResult = Object.freeze({ blockedX: false, blockedZ: false });
         const navigationConfig = {
             cellSize: 2,
             clearance: 0.95,
@@ -1010,6 +1082,10 @@
             maxExpandedNodes: 6500
         };
         const navigationSteeringAngles = [0, Math.PI / 6, -Math.PI / 6, Math.PI / 3, -Math.PI / 3, Math.PI / 2, -Math.PI / 2, Math.PI];
+        const navigationSteeringVectors = navigationSteeringAngles.map(angle => ({
+            cosine: Math.cos(angle),
+            sine: Math.sin(angle)
+        }));
         const navigationDirections = [
             { dc: 1, dr: 0, cost: 1 }, { dc: -1, dr: 0, cost: 1 },
             { dc: 0, dr: 1, cost: 1 }, { dc: 0, dr: -1, cost: 1 },
@@ -1020,6 +1096,7 @@
         let navigationGrid = null;
         let navigationPathBudget = 0;
         let navigationDebugPoints = null;
+        let navigationSearchScratch = null;
 
         const zombieTypeConfigs = {
             normal: {
@@ -1247,6 +1324,8 @@
         let sprintRecoveryDelay = 0;
         let sprintExhausted = false;
         let sprintBlend = 0;
+        let sprintHudUpdateTimer = 0;
+        let sprintHudSnapshot = "";
 
         let isReloading = false;
         let reloadTimer = 0;
@@ -1254,6 +1333,7 @@
         let ammoSpawnTimer = 0;
         const ammoSpawnInterval = 25;
         const ammoPickupAmount = 40;
+        const maxAmmoPickups = 6;
 
         const medKitHealAmount = 50;
         const medKitLifetime = 45;
@@ -1286,6 +1366,7 @@
 
         function init() {
             clock = new THREE.Clock();
+            preloadAudioAssetData();
 
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x050811);
@@ -1295,10 +1376,13 @@
             camera.position.set(0, playerEyeHeight, 0);
             scene.add(camera);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({
+                antialias: false,
+                powerPreference: "high-performance"
+            });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(renderPerformance.pixelRatio);
+            renderer.shadowMap.enabled = renderPerformance.shadowsEnabled;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1307,12 +1391,13 @@
 
             composer = new EffectComposer(renderer);
             composer.addPass(new RenderPass(scene, camera));
-            const bloomPass = new UnrealBloomPass(
+            bloomPass = new UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight),
                 0.52,
                 0.42,
                 0.76
             );
+            bloomPass.enabled = renderPerformance.bloomEnabled;
             composer.addPass(bloomPass);
             composer.addPass(new OutputPass());
 
@@ -1328,9 +1413,15 @@
 
             const moonLight = new THREE.DirectionalLight(0x9dc2ff, 1.15);
             moonLight.position.set(20, 40, 10);
-            moonLight.castShadow = true;
-            moonLight.shadow.mapSize.width = 2048;
-            moonLight.shadow.mapSize.height = 2048;
+            moonLight.castShadow = renderPerformance.shadowsEnabled;
+            moonLight.shadow.mapSize.width = renderPerformance.shadowMapSize;
+            moonLight.shadow.mapSize.height = renderPerformance.shadowMapSize;
+            moonLight.shadow.camera.left = -70;
+            moonLight.shadow.camera.right = 70;
+            moonLight.shadow.camera.top = 70;
+            moonLight.shadow.camera.bottom = -70;
+            moonLight.shadow.camera.near = 1;
+            moonLight.shadow.camera.far = 130;
             scene.add(moonLight);
 
             // Flashlight attached to camera
@@ -1348,6 +1439,13 @@
             createPackAPunchMachine();
             createArena();
             buildNavigationGrid();
+
+            // O cenário que projeta sombras é estático; atualizar o mapa uma vez
+            // evita redesenhá-lo em todos os frames.
+            if (renderPerformance.shadowsEnabled) {
+                renderer.shadowMap.autoUpdate = false;
+                renderer.shadowMap.needsUpdate = true;
+            }
 
             playerWeapons.forEach(pw => {
                 if (pw.configId) {
@@ -1384,6 +1482,7 @@
             controls.addEventListener("lock", () => {
                 overlay.style.display = "none";
                 crosshair.style.display = "block";
+                playGameSound("start");
             });
 
             controls.addEventListener("unlock", () => {
@@ -1428,6 +1527,8 @@
 
             document.addEventListener("keydown", onKeyDown);
             document.addEventListener("keyup", onKeyUp);
+            document.addEventListener("pointerdown", ensureAudioContext, { once: true });
+            document.addEventListener("keydown", ensureAudioContext, { once: true });
             document.addEventListener("mousedown", (e) => {
                 if (e.button === 0) mouseHeld = true;
                 shoot(e);
@@ -1439,6 +1540,14 @@
                 sprintKeysHeld.clear();
                 sprintHeld = false;
                 mouseHeld = false;
+            });
+            document.addEventListener("visibilitychange", () => {
+                if (!audioContext) return;
+                if (document.hidden && audioContext.state === "running") {
+                    audioContext.suspend();
+                } else if (!document.hidden && controls.isLocked && audioContext.state === "suspended") {
+                    audioContext.resume();
+                }
             });
             window.addEventListener("resize", onWindowResize);
 
@@ -2049,26 +2158,56 @@
             mesh.updateMatrixWorld(true);
 
             const bounds = new THREE.Box3().setFromObject(mesh);
-
-            staticColliders.push({
+            const collider = {
                 minX: bounds.min.x,
                 maxX: bounds.max.x,
                 minZ: bounds.min.z,
                 maxZ: bounds.max.z
-            });
+            };
+
+            staticColliders.push(collider);
+            const minCellX = Math.floor(collider.minX / staticColliderCellSize);
+            const maxCellX = Math.floor(collider.maxX / staticColliderCellSize);
+            const minCellZ = Math.floor(collider.minZ / staticColliderCellSize);
+            const maxCellZ = Math.floor(collider.maxZ / staticColliderCellSize);
+            for (let cellX = minCellX; cellX <= maxCellX; cellX++) {
+                for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
+                    const key = getSpatialCellKey(cellX, cellZ);
+                    let bucket = staticColliderGrid.get(key);
+                    if (!bucket) {
+                        bucket = [];
+                        staticColliderGrid.set(key, bucket);
+                    }
+                    bucket.push(collider);
+                }
+            }
 
             bulletBlockers.push(mesh);
         }
 
-        function isPositionBlocked(x, z, radius = 0.1) {
-            for (const collider of staticColliders) {
-                const closestX = THREE.MathUtils.clamp(x, collider.minX, collider.maxX);
-                const closestZ = THREE.MathUtils.clamp(z, collider.minZ, collider.maxZ);
-                const dx = x - closestX;
-                const dz = z - closestZ;
+        function getSpatialCellKey(cellX, cellZ) {
+            return (cellX + 128) * 512 + cellZ + 128;
+        }
 
-                if (dx * dx + dz * dz < radius * radius) {
-                    return true;
+        function isPositionBlocked(x, z, radius = 0.1) {
+            const radiusSq = radius * radius;
+            const minCellX = Math.floor((x - radius) / staticColliderCellSize);
+            const maxCellX = Math.floor((x + radius) / staticColliderCellSize);
+            const minCellZ = Math.floor((z - radius) / staticColliderCellSize);
+            const maxCellZ = Math.floor((z + radius) / staticColliderCellSize);
+
+            for (let cellX = minCellX; cellX <= maxCellX; cellX++) {
+                for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
+                    const bucket = staticColliderGrid.get(getSpatialCellKey(cellX, cellZ));
+                    if (!bucket) continue;
+                    for (const collider of bucket) {
+                        const closestX = THREE.MathUtils.clamp(x, collider.minX, collider.maxX);
+                        const closestZ = THREE.MathUtils.clamp(z, collider.minZ, collider.maxZ);
+                        const dx = x - closestX;
+                        const dz = z - closestZ;
+
+                        if (dx * dx + dz * dz < radiusSq) return true;
+                    }
                 }
             }
 
@@ -2079,10 +2218,9 @@
             const min = -arenaInnerLimit + radius;
             const max = arenaInnerLimit - radius;
 
-            const result = {
-                blockedX: false,
-                blockedZ: false
-            };
+            const result = collisionResultScratch;
+            result.blockedX = false;
+            result.blockedZ = false;
 
             const nextX = THREE.MathUtils.clamp(object.position.x + moveX, min, max);
             if (!isPositionBlocked(nextX, object.position.z, radius)) {
@@ -2103,47 +2241,62 @@
 
         class NavigationMinHeap {
             constructor() {
-                this.items = [];
+                this.indices = [];
+                this.priorities = [];
+                this.result = { index: -1, priority: 0 };
             }
 
             get size() {
-                return this.items.length;
+                return this.indices.length;
+            }
+
+            clear() {
+                this.indices.length = 0;
+                this.priorities.length = 0;
             }
 
             push(index, priority) {
-                const item = { index, priority };
-                this.items.push(item);
-                let child = this.items.length - 1;
+                this.indices.push(index);
+                this.priorities.push(priority);
+                let child = this.indices.length - 1;
 
                 while (child > 0) {
                     const parent = Math.floor((child - 1) / 2);
-                    if (this.items[parent].priority <= priority) break;
-                    this.items[child] = this.items[parent];
+                    if (this.priorities[parent] <= priority) break;
+                    this.indices[child] = this.indices[parent];
+                    this.priorities[child] = this.priorities[parent];
                     child = parent;
                 }
 
-                this.items[child] = item;
+                this.indices[child] = index;
+                this.priorities[child] = priority;
             }
 
             pop() {
-                if (this.items.length === 0) return null;
-                const root = this.items[0];
-                const last = this.items.pop();
-                if (this.items.length === 0) return root;
+                if (this.indices.length === 0) return null;
+                const rootIndex = this.indices[0];
+                const rootPriority = this.priorities[0];
+                const lastIndex = this.indices.pop();
+                const lastPriority = this.priorities.pop();
+                this.result.index = rootIndex;
+                this.result.priority = rootPriority;
+                if (this.indices.length === 0) return this.result;
 
                 let parent = 0;
                 while (true) {
                     const left = parent * 2 + 1;
                     const right = left + 1;
-                    if (left >= this.items.length) break;
-                    const smallest = right < this.items.length && this.items[right].priority < this.items[left].priority ? right : left;
-                    if (this.items[smallest].priority >= last.priority) break;
-                    this.items[parent] = this.items[smallest];
+                    if (left >= this.indices.length) break;
+                    const smallest = right < this.indices.length && this.priorities[right] < this.priorities[left] ? right : left;
+                    if (this.priorities[smallest] >= lastPriority) break;
+                    this.indices[parent] = this.indices[smallest];
+                    this.priorities[parent] = this.priorities[smallest];
                     parent = smallest;
                 }
 
-                this.items[parent] = last;
-                return root;
+                this.indices[parent] = lastIndex;
+                this.priorities[parent] = lastPriority;
+                return this.result;
             }
         }
 
@@ -2276,12 +2429,19 @@
             if (start.index === goal.index) return [getNavigationCellCenter(goal.index)];
 
             const total = navigationGrid.cols * navigationGrid.rows;
-            const gScore = new Float32Array(total);
+            if (!navigationSearchScratch || navigationSearchScratch.gScore.length !== total) {
+                navigationSearchScratch = {
+                    gScore: new Float32Array(total),
+                    cameFrom: new Int32Array(total),
+                    closed: new Uint8Array(total),
+                    open: new NavigationMinHeap()
+                };
+            }
+            const { gScore, cameFrom, closed, open } = navigationSearchScratch;
             gScore.fill(Infinity);
-            const cameFrom = new Int32Array(total);
             cameFrom.fill(-1);
-            const closed = new Uint8Array(total);
-            const open = new NavigationMinHeap();
+            closed.fill(0);
+            open.clear();
             gScore[start.index] = 0;
             open.push(start.index, navigationHeuristic(start.col, start.row, goal.col, goal.row));
             let expanded = 0;
@@ -2670,7 +2830,7 @@
             // Hide weapon during upgrade
             pw.model.visible = false;
 
-            playPackAPunchSound();
+            playPackAPunchSound(papMachine?.position);
             showWaveMessage("⚡ Pack-a-Punch em progresso...");
             updateUI();
         }
@@ -2700,7 +2860,7 @@
 
             const papName = papNames[pw.configId] || ("PaP " + cfg.name);
             showWaveMessage(`🔮 ${papName} desbloqueado!`);
-            playPackAPunchFinishSound();
+            playPackAPunchFinishSound(papMachine?.position);
             updateUI();
         }
 
@@ -2768,7 +2928,7 @@
             });
         }
 
-        function playPackAPunchSound() {
+        function playPackAPunchSound(position = null) {
             const ctx = ensureAudioContext();
             if (!ctx) return;
             const now = ctx.currentTime;
@@ -2785,20 +2945,17 @@
             gain.gain.setValueAtTime(0.15, now + 2.5);
             gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            connectAudioOutput(ctx, gain, position, "sfx", 55);
             osc.start(now);
             osc.stop(now + 3.6);
 
             // Electric crackling
-            const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 3.5), ctx.sampleRate);
-            const channel = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < channel.length; i++) {
-                channel[i] = (Math.random() * 2 - 1) * (Math.sin(i / channel.length * Math.PI) * 0.5);
-            }
+            const noiseBuffer = getSharedNoiseBuffer(ctx);
             const noise = ctx.createBufferSource();
             const filter = ctx.createBiquadFilter();
             const noiseGain = ctx.createGain();
             noise.buffer = noiseBuffer;
+            noise.loop = true;
             filter.type = "bandpass";
             filter.frequency.value = 2000;
             filter.Q.value = 2;
@@ -2808,12 +2965,12 @@
             noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
             noise.connect(filter);
             filter.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
+            connectAudioOutput(ctx, noiseGain, position, "sfx", 55);
             noise.start(now);
             noise.stop(now + 3.6);
         }
 
-        function playPackAPunchFinishSound() {
+        function playPackAPunchFinishSound(position = null) {
             const ctx = ensureAudioContext();
             if (!ctx) return;
             const now = ctx.currentTime;
@@ -2828,7 +2985,7 @@
                 gain.gain.exponentialRampToValueAtTime(0.2, now + 0.05);
                 gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.5);
                 osc.connect(gain);
-                gain.connect(ctx.destination);
+                connectAudioOutput(ctx, gain, position, "sfx", 55);
                 osc.start(now + i * 0.08);
                 osc.stop(now + 1.6);
             });
@@ -2843,7 +3000,7 @@
             gain2.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
             gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
             osc2.connect(gain2);
-            gain2.connect(ctx.destination);
+            connectAudioOutput(ctx, gain2, position, "sfx", 55);
             osc2.start(now);
             osc2.stop(now + 0.5);
         }
@@ -2873,8 +3030,9 @@
 
             gun.traverse(child => {
                 if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
+                    // A arma fica presa à câmera e não precisa entrar no passe de sombra.
+                    child.castShadow = false;
+                    child.receiveShadow = false;
                 }
             });
 
@@ -3225,6 +3383,7 @@
 
             isSwitchingWeapon = true;
             weaponSwitchTimer = weaponSwitchDuration;
+            playGameSound("switch");
 
             setTimeout(() => {
                 playerWeapons[currentWeaponIndex].model.visible = false;
@@ -3238,11 +3397,145 @@
             }, weaponSwitchDuration * 1000);
         }
 
+        function prepareAudioElement(key, url) {
+            if (audioAssetElements.has(key)) return audioAssetElements.get(key);
+
+            const audio = new Audio();
+            audio.preload = "auto";
+            audio.src = url;
+            audioAssetElements.set(key, audio);
+            return audio;
+        }
+
+        function preloadAudioAssetData() {
+            for (const [key, relativePath] of Object.entries(audioAssetPaths)) {
+                if (audioAssetDataPromises.has(key)) continue;
+                const url = new URL(relativePath, window.location.href).href;
+                audioAssetUrls.set(key, url);
+                const audio = prepareAudioElement(key, url);
+
+                // fetch() não pode ler MP3 em file://. Nesse modo o elemento <audio>
+                // é o carregador principal e permite abrir o HTML com duplo clique.
+                if (window.location.protocol === "file:") {
+                    audio.load();
+                    audioAssetDataPromises.set(key, Promise.resolve(null));
+                    continue;
+                }
+
+                const request = fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.arrayBuffer();
+                    })
+                    .catch(error => {
+                        console.warn(`Não foi possível carregar o som ${relativePath}:`, error);
+                        return null;
+                    });
+                audioAssetDataPromises.set(key, request);
+            }
+        }
+
+        function playAudioElementAsset(key, {
+            position = null,
+            volume = 0.5,
+            playbackRate = 1,
+            bus = "sfx",
+            maxDistance = 48,
+            trackZombieVoice = false
+        } = {}) {
+            const url = audioAssetUrls.get(key);
+            if (!url) return false;
+
+            const spatial = getSpatialAudioSettings(position, maxDistance);
+            if (!spatial.audible) return true;
+            if (trackZombieVoice && activeZombieVoices >= maxZombieVoices) return true;
+
+            const template = prepareAudioElement(key, url);
+            const audio = template.cloneNode(true);
+            const busVolume = bus === "zombie" ? 1.15 : 0.92;
+            audio.volume = THREE.MathUtils.clamp(volume * spatial.attenuation * 0.82 * busVolume, 0, 1);
+            audio.playbackRate = playbackRate;
+            audio.preservesPitch = false;
+            audio.mozPreservesPitch = false;
+            audio.webkitPreservesPitch = false;
+
+            let cleanedUp = false;
+            const cleanup = () => {
+                if (cleanedUp) return;
+                cleanedUp = true;
+                activeAudioElements.delete(audio);
+                if (trackZombieVoice) activeZombieVoices = Math.max(0, activeZombieVoices - 1);
+            };
+
+            activeAudioElements.add(audio);
+            if (trackZombieVoice) activeZombieVoices++;
+            audio.addEventListener("ended", cleanup, { once: true });
+            audio.addEventListener("error", cleanup, { once: true });
+
+            try {
+                const playPromise = audio.play();
+                if (playPromise) {
+                    playPromise.catch(error => {
+                        cleanup();
+                        if (!audioAssetPlaybackWarnings.has(key)) {
+                            audioAssetPlaybackWarnings.add(key);
+                            console.warn(`Não foi possível reproduzir o som ${audioAssetPaths[key]}:`, error);
+                        }
+                    });
+                }
+            } catch (error) {
+                cleanup();
+                if (!audioAssetPlaybackWarnings.has(key)) {
+                    audioAssetPlaybackWarnings.add(key);
+                    console.warn(`Não foi possível reproduzir o som ${audioAssetPaths[key]}:`, error);
+                }
+                return false;
+            }
+
+            return true;
+        }
+
+        function loadAudioAsset(key) {
+            if (!audioContext || !audioAssetPaths[key]) return Promise.resolve(null);
+            if (audioAssetBuffers.has(key)) return Promise.resolve(audioAssetBuffers.get(key));
+            if (audioAssetDecodePromises.has(key)) return audioAssetDecodePromises.get(key);
+
+            const dataPromise = audioAssetDataPromises.get(key);
+            if (!dataPromise) return Promise.resolve(null);
+            const decodePromise = dataPromise
+                .then(data => data ? audioContext.decodeAudioData(data.slice(0)) : null)
+                .then(buffer => {
+                    if (buffer) audioAssetBuffers.set(key, buffer);
+                    return buffer;
+                })
+                .catch(error => {
+                    console.warn(`Não foi possível decodificar o som ${audioAssetPaths[key]}:`, error);
+                    return null;
+                });
+            audioAssetDecodePromises.set(key, decodePromise);
+            return decodePromise;
+        }
+
+        function preloadDecodedAudioAssets() {
+            for (const key of Object.keys(audioAssetPaths)) loadAudioAsset(key);
+        }
+
         function ensureAudioContext() {
             if (!audioContext) {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContextClass) return null;
                 audioContext = new AudioContextClass();
+
+                audioMasterGain = audioContext.createGain();
+                audioSfxGain = audioContext.createGain();
+                audioZombieGain = audioContext.createGain();
+                audioMasterGain.gain.value = 0.82;
+                audioSfxGain.gain.value = 0.92;
+                audioZombieGain.gain.value = 1.15;
+                audioSfxGain.connect(audioMasterGain);
+                audioZombieGain.connect(audioMasterGain);
+                audioMasterGain.connect(audioContext.destination);
+                preloadDecodedAudioAssets();
             }
 
             if (audioContext.state === "suspended") {
@@ -3252,7 +3545,339 @@
             return audioContext;
         }
 
-        function playGunshotSound() {
+        function getSharedNoiseBuffer(ctx) {
+            if (sharedNoiseBuffer && sharedNoiseBuffer.sampleRate === ctx.sampleRate) return sharedNoiseBuffer;
+            sharedNoiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+            const channel = sharedNoiseBuffer.getChannelData(0);
+            for (let i = 0; i < channel.length; i++) channel[i] = Math.random() * 2 - 1;
+            return sharedNoiseBuffer;
+        }
+
+        function getSpatialAudioSettings(position, maxDistance = 48) {
+            if (!position || !camera) return { audible: true, attenuation: 1, pan: 0 };
+            const dx = position.x - camera.position.x;
+            const dz = position.z - camera.position.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance >= maxDistance) return { audible: false, attenuation: 0, pan: 0 };
+
+            const proximity = 1 - THREE.MathUtils.clamp((distance - 1) / (maxDistance - 1), 0, 1);
+            camera.getWorldDirection(audioForwardScratch);
+            audioForwardScratch.y = 0;
+            if (audioForwardScratch.lengthSq() > 0.0001) audioForwardScratch.normalize();
+            const rightX = -audioForwardScratch.z;
+            const rightZ = audioForwardScratch.x;
+            const pan = distance > 0.001
+                ? THREE.MathUtils.clamp((dx * rightX + dz * rightZ) / distance, -0.9, 0.9)
+                : 0;
+            return {
+                audible: true,
+                attenuation: 0.08 * proximity + 0.92 * proximity * proximity,
+                pan
+            };
+        }
+
+        function connectAudioOutput(ctx, node, position = null, bus = "sfx", maxDistance = 48) {
+            const spatial = getSpatialAudioSettings(position, maxDistance);
+            const distanceGain = ctx.createGain();
+            distanceGain.gain.value = spatial.attenuation;
+            node.connect(distanceGain);
+
+            const destination = bus === "zombie" ? audioZombieGain : audioSfxGain;
+            let panner = null;
+            if (ctx.createStereoPanner) {
+                panner = ctx.createStereoPanner();
+                panner.pan.value = spatial.pan;
+                distanceGain.connect(panner);
+                panner.connect(destination || ctx.destination);
+            } else {
+                distanceGain.connect(destination || ctx.destination);
+            }
+            return { audible: spatial.audible, distanceGain, panner };
+        }
+
+        function playAudioAsset(key, {
+            position = null,
+            volume = 0.5,
+            playbackRate = 1,
+            bus = "sfx",
+            maxDistance = 48,
+            trackZombieVoice = false,
+            queueIfLoading = true
+        } = {}) {
+            if (!audioAssetPaths[key]) return false;
+            const ctx = ensureAudioContext();
+            if (!ctx || window.location.protocol === "file:") {
+                return playAudioElementAsset(key, {
+                    position,
+                    volume,
+                    playbackRate,
+                    bus,
+                    maxDistance,
+                    trackZombieVoice
+                });
+            }
+
+            const buffer = audioAssetBuffers.get(key);
+            if (!buffer) {
+                if (!queueIfLoading) {
+                    return playAudioElementAsset(key, {
+                        position,
+                        volume,
+                        playbackRate,
+                        bus,
+                        maxDistance,
+                        trackZombieVoice
+                    });
+                }
+                const requestedAt = performance.now();
+                const queuedPosition = position?.clone ? position.clone() : position;
+                loadAudioAsset(key).then(decodedBuffer => {
+                    if (performance.now() - requestedAt > 1500) return;
+                    if (decodedBuffer) {
+                        playAudioAsset(key, {
+                            position: queuedPosition,
+                            volume,
+                            playbackRate,
+                            bus,
+                            maxDistance,
+                            trackZombieVoice,
+                            queueIfLoading: false
+                        });
+                    } else {
+                        playAudioElementAsset(key, {
+                            position: queuedPosition,
+                            volume,
+                            playbackRate,
+                            bus,
+                            maxDistance,
+                            trackZombieVoice
+                        });
+                    }
+                });
+                return true;
+            }
+            const spatial = getSpatialAudioSettings(position, maxDistance);
+            if (!spatial.audible) return true;
+            if (trackZombieVoice && activeZombieVoices >= maxZombieVoices) return true;
+
+            const source = ctx.createBufferSource();
+            const gain = ctx.createGain();
+            source.buffer = buffer;
+            source.playbackRate.value = playbackRate;
+            gain.gain.value = volume;
+            source.connect(gain);
+            const route = connectAudioOutput(ctx, gain, position, bus, maxDistance);
+            if (trackZombieVoice) activeZombieVoices++;
+            source.onended = () => {
+                if (trackZombieVoice) activeZombieVoices = Math.max(0, activeZombieVoices - 1);
+                source.disconnect();
+                gain.disconnect();
+                route.distanceGain.disconnect();
+                if (route.panner) route.panner.disconnect();
+            };
+            source.start();
+            return true;
+        }
+
+        function playSynthTone({
+            frequency = 220,
+            endFrequency = frequency,
+            duration = 0.12,
+            volume = 0.08,
+            type = "sine",
+            delay = 0,
+            position = null,
+            bus = "sfx",
+            maxDistance = 48
+        } = {}) {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+            const spatial = getSpatialAudioSettings(position, maxDistance);
+            if (!spatial.audible) return;
+
+            const start = ctx.currentTime + delay;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(Math.max(20, frequency), start);
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), start + duration);
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), start + Math.min(0.018, duration * 0.2));
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+            osc.connect(gain);
+            const route = connectAudioOutput(ctx, gain, position, bus, maxDistance);
+            osc.onended = () => {
+                osc.disconnect();
+                gain.disconnect();
+                route.distanceGain.disconnect();
+                if (route.panner) route.panner.disconnect();
+            };
+            osc.start(start);
+            osc.stop(start + duration + 0.02);
+        }
+
+        function playNoiseBurst({ duration = 0.12, volume = 0.06, frequency = 900, filterType = "bandpass", position = null, bus = "sfx", maxDistance = 48 } = {}) {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+            const spatial = getSpatialAudioSettings(position, maxDistance);
+            if (!spatial.audible) return;
+
+            const now = ctx.currentTime;
+            const noise = ctx.createBufferSource();
+            const filter = ctx.createBiquadFilter();
+            const gain = ctx.createGain();
+            noise.buffer = getSharedNoiseBuffer(ctx);
+            filter.type = filterType;
+            filter.frequency.value = frequency;
+            filter.Q.value = 1.4;
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(volume, now + 0.008);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            noise.connect(filter);
+            filter.connect(gain);
+            const route = connectAudioOutput(ctx, gain, position, bus, maxDistance);
+            noise.onended = () => {
+                noise.disconnect();
+                filter.disconnect();
+                gain.disconnect();
+                route.distanceGain.disconnect();
+                if (route.panner) route.panner.disconnect();
+            };
+            noise.start(now, Math.random() * 0.7, duration);
+            noise.stop(now + duration + 0.02);
+        }
+
+        function playGameSound(kind, position = null) {
+            if (kind === "start") {
+                playSynthTone({ frequency: 120, endFrequency: 260, duration: 0.28, volume: 0.1, type: "sawtooth" });
+            } else if (kind === "wave") {
+                playSynthTone({ frequency: 82, endFrequency: 62, duration: 0.7, volume: 0.1, type: "sawtooth" });
+                playSynthTone({ frequency: 164, endFrequency: 124, duration: 0.62, delay: 0.08, volume: 0.055, type: "triangle" });
+            } else if (kind === "switch") {
+                playNoiseBurst({ duration: 0.045, volume: 0.026, frequency: 1800, filterType: "highpass" });
+                playSynthTone({ frequency: 145, endFrequency: 210, duration: 0.065, volume: 0.035, type: "square" });
+            } else if (kind === "reloadStart") {
+                if (playAudioAsset("reload", { volume: 0.48 })) return;
+                playNoiseBurst({ duration: 0.055, volume: 0.035, frequency: 1500, filterType: "highpass" });
+                playSynthTone({ frequency: 170, endFrequency: 110, duration: 0.075, volume: 0.045, type: "square" });
+            } else if (kind === "reloadEnd") {
+                playSynthTone({ frequency: 240, endFrequency: 460, duration: 0.07, volume: 0.055, type: "square" });
+            } else if (kind === "ammo") {
+                [440, 660, 880].forEach((frequency, index) => playSynthTone({ frequency, endFrequency: frequency * 1.08, duration: 0.13, delay: index * 0.065, volume: 0.07, position }));
+            } else if (kind === "heal") {
+                [330, 440, 660].forEach((frequency, index) => playSynthTone({ frequency, endFrequency: frequency * 1.15, duration: 0.18, delay: index * 0.08, volume: 0.065, type: "sine", position }));
+            } else if (kind === "powerup") {
+                [260, 520, 780].forEach((frequency, index) => playSynthTone({ frequency, endFrequency: frequency * 1.2, duration: 0.2, delay: index * 0.055, volume: 0.075, type: "triangle", position }));
+            } else if (kind === "perk") {
+                [392, 494, 659, 784].forEach((frequency, index) => playSynthTone({ frequency, duration: 0.22, delay: index * 0.07, volume: 0.07, position }));
+            } else if (kind === "mystery") {
+                if (playAudioAsset("mystery", { position, volume: 0.5, maxDistance: 55 })) return;
+                playNoiseBurst({ duration: 0.35, volume: 0.05, frequency: 1200, position });
+                playSynthTone({ frequency: 180, endFrequency: 720, duration: 0.42, volume: 0.08, type: "sawtooth", position });
+            } else if (kind === "weaponPickup") {
+                playSynthTone({ frequency: 310, endFrequency: 930, duration: 0.24, volume: 0.09, type: "triangle", position });
+            } else if (kind === "hurt") {
+                const ctx = ensureAudioContext();
+                if (!ctx || ctx.currentTime - lastPlayerHurtSoundTime < 0.12) return;
+                lastPlayerHurtSoundTime = ctx.currentTime;
+                if (playAudioAsset("playerHurt", { volume: 0.55 })) return;
+                playNoiseBurst({ duration: 0.1, volume: 0.055, frequency: 280, filterType: "lowpass" });
+                playSynthTone({ frequency: 92, endFrequency: 48, duration: 0.2, volume: 0.08, type: "sawtooth" });
+            } else if (kind === "zombieShot") {
+                playSynthTone({ frequency: 740, endFrequency: 150, duration: 0.2, volume: 0.13, type: "square", position, maxDistance: 55 });
+            }
+        }
+
+        function playZombieVoice(zombie, mood = "idle") {
+            if (!zombie || !audioContext || audioContext.state !== "running" || activeZombieVoices >= maxZombieVoices) return;
+            const spatial = getSpatialAudioSettings(zombie.position, 48);
+            if (!spatial.audible) return;
+
+            const data = zombie.userData;
+            const now = audioContext.currentTime;
+            if (mood === "hurt" && now - (data.audioLastHurtTime || 0) < 0.18) return;
+            if (mood === "hurt") data.audioLastHurtTime = now;
+            if (mood !== "hurt" && mood !== "death" && now - (data.audioLastVoiceTime || 0) < 0.3) return;
+            if (mood !== "hurt") data.audioLastVoiceTime = now;
+
+            if ((mood === "idle" || mood === "attack") && now >= (data.audioVoiceBusyUntil || 0)) {
+                const assetKey = data.typeName === "Bruto"
+                    ? "zombieBrute"
+                    : data.typeName === "Detonador"
+                        ? "zombieDetonator"
+                        : "zombieNormal";
+                const playbackRate = (data.typeName === "Corredor" || data.typeName === "Atirador" ? 1.14 : 1)
+                    * THREE.MathUtils.randFloat(0.94, 1.06);
+                const sampleBuffer = audioAssetBuffers.get(assetKey);
+                if (playAudioAsset(assetKey, {
+                    position: zombie.position,
+                    volume: mood === "attack" ? 0.38 : 0.3,
+                    playbackRate,
+                    bus: "zombie",
+                    maxDistance: 48,
+                    trackZombieVoice: true
+                })) {
+                    data.audioVoiceBusyUntil = now + (sampleBuffer ? sampleBuffer.duration / playbackRate : 1.5);
+                    return;
+                }
+            }
+
+            const base = (zombieVoicePitchByType[data.typeName] || 76) * THREE.MathUtils.randFloat(0.9, 1.1);
+            const duration = mood === "death" ? 0.9 : mood === "attack" ? 0.48 : mood === "hurt" ? 0.32 : THREE.MathUtils.randFloat(0.55, 0.85);
+            const moodVolume = mood === "attack" ? 0.28 : mood === "death" ? 0.25 : mood === "hurt" ? 0.18 : 0.22;
+            const endMultiplier = mood === "death" ? 0.48 : mood === "attack" ? 1.3 : mood === "hurt" ? 1.65 : 0.72;
+
+            const primary = audioContext.createOscillator();
+            const sub = audioContext.createOscillator();
+            const filter = audioContext.createBiquadFilter();
+            const gain = audioContext.createGain();
+            primary.type = data.typeName === "Corredor" ? "square" : "sawtooth";
+            sub.type = "triangle";
+            primary.frequency.setValueAtTime(base, now);
+            primary.frequency.exponentialRampToValueAtTime(Math.max(28, base * endMultiplier), now + duration);
+            sub.frequency.setValueAtTime(base * 0.53, now);
+            sub.frequency.exponentialRampToValueAtTime(Math.max(22, base * 0.4), now + duration);
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(data.typeName === "Atirador" ? 1250 : 620, now);
+            filter.Q.value = 2.2;
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(moodVolume, now + 0.035);
+            gain.gain.setValueAtTime(moodVolume * 0.72, now + duration * 0.55);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            primary.connect(filter);
+            sub.connect(filter);
+            filter.connect(gain);
+            const route = connectAudioOutput(audioContext, gain, zombie.position, "zombie", 48);
+            activeZombieVoices++;
+            primary.onended = () => {
+                activeZombieVoices = Math.max(0, activeZombieVoices - 1);
+                primary.disconnect();
+                sub.disconnect();
+                filter.disconnect();
+                gain.disconnect();
+                route.distanceGain.disconnect();
+                if (route.panner) route.panner.disconnect();
+            };
+            primary.start(now);
+            sub.start(now);
+            primary.stop(now + duration + 0.02);
+            sub.stop(now + duration + 0.02);
+        }
+
+        function updateZombieAudio(zombie, distance, delta) {
+            if (!audioContext || audioContext.state !== "running") return;
+            const data = zombie.userData;
+            data.audioVoiceTimer -= delta;
+            if (data.audioVoiceTimer > 0 || distance >= 48) return;
+
+            const proximity = 1 - THREE.MathUtils.clamp(distance / 48, 0, 1);
+            const interval = THREE.MathUtils.lerp(5.2, 1.15, proximity);
+            data.audioVoiceTimer = interval * THREE.MathUtils.randFloat(0.75, 1.3);
+            playZombieVoice(zombie, distance < 4 ? "attack" : "idle");
+        }
+
+        function playGunshotSound(config = null) {
+            if ((!config || config.id === "pistol") && playAudioAsset("pistol", { volume: 0.42 })) return;
             const ctx = ensureAudioContext();
             if (!ctx) return;
 
@@ -3267,15 +3892,11 @@
             gain.gain.exponentialRampToValueAtTime(0.22, now + 0.003);
             gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            connectAudioOutput(ctx, gain);
             osc.start(now);
             osc.stop(now + 0.14);
 
-            const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
-            const channel = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < channel.length; i++) {
-                channel[i] = (Math.random() * 2 - 1) * (1 - i / channel.length);
-            }
+            const noiseBuffer = getSharedNoiseBuffer(ctx);
 
             const noise = ctx.createBufferSource();
             const filter = ctx.createBiquadFilter();
@@ -3288,8 +3909,8 @@
             noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
             noise.connect(filter);
             filter.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
-            noise.start(now);
+            connectAudioOutput(ctx, noiseGain);
+            noise.start(now, Math.random() * 0.7);
             noise.stop(now + 0.09);
         }
 
@@ -3354,7 +3975,7 @@
             const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.43, 0.48, 5, 10), bodyMat);
             torso.position.y = 1.28;
             torso.scale.z = 0.72;
-            torso.castShadow = true;
+            torso.castShadow = false;
             torso.name = "torso";
 
             const pelvis = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.34, 0.42), bodyMat);
@@ -3366,7 +3987,7 @@
             head.position.y = 2.08;
             head.scale.set(0.92, 1.08, 0.96);
             head.rotation.z = THREE.MathUtils.randFloat(-0.14, 0.14);
-            head.castShadow = true;
+            head.castShadow = false;
             head.name = "head";
 
             const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.18, 0.34), headMat);
@@ -3474,8 +4095,12 @@
                 });
             }
 
+            // Sombras dinâmicas por membro multiplicavam os draw calls por inimigo.
             zombie.traverse(child => {
-                if (child.isMesh) child.castShadow = true;
+                if (child.isMesh) {
+                    child.castShadow = false;
+                    child.receiveShadow = false;
+                }
             });
             zombie.scale.setScalar(typeConfig.scale);
             zombie.position.copy(position);
@@ -3497,6 +4122,10 @@
                 attackInterval: typeConfig.attackInterval,
                 attackCooldown: Math.random() * 0.3,
                 swing: Math.random() * Math.PI * 2,
+                audioVoiceTimer: THREE.MathUtils.randFloat(0.35, 2.4),
+                audioLastHurtTime: -Infinity,
+                audioLastVoiceTime: -Infinity,
+                audioVoiceBusyUntil: -Infinity,
                 isShooter: typeConfig.isShooter || false,
                 isExploder: typeConfig.isExploder || false,
                 isArmed: false,
@@ -3817,6 +4446,7 @@
                     const maxPossibleHealth = hasJuggernog ? 250 : 100;
                     health = Math.min(maxPossibleHealth, health + kit.userData.healAmount);
 
+                    playGameSound("heal", kit.position);
                     removeMedKit(kit);
                     showWaveMessage(`+${medKitHealAmount} vida!`);
                     updateUI();
@@ -3869,9 +4499,9 @@
                 }
 
                 const moveDist = proj.userData.speed * delta;
-                proj.position.add(proj.userData.direction.clone().multiplyScalar(moveDist));
+                proj.position.addScaledVector(proj.userData.direction, moveDist);
 
-                if (controls.isLocked && proj.position.distanceTo(camera.position) < 1.0 + playerRadius) {
+                if (controls.isLocked && proj.position.distanceToSquared(camera.position) < (1.0 + playerRadius) ** 2) {
                     applyDamage(proj.userData.damage);
                     scene.remove(proj);
                     disposeObject3D(proj);
@@ -3944,6 +4574,7 @@
             waitingNextWave = false;
             waveDelay = 0;
             showWaveMessage(`Onda ${wave}`);
+            if (audioContext) playGameSound("wave");
 
             // Spawn med kit a cada 5 waves
             if (wave > 1 && wave % medKitSpawnEveryWaves === 0) {
@@ -3996,6 +4627,7 @@
 
             if (ammoSpawnTimer >= ammoSpawnInterval) {
                 ammoSpawnTimer -= ammoSpawnInterval;
+                if (ammoPickups.length >= maxAmmoPickups) removeAmmoPickup(ammoPickups[0]);
                 createAmmoPickup(getRandomAmmoPosition());
                 showWaveMessage("Caixa de munição apareceu!");
             }
@@ -4016,6 +4648,7 @@
                             pw.reserveAmmo += weaponConfigs[pw.configId].magSize * 2;
                         }
                     });
+                    playGameSound("ammo", pickup.position);
                     removeAmmoPickup(pickup);
                     showWaveMessage(`+ Munição`);
                     updateUI();
@@ -4088,6 +4721,7 @@
                 }
 
                 if (controls.isLocked && p.position.distanceTo(camera.position) < 2.2) {
+                    playGameSound("powerup", p.position);
                     applyPowerup(p.userData.type);
                     scene.remove(p);
                     disposeObject3D(p);
@@ -4110,6 +4744,7 @@
                 showWaveMessage("Munição Máxima!");
             } else if (type === "nuke") {
                 showWaveMessage("Bomba Nuclear!");
+                playAudioAsset("nuke", { volume: 0.62 });
                 damageFlashAmount = 1.0;
                 damageFlash.style.backgroundColor = "white";
                 setTimeout(() => damageFlash.style.backgroundColor = "rgba(255, 0, 0, 0.8)", 300);
@@ -4450,35 +5085,35 @@
             glowTrail.renderOrder = 998;
             scene.add(glowTrail);
 
-            // --- Muzzle flash (flash na ponta da arma) ---
-            const flashMat = new THREE.SpriteMaterial({
-                map: muzzleFlashTexture,
-                color: cfg.color,
-                transparent: true,
-                opacity: 1,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-                toneMapped: false
-            });
-            const flashSize = (cfg.id === "shotgun" || cfg.id === "sniper") ? 0.72 : 0.42;
-            const flash = new THREE.Sprite(flashMat);
-            flash.scale.set(flashSize, flashSize, 1);
-            // Posicionar na ponta da arma (offset local da câmera: direita, baixo, frente)
-            const activeModel = playerWeapons[currentWeaponIndex]?.model;
-            let barrelPos = start.clone();
-            if (activeModel?.userData.muzzleLocal) {
-                activeModel.updateWorldMatrix(true, false);
-                barrelPos = activeModel.localToWorld(activeModel.userData.muzzleLocal.clone());
-            }
-            flash.position.copy(barrelPos);
-            flash.renderOrder = 1000;
-            flash.visible = showMuzzle;
-            scene.add(flash);
+            let flash = null;
+            let muzzleLight = null;
+            if (showMuzzle) {
+                const flashMat = new THREE.SpriteMaterial({
+                    map: muzzleFlashTexture,
+                    color: cfg.color,
+                    transparent: true,
+                    opacity: 1,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    toneMapped: false
+                });
+                const flashSize = (cfg.id === "shotgun" || cfg.id === "sniper") ? 0.72 : 0.42;
+                flash = new THREE.Sprite(flashMat);
+                flash.scale.set(flashSize, flashSize, 1);
+                const activeModel = playerWeapons[currentWeaponIndex]?.model;
+                const barrelPos = start.clone();
+                if (activeModel?.userData.muzzleLocal) {
+                    activeModel.updateWorldMatrix(true, false);
+                    barrelPos.copy(activeModel.localToWorld(activeModel.userData.muzzleLocal.clone()));
+                }
+                flash.position.copy(barrelPos);
+                flash.renderOrder = 1000;
+                scene.add(flash);
 
-            const muzzleLight = new THREE.PointLight(0xffb24a, cfg.id === "shotgun" ? 7 : 4.5, 5.5, 2);
-            muzzleLight.position.copy(barrelPos);
-            muzzleLight.visible = showMuzzle;
-            scene.add(muzzleLight);
+                muzzleLight = new THREE.PointLight(0xffb24a, cfg.id === "shotgun" ? 7 : 4.5, 5.5, 2);
+                muzzleLight.position.copy(barrelPos);
+                scene.add(muzzleLight);
+            }
 
             // --- Spark de impacto no ponto de chegada ---
             const sparkMat = new THREE.MeshBasicMaterial({
@@ -4543,7 +5178,7 @@
                 if (t.life <= 0) {
                     scene.remove(t.core);
                     scene.remove(t.glowTrail);
-                    scene.remove(t.flash);
+                    if (t.flash) scene.remove(t.flash);
                     scene.remove(t.spark);
                     scene.remove(t.impactLight);
                     if (t.muzzleLight) scene.remove(t.muzzleLight);
@@ -4551,8 +5186,10 @@
                     t.core.material.dispose();
                     t.glowTrail.geometry.dispose();
                     t.glowTrail.material.dispose();
-                    if (t.flash.geometry) t.flash.geometry.dispose();
-                    t.flash.material.dispose();
+                    if (t.flash) {
+                        if (t.flash.geometry) t.flash.geometry.dispose();
+                        t.flash.material.dispose();
+                    }
                     t.spark.geometry.dispose();
                     t.spark.material.dispose();
                     tracers.splice(i, 1);
@@ -4567,8 +5204,10 @@
                     t.glowTrail.scale.x = 0.8 + (1 - alpha) * 1.2;
                     t.glowTrail.scale.z = 0.8 + (1 - alpha) * 1.2;
                     // Flash disappears fast
-                    t.flash.material.opacity = Math.max(0, alpha * 3 - 2);
-                    t.flash.scale.setScalar(1 + (1 - alpha) * 2);
+                    if (t.flash) {
+                        t.flash.material.opacity = Math.max(0, alpha * 3 - 2);
+                        t.flash.scale.setScalar(1 + (1 - alpha) * 2);
+                    }
                     // Spark expands and fades
                     t.spark.material.opacity = alpha * 0.85;
                     t.spark.scale.setScalar(1 + (1 - alpha) * 1.5);
@@ -4594,6 +5233,7 @@
 
             isReloading = true;
             reloadTimer = cfg.reloadDuration * (hasSpeedCola ? 0.3 : 1.0);
+            playGameSound("reloadStart");
             updateUI();
         }
 
@@ -4609,6 +5249,7 @@
 
             isReloading = false;
             reloadTimer = 0;
+            playGameSound("reloadEnd");
             updateUI();
         }
 
@@ -4655,22 +5296,26 @@
             } else if (cfg.id === "ray_gun") {
                 playRayGunSound();
             } else {
-                playGunshotSound();
+                playGunshotSound(cfg);
             }
 
             updateUI();
             ejectShell(cfg);
+            // Todos os pellets compartilham as mesmas matrizes desse disparo.
+            scene.updateMatrixWorld();
 
             for (let p = 0; p < cfg.pellets; p++) {
                 if (cfg.id === "ray_gun") {
                     fireLaser(cfg.damageHead, cfg.damageBody, cfg.spread, cfg.penetration || 1, cfg.color);
                 } else {
-                    fireBullet(cfg.damageHead, cfg.damageBody, cfg.spread, cfg.penetration || 1, p === 0);
+                    // Três rastros já comunicam a dispersão da shotgun sem criar
+                    // oito conjuntos completos de geometria, materiais e luzes.
+                    fireBullet(cfg.damageHead, cfg.damageBody, cfg.spread, cfg.penetration || 1, p === 0, p < 3);
                 }
             }
         }
 
-        function fireBullet(headDamage, bodyDamage, spread = 0, maxPenetration = 1, showMuzzle = true) {
+        function fireBullet(headDamage, bodyDamage, spread = 0, maxPenetration = 1, showMuzzle = true, showTracer = true) {
             // Usa o centro exato da tela para a origem do tiro
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             const shotDirection = raycaster.ray.direction.clone();
@@ -4685,42 +5330,34 @@
 
             raycaster.far = bulletRange;
 
-            for (const zombie of zombies) {
-                zombie.updateMatrixWorld(true);
-            }
-
             const zombieHits = raycaster.intersectObjects(zombieHitMeshes, false);
             const worldHits = raycaster.intersectObjects(bulletBlockers, false);
 
             const tracerStart = camera.position.clone().add(shotDirection.clone().multiplyScalar(0.55));
-            let end = tracerStart.clone().add(shotDirection.clone().multiplyScalar(bulletRange));
+            const firstWorldHit = worldHits[0];
+            const worldHitDistance = firstWorldHit ? firstWorldHit.distance : Infinity;
+            let end = firstWorldHit
+                ? firstWorldHit.point.clone()
+                : tracerStart.clone().add(shotDirection.clone().multiplyScalar(bulletRange));
 
             let penetrationsLeft = maxPenetration;
-            let hitZombies = new Set();
-            let firstHitPoint = null;
+            const hitZombies = new Set();
 
-            // Sort all hits by distance
-            let allHits = [...zombieHits.map(h => ({ ...h, type: 'zombie' })), ...worldHits.map(h => ({ ...h, type: 'world' }))];
-            allHits.sort((a, b) => a.distance - b.distance);
+            // Raycaster já devolve cada lista ordenada por distância. Só os
+            // zombies antes do primeiro obstáculo podem receber o impacto.
+            for (const hit of zombieHits) {
+                if (hit.distance > worldHitDistance || penetrationsLeft <= 0) break;
+                const zombie = hit.object.userData.parentZombie;
+                if (!zombie) continue;
 
-            for (const hit of allHits) {
-                if (hit.type === 'world') {
-                    if (!firstHitPoint) firstHitPoint = hit.point.clone();
-                    end = hit.point.clone();
-                    break; // Walls stop bullets immediately
-                } else if (hit.type === 'zombie' && penetrationsLeft > 0) {
-                    const zombie = hit.object.userData.parentZombie;
-                    if (!zombie) continue;
+                // Prevent hitting the same zombie multiple times with one bullet
+                if (hitZombies.has(zombie)) continue;
+                hitZombies.add(zombie);
 
-                    // Prevent hitting the same zombie multiple times with one bullet
-                    if (hitZombies.has(zombie)) continue;
-                    hitZombies.add(zombie);
+                if (!firstWorldHit) end = hit.point.clone();
 
-                    if (!firstHitPoint) firstHitPoint = hit.point.clone();
-                    end = hit.point.clone(); // The tracer will end at the last hit or wall
-
-                    const isHead = hit.object.name === "head";
-                    const isLeg = hit.object.name === "leg";
+                const isHead = hit.object.name === "head";
+                const isLeg = hit.object.name === "leg";
 
                     const localHitY = (hit.point.y - zombie.position.y) / zombie.scale.y;
                     const isLegByPosition = !isHead && !isLeg && localHitY < 0.9;
@@ -4732,6 +5369,7 @@
 
                     zombie.userData.health -= damage;
                     createZombieHitEffect(hit.point, isHead);
+                    if (zombie.userData.health > 0) playZombieVoice(zombie, "hurt");
 
                     if (finalIsLeg && !zombie.userData.legsDestroyed) {
                         zombie.userData.legHealth -= damage;
@@ -4759,23 +5397,10 @@
                         killZombie(zombie);
                     }
 
-                    penetrationsLeft--;
-                }
+                penetrationsLeft--;
             }
 
-            createTracer(tracerStart, end, showMuzzle);
-
-            // DEBUG MARKER: Adiciona uma bolinha vermelha onde o tiro acertou real para você testar a mira
-            const debugMat = new THREE.MeshBasicMaterial({ visible: false });
-            const debugSphere = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), debugMat);
-            debugSphere.position.copy(end);
-            debugSphere.renderOrder = 9999; // Sempre visível
-            scene.add(debugSphere);
-            setTimeout(() => {
-                scene.remove(debugSphere);
-                debugSphere.geometry.dispose();
-                debugSphere.material.dispose();
-            }, 1);
+            if (showTracer) createTracer(tracerStart, end, showMuzzle);
         }
 
         function fireLaser(headDamage, bodyDamage, spread = 0, maxPenetration = 1, color = "#00ffcc") {
@@ -4793,37 +5418,28 @@
 
             raycaster.far = bulletRange;
 
-            for (const zombie of zombies) {
-                zombie.updateMatrixWorld(true);
-            }
-
             const zombieHits = raycaster.intersectObjects(zombieHitMeshes, false);
             const worldHits = raycaster.intersectObjects(bulletBlockers, false);
 
             const tracerStart = camera.position.clone().add(shotDirection.clone().multiplyScalar(0.7));
-            let end = tracerStart.clone().add(shotDirection.clone().multiplyScalar(bulletRange));
+            const firstWorldHit = worldHits[0];
+            const worldHitDistance = firstWorldHit ? firstWorldHit.distance : Infinity;
+            let end = firstWorldHit
+                ? firstWorldHit.point.clone()
+                : tracerStart.clone().add(shotDirection.clone().multiplyScalar(bulletRange));
 
             let penetrationsLeft = maxPenetration;
-            let hitZombies = new Set();
-            let firstHitPoint = null;
+            const hitZombies = new Set();
 
-            let allHits = [...zombieHits.map(h => ({ ...h, type: 'zombie' })), ...worldHits.map(h => ({ ...h, type: 'world' }))];
-            allHits.sort((a, b) => a.distance - b.distance);
+            for (const hit of zombieHits) {
+                if (hit.distance > worldHitDistance || penetrationsLeft <= 0) break;
+                const zombie = hit.object.userData.parentZombie;
+                if (!zombie) continue;
 
-            for (const hit of allHits) {
-                if (hit.type === 'world') {
-                    if (!firstHitPoint) firstHitPoint = hit.point.clone();
-                    end = hit.point.clone();
-                    break;
-                } else if (hit.type === 'zombie' && penetrationsLeft > 0) {
-                    const zombie = hit.object.userData.parentZombie;
-                    if (!zombie) continue;
+                if (hitZombies.has(zombie)) continue;
+                hitZombies.add(zombie);
 
-                    if (hitZombies.has(zombie)) continue;
-                    hitZombies.add(zombie);
-
-                    if (!firstHitPoint) firstHitPoint = hit.point.clone();
-                    end = hit.point.clone();
+                if (!firstWorldHit) end = hit.point.clone();
 
                     const isHead = hit.object.name === "head";
                     const isLeg = hit.object.name === "leg";
@@ -4838,6 +5454,7 @@
 
                     zombie.userData.health -= damage;
                     createZombieHitEffect(hit.point, isHead, 0x16ffd0);
+                    if (zombie.userData.health > 0) playZombieVoice(zombie, "hurt");
 
                     if (finalIsLeg && !zombie.userData.legsDestroyed) {
                         zombie.userData.legHealth -= damage;
@@ -4865,8 +5482,7 @@
                         killZombie(zombie);
                     }
 
-                    penetrationsLeft--;
-                }
+                penetrationsLeft--;
             }
 
             createLaserBeam(tracerStart, end, color);
@@ -4923,6 +5539,7 @@
         }
 
         function playShotgunSound() {
+            if (playAudioAsset("shotgun", { volume: 0.5 })) return;
             const ctx = ensureAudioContext();
             if (!ctx) return;
 
@@ -4938,16 +5555,12 @@
             gain.gain.exponentialRampToValueAtTime(0.3, now + 0.004);
             gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            connectAudioOutput(ctx, gain);
             osc.start(now);
             osc.stop(now + 0.23);
 
             // Loud noise burst
-            const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.18), ctx.sampleRate);
-            const channel = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < channel.length; i++) {
-                channel[i] = (Math.random() * 2 - 1) * (1 - i / channel.length);
-            }
+            const noiseBuffer = getSharedNoiseBuffer(ctx);
 
             const noise = ctx.createBufferSource();
             const filter = ctx.createBiquadFilter();
@@ -4960,8 +5573,8 @@
             noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
             noise.connect(filter);
             filter.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
-            noise.start(now);
+            connectAudioOutput(ctx, noiseGain);
+            noise.start(now, Math.random() * 0.7);
             noise.stop(now + 0.15);
         }
 
@@ -4981,16 +5594,12 @@
             gain.gain.exponentialRampToValueAtTime(0.35, now + 0.01);
             gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            connectAudioOutput(ctx, gain);
             osc.start(now);
             osc.stop(now + 0.21);
 
             // Zapper estalado (noise)
-            const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.1), ctx.sampleRate);
-            const channel = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < channel.length; i++) {
-                channel[i] = (Math.random() * 2 - 1) * (1 - i / channel.length);
-            }
+            const noiseBuffer = getSharedNoiseBuffer(ctx);
             const noise = ctx.createBufferSource();
             const filter = ctx.createBiquadFilter();
             const noiseGain = ctx.createGain();
@@ -5002,12 +5611,12 @@
             noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
             noise.connect(filter);
             filter.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
-            noise.start(now);
+            connectAudioOutput(ctx, noiseGain);
+            noise.start(now, Math.random() * 0.7);
             noise.stop(now + 0.11);
         }
 
-        function playDetonatorBeep(progress) {
+        function playDetonatorBeep(progress, position = null) {
             const ctx = ensureAudioContext();
             if (!ctx) return;
 
@@ -5020,12 +5629,12 @@
             gain.gain.exponentialRampToValueAtTime(0.045, now + 0.012);
             gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            connectAudioOutput(ctx, gain, position, "zombie", 55);
             osc.start(now);
             osc.stop(now + 0.08);
         }
 
-        function playDetonatorExplosionSound() {
+        function playDetonatorExplosionSound(position = null) {
             const ctx = ensureAudioContext();
             if (!ctx) return;
 
@@ -5039,7 +5648,7 @@
             gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
             gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            connectAudioOutput(ctx, gain, position, "sfx", 75);
             osc.start(now);
             osc.stop(now + 0.38);
         }
@@ -5092,7 +5701,7 @@
             const playerDistance = Math.sqrt(playerDX * playerDX + playerDZ * playerDZ);
 
             createExplosionEffect(position.clone().add(new THREE.Vector3(0, 1.15, 0)), explosionRadius);
-            playDetonatorExplosionSound();
+            playDetonatorExplosionSound(position);
             screenShakeAmount = Math.min(1.4, screenShakeAmount + 0.72);
 
             if (playerDistance < explosionRadius) {
@@ -5121,6 +5730,7 @@
         }
 
         function killZombie(zombie, { awardScore = true, allowPowerup = true } = {}) {
+            playZombieVoice(zombie, "death");
             const idx = zombies.indexOf(zombie);
             if (idx !== -1) zombies.splice(idx, 1);
 
@@ -5153,6 +5763,7 @@
             damageFlashAmount = Math.min(1.45, damageFlashAmount + 0.55 + amount * 0.02);
             damageTextAmount = 1;
             screenShakeAmount = Math.min(1, screenShakeAmount + 0.35 + amount * 0.02);
+            playGameSound("hurt");
 
             if (health <= 0) {
                 health = 0;
@@ -5192,22 +5803,22 @@
             if (!goalCell) return playerPos;
             const targetChanged = goalCell.index !== data.navTargetCell;
             const pathFinished = data.navPathIndex >= data.navPath.length;
-            const shouldRepath = data.navForceRepath || pathFinished || (targetChanged && data.navRepathTimer <= 0);
+            const shouldRepath = data.navRepathTimer <= 0 && (data.navForceRepath || pathFinished || targetChanged);
 
             if (shouldRepath && navigationPathBudget > 0) {
                 navigationPathBudget--;
                 navigationStats.pathsThisFrame++;
+                data.navForceRepath = false;
+                data.navTargetCell = goalCell.index;
                 const path = findNavigationPath(zombie.position, playerPos, radius);
                 if (path.length > 0) {
                     data.navPath = path;
                     data.navPathIndex = 0;
-                    data.navTargetCell = goalCell.index;
-                    data.navForceRepath = false;
                     data.navRepathTimer = navigationConfig.repathInterval + Math.random() * 0.28;
                     navigationStats.pathsBuilt++;
                     updateZombieDebugPath(zombie);
                 } else {
-                    data.navRepathTimer = 0.3;
+                    data.navRepathTimer = 0.45 + Math.random() * 0.35;
                     navigationStats.failedPaths++;
                 }
             }
@@ -5336,6 +5947,26 @@
             zombie.rotation.set(0, Math.atan2(directionX, directionZ), 0);
         }
 
+        function rebuildZombieSpatialGrid() {
+            for (const bucket of zombieSpatialGrid.values()) {
+                bucket.length = 0;
+                zombieSpatialBucketPool.push(bucket);
+            }
+            zombieSpatialGrid.clear();
+
+            for (const zombie of zombies) {
+                const cellX = Math.floor(zombie.position.x / zombieSpatialCellSize);
+                const cellZ = Math.floor(zombie.position.z / zombieSpatialCellSize);
+                const key = getSpatialCellKey(cellX, cellZ);
+                let bucket = zombieSpatialGrid.get(key);
+                if (!bucket) {
+                    bucket = zombieSpatialBucketPool.pop() || [];
+                    zombieSpatialGrid.set(key, bucket);
+                }
+                bucket.push(zombie);
+            }
+        }
+
         function moveZombieWithNavigation(zombie, playerPos, delta, speedMultiplier = 1) {
             const data = zombie.userData;
             const target = getZombieNavigationTarget(zombie, playerPos, delta);
@@ -5345,7 +5976,7 @@
             const shouldMove = targetDistance > 0.08;
 
             if (!shouldMove) {
-                updateZombieNavigationProgress(zombie, playerPos, delta, 0, { blockedX: false, blockedZ: false }, false);
+                updateZombieNavigationProgress(zombie, playerPos, delta, 0, noCollisionResult, false);
                 return;
             }
 
@@ -5355,22 +5986,30 @@
             let separationZ = 0;
             const radius = data.radius || zombieRadius;
 
-            for (const other of zombies) {
-                if (other === zombie) continue;
-                const offsetX = zombie.position.x - other.position.x;
-                const offsetZ = zombie.position.z - other.position.z;
-                const distanceSq = offsetX * offsetX + offsetZ * offsetZ;
-                const separationRange = (radius + (other.userData.radius || zombieRadius)) * 1.45;
-                if (distanceSq >= separationRange * separationRange) continue;
+            const centerCellX = Math.floor(zombie.position.x / zombieSpatialCellSize);
+            const centerCellZ = Math.floor(zombie.position.z / zombieSpatialCellSize);
+            for (let cellX = centerCellX - 1; cellX <= centerCellX + 1; cellX++) {
+                for (let cellZ = centerCellZ - 1; cellZ <= centerCellZ + 1; cellZ++) {
+                    const bucket = zombieSpatialGrid.get(getSpatialCellKey(cellX, cellZ));
+                    if (!bucket) continue;
+                    for (const other of bucket) {
+                        if (other === zombie) continue;
+                        const offsetX = zombie.position.x - other.position.x;
+                        const offsetZ = zombie.position.z - other.position.z;
+                        const distanceSq = offsetX * offsetX + offsetZ * offsetZ;
+                        const separationRange = (radius + (other.userData.radius || zombieRadius)) * 1.45;
+                        if (distanceSq >= separationRange * separationRange) continue;
 
-                if (distanceSq < 0.0001) {
-                    separationX += Math.cos(data.swing);
-                    separationZ += Math.sin(data.swing);
-                } else {
-                    const distance = Math.sqrt(distanceSq);
-                    const strength = 1 - distance / separationRange;
-                    separationX += (offsetX / distance) * strength;
-                    separationZ += (offsetZ / distance) * strength;
+                        if (distanceSq < 0.0001) {
+                            separationX += Math.cos(data.swing);
+                            separationZ += Math.sin(data.swing);
+                        } else {
+                            const distance = Math.sqrt(distanceSq);
+                            const strength = 1 - distance / separationRange;
+                            separationX += (offsetX / distance) * strength;
+                            separationZ += (offsetZ / distance) * strength;
+                        }
+                    }
                 }
             }
 
@@ -5385,9 +6024,7 @@
             let steeringX = desiredX;
             let steeringZ = desiredZ;
 
-            for (const angle of navigationSteeringAngles) {
-                const cosine = Math.cos(angle);
-                const sine = Math.sin(angle);
+            for (const { cosine, sine } of navigationSteeringVectors) {
                 const candidateX = desiredX * cosine - desiredZ * sine;
                 const candidateZ = desiredX * sine + desiredZ * cosine;
                 const probeX = zombie.position.x + candidateX * lookAhead;
@@ -5418,6 +6055,7 @@
             const playerPos = camera.position;
             navigationPathBudget = navigationConfig.maxPathsPerFrame;
             navigationStats.pathsThisFrame = 0;
+            rebuildZombieSpatialGrid();
 
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
@@ -5427,6 +6065,7 @@
                 const dx = playerPos.x - zombie.position.x;
                 const dz = playerPos.z - zombie.position.z;
                 const dist = Math.sqrt(dx * dx + dz * dz);
+                updateZombieAudio(zombie, dist, delta);
 
                 faceZombieHorizontally(zombie, playerPos.x, playerPos.z);
 
@@ -5466,7 +6105,7 @@
                         }
 
                         if (zombie.userData.warningCooldown <= 0) {
-                            playDetonatorBeep(fuseProgress);
+                            playDetonatorBeep(fuseProgress, zombie.position);
                             zombie.userData.warningCooldown = Math.max(0.1, 0.4 - fuseProgress * 0.26);
                         }
 
@@ -5480,7 +6119,7 @@
                         const speedMultiplier = zombie.userData.isArmed ? zombie.userData.armedSpeedMultiplier : 1;
                         moveZombieWithNavigation(zombie, playerPos, delta, speedMultiplier);
                     } else {
-                        updateZombieNavigationProgress(zombie, playerPos, delta, 0, { blockedX: false, blockedZ: false }, false);
+                        updateZombieNavigationProgress(zombie, playerPos, delta, 0, noCollisionResult, false);
                     }
 
                     const detonatorBar = zombie.userData.healthBarGroup;
@@ -5501,11 +6140,14 @@
                         const targetPos = playerPos.clone();
                         targetPos.y = playerEyeHeight - 0.2;
                         createZombieProjectile(startPos, targetPos, zombie.userData.attackDamage);
+                        playGameSound("zombieShot", zombie.position);
+                        playZombieVoice(zombie, "attack");
                         zombie.userData.attackCooldown = zombie.userData.attackInterval;
                     }
                 } else {
-                    updateZombieNavigationProgress(zombie, playerPos, delta, 0, { blockedX: false, blockedZ: false }, false);
+                    updateZombieNavigationProgress(zombie, playerPos, delta, 0, noCollisionResult, false);
                     if (zombie.userData.attackCooldown <= 0) {
+                        playZombieVoice(zombie, "attack");
                         applyDamage(zombie.userData.attackDamage);
                         zombie.userData.attackCooldown = zombie.userData.attackInterval;
                     }
@@ -5601,7 +6243,7 @@
             sprintBlend = THREE.MathUtils.damp(sprintBlend, isSprinting ? 1 : 0, isSprinting ? 9 : 12, delta);
             const speedMultiplier = THREE.MathUtils.lerp(1, sprintMultiplier, sprintBlend);
             const speed = (baseMoveSpeed + (hasMoveSpeed ? 30 : 0)) * speedMultiplier;
-            updateSprintHud();
+            updateSprintHud(delta);
 
             if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
             if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
@@ -5675,8 +6317,11 @@
             weaponRecoil = THREE.MathUtils.lerp(weaponRecoil, 0, delta * (cfg.id === "shotgun" || cfg.id === "sniper" ? 8 : 14));
 
             const targetFov = 75 + sprintBlend * 9;
-            camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, delta * 7);
-            camera.updateProjectionMatrix();
+            const nextFov = THREE.MathUtils.lerp(camera.fov, targetFov, delta * 7);
+            if (Math.abs(nextFov - camera.fov) > 0.001) {
+                camera.fov = nextFov;
+                camera.updateProjectionMatrix();
+            }
         }
 
         function updateDamageEffects(delta) {
@@ -5716,13 +6361,12 @@
             crosshair.style.transform = `scale(${(1 + sprintBlend * 0.08).toFixed(3)})`;
         }
 
-        function updateSprintHud() {
+        function updateSprintHud(delta = 0, force = false) {
+            sprintHudUpdateTimer += delta;
+            if (!force && sprintHudUpdateTimer < 0.1) return;
+            sprintHudUpdateTimer = 0;
             const sprintPct = Math.max(0, Math.min(100, sprintCharge * 100));
-            uiSprintFill.style.width = `${sprintPct}%`;
-            uiSprintFill.parentElement.setAttribute("role", "progressbar");
-            uiSprintFill.parentElement.setAttribute("aria-label", "Fôlego para sprint");
-            uiSprintFill.parentElement.setAttribute("aria-valuemin", "0");
-            uiSprintFill.parentElement.setAttribute("aria-valuemax", "100");
+            uiSprintFill.style.transform = `scaleX(${(sprintPct / 100).toFixed(3)})`;
             uiSprintFill.parentElement.setAttribute("aria-valuenow", String(Math.round(sprintPct)));
 
             uiSprintCard.classList.remove("sprinting", "low", "cooldown", "exhausted");
@@ -5758,6 +6402,9 @@
                 detailText = "100% · DISPONÍVEL";
             }
 
+            const snapshot = `${Math.round(sprintPct)}|${stateText}|${detailText}|${isSprinting}|${sprintExhausted}`;
+            if (snapshot === sprintHudSnapshot) return;
+            sprintHudSnapshot = snapshot;
             uiSprintState.textContent = stateText;
             uiSprintInfo.textContent = detailText;
             document.body.dataset.sprintState = stateText;
@@ -5785,7 +6432,7 @@
                 ? "0 0 14px rgba(255, 80, 80, 1)"
                 : "0 0 6px rgba(0,0,0,0.8)";
 
-            updateSprintHud();
+            updateSprintHud(0, true);
 
             uiWave.textContent = `ONDA ${String(wave).padStart(2, "0")}`;
             uiScore.textContent = score.toLocaleString("pt-BR");
@@ -5866,6 +6513,7 @@
         function endGame() {
             gameOver = true;
             damageFlashAmount = 1;
+            playAudioAsset("gameOver", { volume: 0.58 });
             controls.unlock();
         }
 
@@ -5889,14 +6537,16 @@
                 const t = tracers[i];
                 scene.remove(t.core);
                 scene.remove(t.glowTrail);
-                scene.remove(t.flash);
+                if (t.flash) scene.remove(t.flash);
                 scene.remove(t.spark);
                 scene.remove(t.impactLight);
                 if (t.muzzleLight) scene.remove(t.muzzleLight);
                 t.core.geometry.dispose(); t.core.material.dispose();
                 t.glowTrail.geometry.dispose(); t.glowTrail.material.dispose();
-                if (t.flash.geometry) t.flash.geometry.dispose();
-                t.flash.material.dispose();
+                if (t.flash) {
+                    if (t.flash.geometry) t.flash.geometry.dispose();
+                    t.flash.material.dispose();
+                }
                 t.spark.geometry.dispose(); t.spark.material.dispose();
             }
             tracers.length = 0;
@@ -6075,15 +6725,79 @@
         }
 
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
+            if (resizePending) return;
+            resizePending = true;
+            requestAnimationFrame(() => {
+                resizePending = false;
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function updateAdaptiveRenderQuality(delta) {
+            renderPerformance.sampleTime += delta;
+            renderPerformance.sampleFrames++;
+            if (renderPerformance.sampleTime < 1) return;
+
+            const fps = renderPerformance.sampleFrames / renderPerformance.sampleTime;
+            document.body.dataset.fps = fps.toFixed(1);
+            document.body.dataset.pixelRatio = renderPerformance.pixelRatio.toFixed(2);
+            document.body.dataset.drawCalls = String(renderer.info.render.calls);
+            document.body.dataset.triangles = String(renderer.info.render.triangles);
+            renderPerformance.sampleTime = 0;
+            renderPerformance.sampleFrames = 0;
+
+            if (!renderPerformance.dynamic || !controls.isLocked) return;
+
+            if (fps < 52) {
+                renderPerformance.slowSamples++;
+                renderPerformance.fastSamples = 0;
+            } else if (fps > 58) {
+                renderPerformance.fastSamples++;
+                renderPerformance.slowSamples = 0;
+            } else {
+                renderPerformance.slowSamples = 0;
+                renderPerformance.fastSamples = 0;
+            }
+
+            let nextPixelRatio = renderPerformance.pixelRatio;
+            if (renderPerformance.slowSamples >= 2) {
+                nextPixelRatio = Math.max(renderPerformance.minPixelRatio, nextPixelRatio - 0.1);
+            } else if (renderPerformance.fastSamples >= 4) {
+                nextPixelRatio = Math.min(renderPerformance.maxPixelRatio, nextPixelRatio + 0.05);
+            } else {
+                return;
+            }
+
+            renderPerformance.slowSamples = 0;
+            renderPerformance.fastSamples = 0;
+            if (Math.abs(nextPixelRatio - renderPerformance.pixelRatio) < 0.01) return;
+            renderPerformance.pixelRatio = nextPixelRatio;
+            renderer.setPixelRatio(nextPixelRatio);
+            composer.setPixelRatio(nextPixelRatio);
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            const delta = Math.min(clock.getDelta(), 0.1);
+            if (document.hidden) {
+                clock.getDelta();
+                return;
+            }
+
+            const delta = Math.min(clock.getDelta(), 0.05);
+            frameTimeSeconds = performance.now() * 0.001;
+            const gameActive = controls.isLocked || previewMode || detonatorTestMode || sprintTestMode;
+            if (!gameActive) {
+                pausedRenderTimer += delta;
+                if (pausedRenderTimer < 1 / 12) return;
+                pausedRenderTimer = 0;
+                composer.render();
+                updateAdaptiveRenderQuality(delta);
+                return;
+            }
+            pausedRenderTimer = 0;
 
             updatePlayer(delta);
             updateZombies(delta);
@@ -6105,6 +6819,7 @@
             updateEnvironment(delta);
 
             composer.render();
+            updateAdaptiveRenderQuality(delta);
         }
 
         function interact() {
@@ -6123,6 +6838,7 @@
                         mysteryBoxWeaponMesh.position.set(0, 1.5, 0);
                         mysteryBox.add(mysteryBoxWeaponMesh);
 
+                        playGameSound("mystery", mysteryBox.position);
                         updateUI();
                         return;
                     } else if (mysteryBoxState === "idle" && score < mysteryBoxCost) {
@@ -6149,6 +6865,7 @@
                         mysteryBox.remove(mysteryBoxWeaponMesh);
                         mysteryBoxWeaponMesh = null;
 
+                        playGameSound("weaponPickup", mysteryBox.position);
                         updateUI();
                         return;
                     }
@@ -6172,6 +6889,7 @@
                         score -= perk.cost;
                         perk.active = true;
                         applyPerk(perk.id);
+                        playGameSound("perk", perk.mesh.position);
                         showWaveMessage(`Você comprou ${perk.name}!`);
                         updateUI();
                     } else {
