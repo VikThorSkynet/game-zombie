@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FPS de Zumbis - Three.js (Pack-a-Punch)</title>
+    <title>Protocolo Sobreviva — v12 • 21/09/2026 20:54:31</title>
 
     <style>
         * {
@@ -757,7 +757,30 @@
             #weapon { font-size: 21px; }
             #ammo { font-size: 38px; }
         }
-    </style>
+    /* v12: readable HUD and lightweight menu */
+#panel {max-width:760px;text-align:left;padding:clamp(22px,4vw,48px);max-height:90dvh;overflow:auto;border-radius:12px;border-top:3px solid #69efae}
+#panel h1 {font-size:clamp(30px,5vw,52px);letter-spacing:-2px;line-height:1.05}
+.menu-kicker {font-size:11px;letter-spacing:3px;color:#69efae;margin-bottom:16px}
+.menu-lead {max-width:540px;color:#afc2d3!important}
+.control-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:24px 0}
+.control-grid div {padding:12px;background:#ffffff06;border:1px solid #ffffff12;border-radius:6px;font-size:12px;color:#a8bac9}
+.control-grid b {display:block;color:#fff;font-size:15px;margin-bottom:5px}
+.quality-row {display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:20px 0;color:#b5c8d5;font-size:13px}
+select {background:#132331;color:white;border:1px solid #527285;border-radius:6px;padding:10px}
+#mainBtn {min-width:210px;font-weight:700;color:#051b11;padding:15px 24px}
+button:focus-visible,select:focus-visible {outline:3px solid #fff;outline-offset:4px}
+.release {font-size:11px!important;color:#7991a3!important;margin-top:22px!important}
+#ui,#mission-ui,#weapon-ui {backdrop-filter:none;font-variant-numeric:tabular-nums}
+#ammo {font-variant-numeric:tabular-nums}
+#ammo-hint {font-size:12px;letter-spacing:1px;color:#aac0cf;margin-top:8px}
+#weapon-ui.low-ammo #ammo-hint {color:#ffcd6b}
+body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui,body.menu-open #mission-ui,body.menu-open #weapon-ui {visibility:hidden}
+#performance-label {position:fixed;bottom:14px;left:18px;color:#89a5b6;font:11px monospace;z-index:21;pointer-events:none}
+.loading-line {height:3px;background:#69efae;margin:25px 0;transform-origin:left;animation:loading 1s ease-in-out infinite alternate}
+@keyframes loading {from{transform:scaleX(.15)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media(max-width:700px){.control-grid{grid-template-columns:repeat(2,1fr)}#ui{width:42vw}#mission-ui{width:48vw;min-width:0}#weapon-ui{bottom:28px;max-width:60vw}#status{font-size:10px}}
+</style>
 
     <script type="importmap">
   {
@@ -769,7 +792,8 @@
   </script>
 </head>
 
-<body>
+<body class="menu-open">
+    <div id="performance-label">CARREGANDO RECURSOS</div>
     <div id="ui">
         <div class="resource-card health-card" id="health-container">
             <div class="resource-heading">
@@ -814,6 +838,7 @@
     <div id="weapon-ui">
         <div id="weapon">🔫 Pistola [1]</div>
         <div id="ammo">20 / 60</div>
+        <div id="ammo-hint">R · RECARREGAR &nbsp; 1 / 2 · TROCAR</div>
     </div>
 
     <div id="crosshair"></div>
@@ -829,21 +854,20 @@
     <div id="waveMessage"></div>
 
     <div id="overlay">
-        <div id="panel">
-            <h1>FPS de Zumbis</h1>
-            <p><b>WASD</b> para andar</p>
-            <p><b>Ctrl</b> ou <b>Shift</b> para sprint</p>
-            <p><b>Mouse</b> para olhar</p>
-            <p><b>Clique esquerdo</b> para atirar</p>
-            <p><b>R</b> para recarregar</p>
-            <p><b>1</b> Pistola / <b>2</b> Shotgun</p>
-            <p>O sprint tem barra e <b>cooldown</b> quando esgota.</p>
-            <p>A cada <b>45 segundos</b> surge uma caixa de munição em um lugar aleatório.</p>
-            <p>A cada <b>5 ondas</b> aparece um 💊 <b>Med Kit</b> no mapa (dura 45s).</p>
-            <p>🔮 <b>Pack-a-Punch</b>: melhore suas armas por <b>5000 Pts</b>!</p>
-            <button id="mainBtn">Começar</button>
+        <div id="panel" role="region" aria-label="Menu do jogo">
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V12</div>
+            <h1>Prepare-se para a noite.</h1>
+            <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
+            <div class="loading-line"></div>
+            <noscript>Ative o JavaScript para iniciar o jogo.</noscript>
         </div>
     </div>
+    <script>
+        window.bootTimer = setTimeout(() => {
+            const status = document.getElementById('boot-status');
+            if (status) status.textContent = 'O carregamento está demorando. Verifique sua conexão com a internet e recarregue a página.';
+        }, 20000);
+    </script>
 
     <script type="module">
         import * as THREE from "three";
@@ -880,7 +904,9 @@
             fastSamples: 0
         };
         let frameTimeSeconds = 0;
-        let pausedRenderTimer = 0;
+        let sceneNeedsRender = true;
+        let hudElapsed = 0;
+        let lastHudState = '';
         let resizePending = false;
 
         document.body.classList.toggle("performance-low", lowQuality);
@@ -1361,7 +1387,12 @@
         const damageText = document.getElementById("damageText");
         const uiInteractionPrompt = document.getElementById("interactionPrompt");
 
+        // Paint the loading screen before synchronous scene construction.
+        await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
         init();
+        renderScene();
+        clearTimeout(window.bootTimer);
+        document.getElementById('performance-label').textContent = 'QUALIDADE ' + ({auto:'AUTOMÁTICA',low:'DESEMPENHO',high:'ALTA'}[requestedQuality] || 'AUTOMÁTICA');
         animate();
 
         function init() {
@@ -1389,6 +1420,7 @@
             renderer.toneMappingExposure = 1.12;
             document.body.appendChild(renderer.domElement);
 
+            if (!lowQuality) {
             composer = new EffectComposer(renderer);
             composer.addPass(new RenderPass(scene, camera));
             bloomPass = new UnrealBloomPass(
@@ -1400,6 +1432,7 @@
             bloomPass.enabled = renderPerformance.bloomEnabled;
             composer.addPass(bloomPass);
             composer.addPass(new OutputPass());
+            }
 
             muzzleFlashTexture = createRadialTexture("#fffbd2", "#ff7a18");
 
@@ -1459,27 +1492,26 @@
             playerWeapons[currentWeaponIndex].model.visible = true;
 
             setOverlay(
-                "FPS de Zumbis",
-                `
-          <p><b>WASD</b> para andar</p>
-          <p><b>Ctrl</b> ou <b>Shift</b> para sprint</p>
-          <p><b>Mouse</b> para olhar</p>
-          <p><b>Clique esquerdo</b> para atirar</p>
-          <p><b>R</b> para recarregar</p>
-          <p><b>1</b> Pistola / <b>2</b> Shotgun</p>
-          <p>O sprint recarrega e entra em <b>cooldown</b> quando esgota.</p>
-          <p>A cada <b>45 segundos</b> nasce uma caixa de munição em um lugar aleatório.</p>
-          <p>A cada <b>5 ondas</b> aparece um 💊 <b>Med Kit</b> no mapa (dura 45s).</p>
-          <p>🔮 <b>Pack-a-Punch</b>: melhore suas armas por <b>5000 Pts</b>!</p>
-        `,
-                "Começar",
-                () => controls.lock()
+                "Sobreviva à noite.",
+                '<p class="menu-lead">A cidade caiu. Defenda sua posição, enfrente as ondas e melhore seu arsenal.</p>' +
+                '<div class="control-grid"><div><b>W A S D</b>Mover</div><div><b>MOUSE</b>Mirar e atirar</div><div><b>CTRL / SHIFT</b>Correr</div><div><b>R</b>Recarregar</div><div><b>E</b>Interagir</div><div><b>1 / 2 · ESC</b>Armas · Pausar</div></div>' +
+                '<label class="quality-row">Qualidade <select id="quality-select"><option value="auto">Automática</option><option value="low">Desempenho</option><option value="high">Alta</option></select><span>Automática ajusta a resolução durante a partida.</span></label>',
+                "INICIAR OPERAÇÃO", () => controls.lock()
             );
+            const qualitySelect = document.getElementById('quality-select');
+            qualitySelect.value = ['auto','low','high'].includes(requestedQuality) ? requestedQuality : 'auto';
+            qualitySelect.onchange = () => {
+                const next = new URL(window.location.href);
+                next.searchParams.set('quality', qualitySelect.value);
+                window.location.assign(next.href);
+            };
 
             startWave(1);
             updateUI();
 
             controls.addEventListener("lock", () => {
+                document.body.classList.remove("menu-open");
+                sceneNeedsRender = true;
                 overlay.style.display = "none";
                 crosshair.style.display = "block";
                 playGameSound("start");
@@ -1552,6 +1584,7 @@
             window.addEventListener("resize", onWindowResize);
 
             if (previewMode || detonatorTestMode || sprintTestMode) {
+                document.body.classList.remove("menu-open");
                 overlay.style.display = "none";
                 crosshair.style.display = "block";
             }
@@ -1579,10 +1612,14 @@
 
         function setOverlay(title, html, buttonText, callback) {
             overlay.style.display = "flex";
+            document.body.classList.add("menu-open");
+            sceneNeedsRender = true;
             panel.innerHTML = `
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V12</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
+        <p class="release">V12 · 21/09/2026 às 20:54:31 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
         }
@@ -6345,6 +6382,14 @@
         }
 
         function updateUI() {
+            const activeWeapon = playerWeapons[currentWeaponIndex];
+            const state = [Math.floor(health), hasJuggernog, wave, score, zombies.length, currentWeaponIndex,
+                activeWeapon.ammoInMag, activeWeapon.reserveAmmo, activeWeapon.packapunched, activeWeapon.configId,
+                gameOver, isSwitchingWeapon, isReloading, reloadTimer.toFixed(1), sprintCharge.toFixed(2),
+                sprintExhausted, sprintHeld, sprintCooldownTimer.toFixed(1), sprintRecoveryDelay.toFixed(1), isSprinting,
+                hasSpeedCola, hasDoubleTap, hasMoveSpeed, doublePointsTimer.toFixed(1), instaKillTimer.toFixed(1), damageFlashAmount > 0.05].join('|');
+            if (state === lastHudState) return;
+            lastHudState = state;
             const maxPossibleHealth = hasJuggernog ? 250 : 100;
             const healthPct = Math.max(0, Math.min(100, (health / maxPossibleHealth) * 100));
             uiHealthFill.style.width = `${healthPct}%`;
@@ -6374,7 +6419,10 @@
             const cfg = weaponConfigs[pw.configId];
 
             uiAmmo.textContent = `${pw.ammoInMag} / ${pw.reserveAmmo}`;
-            uiAmmo.style.color = pw.ammoInMag === 0 ? "#e74c3c" : "#ffffff";
+            const lowAmmo = pw.ammoInMag <= Math.ceil(cfg.magSize * 0.2);
+            uiAmmo.style.color = lowAmmo ? "#ffcd6b" : "#ffffff";
+            document.getElementById('weapon-ui').classList.toggle('low-ammo', lowAmmo);
+            document.getElementById('ammo-hint').textContent = isReloading ? 'RECARREGANDO…' : lowAmmo ? (pw.reserveAmmo > 0 ? 'R · RECARREGAR AGORA' : 'PROCURE MUNIÇÃO') : 'R · RECARREGAR  /  1 · 2 TROCAR';
 
             const weaponDisplayName = pw.packapunched
                 ? (papNames[pw.configId] || ("PaP " + cfg.name))
@@ -6661,10 +6709,11 @@
             resizePending = true;
             requestAnimationFrame(() => {
                 resizePending = false;
+                sceneNeedsRender = true;
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                composer.setSize(window.innerWidth, window.innerHeight);
+                composer?.setSize(window.innerWidth, window.innerHeight);
             });
         }
 
@@ -6675,6 +6724,7 @@
 
             const fps = renderPerformance.sampleFrames / renderPerformance.sampleTime;
             document.body.dataset.fps = fps.toFixed(1);
+            document.getElementById('performance-label').textContent = Math.round(fps) + ' FPS · ' + requestedQuality.toUpperCase();
             document.body.dataset.pixelRatio = renderPerformance.pixelRatio.toFixed(2);
             document.body.dataset.drawCalls = String(renderer.info.render.calls);
             document.body.dataset.triangles = String(renderer.info.render.triangles);
@@ -6708,7 +6758,13 @@
             if (Math.abs(nextPixelRatio - renderPerformance.pixelRatio) < 0.01) return;
             renderPerformance.pixelRatio = nextPixelRatio;
             renderer.setPixelRatio(nextPixelRatio);
-            composer.setPixelRatio(nextPixelRatio);
+            composer?.setPixelRatio(nextPixelRatio);
+        }
+
+        function renderScene() {
+            // Low quality avoids the composer render targets and fullscreen passes.
+            if (lowQuality) renderer.render(scene, camera);
+            else composer.render();
         }
 
         function animate() {
@@ -6718,18 +6774,19 @@
                 return;
             }
 
-            const delta = Math.min(clock.getDelta(), 0.05);
+            const elapsed = clock.getDelta();
+            const delta = Math.min(elapsed, 0.05);
             frameTimeSeconds = performance.now() * 0.001;
             const gameActive = controls.isLocked || previewMode || detonatorTestMode || sprintTestMode;
             if (!gameActive) {
-                pausedRenderTimer += delta;
-                if (pausedRenderTimer < 1 / 12) return;
-                pausedRenderTimer = 0;
-                composer.render();
-                updateAdaptiveRenderQuality(delta);
+                if (sceneNeedsRender) { renderScene(); sceneNeedsRender = false; }
+                renderPerformance.sampleTime = 0;
+                renderPerformance.sampleFrames = 0;
                 return;
             }
-            pausedRenderTimer = 0;
+            sceneNeedsRender = true;
+            hudElapsed += delta;
+            if (hudElapsed >= 0.1) { updateUI(); hudElapsed = 0; }
 
             updatePlayer(delta);
             updateZombies(delta);
@@ -6750,8 +6807,8 @@
             updateCombatEffects(delta);
             updateEnvironment(delta);
 
-            composer.render();
-            updateAdaptiveRenderQuality(delta);
+            renderScene();
+            updateAdaptiveRenderQuality(elapsed);
         }
 
         function interact() {

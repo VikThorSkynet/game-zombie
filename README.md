@@ -1,37 +1,41 @@
-# FPS de Zumbis
+# Protocolo Sobreviva — v12
 
-Jogo de tiro em primeira pessoa construído em um único HTML com Three.js,
-modelos procedurais e arquivos MP3 locais.
+FPS de zumbis em um único HTML com Three.js, modelos procedurais e MP3 locais.
 
-## Versão atual nesta branch
+## Versão atual
 
-[game_version11_21-09-2026_14-16-02.html](game_version11_21-09-2026_14-16-02.html)
+[game_version12_21-09-2026_20-54-31.html](game_version12_21-09-2026_20-54-31.html)
 
-Atualização: **21/09/2026 às 14:16:02**, America/Sao_Paulo (UTC−03:00).
-Branch: `codex/melhorias-modelos-armas-zumbis-mapa`.
+Atualização: **21/09/2026 às 20:54:31**, America/Sao_Paulo (UTC−03:00).
+Branch: `codex/hud-inicio-performance`.
 
-Nesta atualização, os modelos das seis armas, cinco tipos de zumbi e elementos
-da cidade receberam detalhes visuais. As regras de combate, navegação, layout
-e volumes de colisão foram preservados.
+Tela inicial com controles e seleção de qualidade; carregamento inicial visível;
+HUD com aviso de pouca munição e FPS; otimizações de renderização e atualização do HUD.
 
 ## Executar
 
-Mantenha o HTML e os MP3 na mesma pasta. Sirva a raiz do repositório por HTTP.
-Por exemplo, com Python instalado:
+Mantenha o HTML e os MP3 na mesma pasta. Sirva a raiz por HTTP:
 
 ```sh
 python -m http.server 8000
 ```
 
-Abra [o jogo no servidor local](http://localhost:8000/game_version11_21-09-2026_14-16-02.html).
+Abra [o jogo](http://localhost:8000/game_version12_21-09-2026_20-54-31.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
-O parâmetro `?preview&quality=high` abre a prévia existente com os cinco tipos
-de zumbi. Para verificar a qualidade baixa, use `?preview&quality=low`.
+- Automática: ajusta a resolução durante a partida.
+- Desempenho: renderização direta, sem bloom e sem buffers de pós-processamento.
+- Alta: mantém o pós-processamento e maior resolução.
+
+Trocar a qualidade recarrega a página. O seletor aparece antes de iniciar a partida.
+WASD: mover; mouse: mirar/atirar; Ctrl ou Shift: correr; R: recarregar;
+E: interagir; 1/2: trocar arma; Esc: pausar.
+A interface se adapta a telas menores; o jogo continua exigindo teclado e mouse.
+
+Para inspeção visual, use `?preview&quality=low` ou `?preview&quality=high`.
 
 ## Memória persistente
 
-[Memória de 21/09/2026 às 14:16:02](docs/MEMORIA_PERSISTENTE_21-09-2026_14-16-02.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_21-09-2026_20-54-31.md)
 
-Esse documento é a referência de continuidade: contém decisões, pontos de
-integração, resultados de validação e limitações conhecidas.
+[Histórico dos modelos](docs/MEMORIA_PERSISTENTE_21-09-2026_14-16-02.md).
