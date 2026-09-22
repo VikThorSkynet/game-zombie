@@ -7,6 +7,7 @@ FPS de zumbis em um único HTML com Three.js, modelos procedurais e MP3 locais.
 [game_version16_22-09-2026_13-22-44.html](game_version16_22-09-2026_13-22-44.html)
 
 Atualização: **22/09/2026 às 13:22:44**, America/Sao_Paulo (UTC−03:00).
+Revisão de balanceamento e áudio: **22/09/2026 às 14:27:28**.
 Branch: `codex/bonus-facada-iluminacao-v16`.
 
 v16: lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
@@ -64,11 +65,22 @@ proximidade e caminho desobstruído. Bônus temporários duram 30 segundos.
 - **Liquidação:** ativa quatro caixas temporárias e reduz todas as tentativas para 10 pontos.
   Uma tentativa iniciada continua após o fim do bônus; há dez segundos para retirar a arma.
 
+Existem exatamente três depósitos fixos: oeste `(-86, 0)`, leste `(86, 0)` e
+norte `(0, 130)`, separados por pelo menos 155 unidades. Caixas comuns de munição
+não surgem mais aleatoriamente; o bônus Munição Máxima continua disponível.
+
 Depósitos sinalizados **MUNIÇÃO · [E]** abastecem a arma equipada: 250 pontos
 para armas comuns, 1.000 após Pack-a-Punch; Ray Gun custa 1.500/3.000.
 Não cobram quando a munição já está completa. Esses preços são adaptações ao jogo.
 Facada tem alcance de 2,5 unidades, dano 150 e intervalo de 0,55 segundo;
 não atravessa obstáculos e não consome munição.
+O som de cada golpe usa o arquivo fornecido `facada.mp3`.
+
+A velocidade de cada tipo de zumbi aumenta somente até a onda 15; vida e quantidade
+continuam seguindo a progressão existente. Ferir as pernas reduz gradualmente
+a velocidade até 60%; destruí-las reduz para 45% da velocidade original
+(antes 25%). Os rastejantes ficam mais rápidos, mas ainda são 55% mais lentos
+que os zumbis intactos equivalentes. Vale para projéteis comuns e Ray Gun.
 
 Referências de desenho e mecânicas: [guia oficial Zombies BO6](https://www.callofduty.com/blog/2024/08/call-of-duty-black-ops-6-zombies-deep-dive-terminus-map-intel)
 e [ilustrações e depósitos em BO7](https://www.callofduty.com/ca/en/blog/2025/09/call-of-duty-black-ops-7-zombies-deep-dive).
