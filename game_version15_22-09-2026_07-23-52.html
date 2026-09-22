@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v14 • 21/09/2026 22:32:22</title>
+    <title>Protocolo Sobreviva — v15 • 22/09/2026 07:23:52</title>
 
     <style>
         * {
@@ -757,7 +757,7 @@
             #weapon { font-size: 21px; }
             #ammo { font-size: 38px; }
         }
-    /* v14: readable HUD and lightweight menu */
+    /* v15: readable HUD and lightweight menu */
 #panel {max-width:760px;text-align:left;padding:clamp(22px,4vw,48px);max-height:90dvh;overflow:auto;border-radius:12px;border-top:3px solid #69efae}
 #panel h1 {font-size:clamp(30px,5vw,52px);letter-spacing:-2px;line-height:1.05}
 .menu-kicker {font-size:11px;letter-spacing:3px;color:#69efae;margin-bottom:16px}
@@ -780,6 +780,17 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 #ads-dot {display:none;position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#ff4545;box-shadow:0 0 5px #f22;z-index:12;pointer-events:none}
 body.aiming #ads-dot {display:block}
 body.aiming #crosshair {visibility:hidden}
+.settings-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;padding:16px;background:#09141dc9;border:1px solid #ffffff18;border-radius:8px}
+.settings-grid label {display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:#b9ced9;font-size:12px}
+.settings-grid input[type=range] {width:100%;accent-color:#69efae}
+.settings-grid output {margin-left:auto;color:#fff;font-variant-numeric:tabular-nums}
+.settings-grid input:focus-visible {outline:2px solid #69efae;outline-offset:3px}
+#combat-feedback {position:fixed;top:58%;left:50%;transform:translateX(-50%);font:700 12px monospace;letter-spacing:2px;color:#ffcf78;text-shadow:0 2px 5px #000;pointer-events:none;z-index:15;opacity:0}
+#reload-track {height:3px;background:#ffffff18;margin-top:12px;overflow:hidden;display:none}
+#reload-fill {height:100%;background:#ffcf78;transform-origin:left}
+body::after {content:'';position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 12vw #0005;z-index:2}
+#panel {background:linear-gradient(135deg,#10222af2,#071018f5);box-shadow:0 24px 100px #000b}
+body.menu-open #combat-feedback {visibility:hidden}
 .perk-badge {display:inline-flex;align-items:center;gap:6px;color:#f3e8c9;font-size:11px}
 .perk-badge b {display:grid;place-items:center;width:27px;height:27px;border-radius:50%;border:2px solid #dbcda4;box-shadow:inset 0 0 0 2px #0007;background:var(--perk-color);font:bold 18px Georgia}
 .loading-line {height:3px;background:#69efae;margin:25px 0;transform-origin:left;animation:loading 1s ease-in-out infinite alternate}
@@ -846,10 +857,12 @@ body.aiming #crosshair {visibility:hidden}
         <div id="weapon">🔫 Pistola [1]</div>
         <div id="ammo">20 / 60</div>
         <div id="ammo-hint">R · RECARREGAR &nbsp; 1 / 2 · TROCAR</div>
+        <div id="reload-track" role="progressbar" aria-label="Recarga" aria-valuemin="0" aria-valuemax="100"><div id="reload-fill"></div></div>
     </div>
 
     <div id="crosshair"></div>
     <div id="ads-dot" aria-hidden="true"></div>
+    <div id="combat-feedback" aria-hidden="true"></div>
     <div id="hitmarker">
         <span class="tl"></span>
         <span class="tr"></span>
@@ -863,7 +876,7 @@ body.aiming #crosshair {visibility:hidden}
 
     <div id="overlay">
         <div id="panel" role="region" aria-label="Menu do jogo">
-            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V14</div>
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V15</div>
             <h1>Prepare-se para a noite.</h1>
             <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
             <div class="loading-line"></div>
@@ -917,6 +930,43 @@ body.aiming #crosshair {visibility:hidden}
         let hudElapsed = 0;
         let lastHudState = '';
         let resizePending = false;
+        const settingsKey = 'sobreviva.settings.v1';
+        const settings = { sensitivity: 1, volume: 0.82, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches };
+        try {
+            const saved = JSON.parse(localStorage.getItem(settingsKey) || '{}');
+            if (Number.isFinite(saved?.sensitivity)) settings.sensitivity = THREE.MathUtils.clamp(saved.sensitivity, 0.25, 2);
+            if (Number.isFinite(saved?.volume)) settings.volume = THREE.MathUtils.clamp(saved.volume, 0, 1);
+            if (typeof saved?.reducedMotion === 'boolean') settings.reducedMotion = saved.reducedMotion;
+        } catch { /* Storage may be unavailable; defaults remain usable. */ }
+        const runStats = { kills: 0, criticalHits: 0, shots: 0, seconds: 0 };
+        let combatFeedbackTimer = 0;
+        const combatFeedback = document.getElementById('combat-feedback');
+
+        function mountSettings() {
+            const section = document.createElement('div');
+            section.className = 'settings-grid';
+            section.innerHTML = `<label>Sensibilidade <output id="sensitivity-value"></output><input id="sensitivity" aria-label="Sensibilidade do mouse" type="range" min="0.25" max="2" step="0.05"></label>
+                <label>Volume <output id="volume-value"></output><input id="volume" aria-label="Volume geral" type="range" min="0" max="1" step="0.05"></label>
+                <label><input id="reduced-motion" type="checkbox"> Reduzir movimento da câmera</label>`;
+            document.getElementById('mainBtn').before(section);
+            for (const key of ['sensitivity', 'volume']) {
+                const input = document.getElementById(key);
+                input.value = settings[key];
+                const output = document.getElementById(`${key}-value`);
+                const update = () => { output.textContent = key === 'volume' ? `${Math.round(settings[key] * 100)}%` : `${settings[key].toFixed(2)}×`; };
+                update();
+                input.oninput = () => { settings[key] = Number(input.value); update(); applySettings(); };
+            }
+            const reduced = document.getElementById('reduced-motion');
+            reduced.checked = settings.reducedMotion;
+            reduced.onchange = () => { settings.reducedMotion = reduced.checked; applySettings(); };
+        }
+
+        function applySettings() {
+            if (controls) controls.pointerSpeed = settings.sensitivity * THREE.MathUtils.lerp(1, 0.65, aimBlend);
+            if (audioMasterGain && audioContext) audioMasterGain.gain.setTargetAtTime(settings.volume, audioContext.currentTime, 0.03);
+            try { localStorage.setItem(settingsKey, JSON.stringify(settings)); } catch { /* Session settings still work. */ }
+        }
 
         document.body.classList.toggle("performance-low", lowQuality);
 
@@ -1056,6 +1106,8 @@ body.aiming #crosshair {visibility:hidden}
         const zombieSpatialCellSize = 3.5;
         const tracers = [];
         const impactParticles = [];
+        const impactPool = [];
+        const maxImpactEffects = lowQuality ? 20 : 40;
         const explosionEffects = [];
         const shellCasings = [];
         const environmentLights = [];
@@ -1212,7 +1264,7 @@ body.aiming #crosshair {visibility:hidden}
         };
 
         let health = 100;
-        let score = 10000000;
+        let score = 0;
         let wave = 1;
 
         let zombiesToSpawn = 0;
@@ -1448,6 +1500,7 @@ body.aiming #crosshair {visibility:hidden}
             muzzleFlashTexture = createRadialTexture("#fffbd2", "#ff7a18");
 
             controls = new PointerLockControls(camera, document.body);
+            controls.pointerSpeed = settings.sensitivity;
 
             const hemi = new THREE.HemisphereLight(0x7596c9, 0x15101b, 0.5);
             scene.add(hemi);
@@ -1470,8 +1523,10 @@ body.aiming #crosshair {visibility:hidden}
 
             // Flashlight attached to camera
             const flashlight = new THREE.SpotLight(0xffffee, 80, 80, Math.PI / 6, 0.5, 1.2);
-            flashlight.position.set(0, -0.2, 0); // Centralizada
-            flashlight.target.position.set(0, 0, -1);
+            // Emit beyond the longest barrel so the close-range beam cannot
+            // overexpose the receiver and optic when the weapon centers in ADS.
+            flashlight.position.set(0, -0.2, -2);
+            flashlight.target.position.set(0, 0, -3);
             flashlight.castShadow = false; // Disable shadows for flashlight to save performance, as moon has shadows
             camera.add(flashlight);
             camera.add(flashlight.target);
@@ -1554,6 +1609,8 @@ body.aiming #crosshair {visibility:hidden}
                         `
               <p>Pontuação final: <b>${score}</b></p>
               <p>Você chegou até a onda <b>${wave}</b></p>
+              <p>${runStats.kills} eliminações · ${runStats.criticalHits} acertos críticos</p>
+              <p>${runStats.shots} disparos · ${Math.floor(runStats.seconds / 60)}min ${Math.floor(runStats.seconds % 60)}s sobrevividos</p>
             `,
                         "Reiniciar",
                         () => {
@@ -1564,7 +1621,7 @@ body.aiming #crosshair {visibility:hidden}
                 } else {
                     setOverlay(
                         "Pausado",
-                        `<p>Clique abaixo para continuar.</p>`,
+                        `<p>Onda ${wave} · ${runStats.kills} eliminações · ${runStats.criticalHits} acertos críticos</p><p>Clique abaixo para continuar.</p>`,
                         "Continuar",
                         () => controls.lock()
                     );
@@ -1634,13 +1691,14 @@ body.aiming #crosshair {visibility:hidden}
             document.body.classList.add("menu-open");
             sceneNeedsRender = true;
             panel.innerHTML = `
-        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V14</div>
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V15</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
-        <p class="release">V14 · 21/09/2026 às 22:32:22 · America/Sao_Paulo</p>
+        <p class="release">V15 · 22/09/2026 às 07:23:52 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
+            mountSettings();
         }
 
         function createSeededRandom(seed) {
@@ -3686,7 +3744,7 @@ body.aiming #crosshair {visibility:hidden}
                 audioMasterGain = audioContext.createGain();
                 audioSfxGain = audioContext.createGain();
                 audioZombieGain = audioContext.createGain();
-                audioMasterGain.gain.value = 0.82;
+                audioMasterGain.gain.value = settings.volume;
                 audioSfxGain.gain.value = 0.92;
                 audioZombieGain.gain.value = 1.15;
                 audioSfxGain.connect(audioMasterGain);
@@ -5118,35 +5176,46 @@ body.aiming #crosshair {visibility:hidden}
         }
 
         function createZombieHitEffect(point, isHead = false, color = 0xa90f24) {
+            // Reuse buffers and materials, including when a shotgun fills the budget.
+            const particles = impactPool.pop() || (impactParticles.length >= maxImpactEffects ? impactParticles.shift() : createImpactParticles());
             const count = isHead ? 16 : 9;
-            const positions = new Float32Array(count * 3);
-            const velocities = [];
+            const positions = particles.geometry.attributes.position.array;
+            const velocities = particles.userData.velocities;
+            positions.fill(0);
             for (let i = 0; i < count; i++) {
-                positions[i * 3] = 0;
-                positions[i * 3 + 1] = 0;
-                positions[i * 3 + 2] = 0;
-                velocities.push(new THREE.Vector3(
+                velocities[i].set(
                     THREE.MathUtils.randFloatSpread(2.2),
                     THREE.MathUtils.randFloat(0.45, isHead ? 2.4 : 1.55),
                     THREE.MathUtils.randFloatSpread(2.2)
-                ));
+                );
             }
+            particles.geometry.setDrawRange(0, count);
+            particles.geometry.attributes.position.needsUpdate = true;
+            particles.material.color.setHex(color);
+            particles.material.size = isHead ? 0.12 : 0.085;
+            particles.material.opacity = 0.92;
+            particles.userData.count = count;
+            particles.position.copy(point);
+            particles.userData.life = 0.52;
+            scene.add(particles);
+            impactParticles.push(particles);
+        }
+
+        function createImpactParticles() {
             const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(48), 3).setUsage(THREE.DynamicDrawUsage));
+            geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 3);
             const material = new THREE.PointsMaterial({
-                color,
-                size: isHead ? 0.12 : 0.085,
+                color: 0xa90f24,
+                size: 0.085,
                 transparent: true,
                 opacity: 0.92,
                 depthWrite: false
             });
             const particles = new THREE.Points(geometry, material);
-            particles.position.copy(point);
-            particles.userData.velocities = velocities;
-            particles.userData.life = 0.52;
+            particles.userData.velocities = Array.from({length: 16}, () => new THREE.Vector3());
             particles.userData.maxLife = 0.52;
-            scene.add(particles);
-            impactParticles.push(particles);
+            return particles;
         }
 
         function ejectShell(cfg) {
@@ -5211,18 +5280,18 @@ body.aiming #crosshair {visibility:hidden}
                 const effect = impactParticles[i];
                 effect.userData.life -= delta;
                 const pos = effect.geometry.attributes.position.array;
-                effect.userData.velocities.forEach((velocity, idx) => {
+                for (let idx = 0; idx < effect.userData.count; idx++) {
+                    const velocity = effect.userData.velocities[idx];
                     velocity.y -= 3.8 * delta;
                     pos[idx * 3] += velocity.x * delta;
                     pos[idx * 3 + 1] += velocity.y * delta;
                     pos[idx * 3 + 2] += velocity.z * delta;
-                });
+                }
                 effect.geometry.attributes.position.needsUpdate = true;
                 effect.material.opacity = Math.max(0, effect.userData.life / effect.userData.maxLife);
                 if (effect.userData.life <= 0) {
                     scene.remove(effect);
-                    effect.geometry.dispose();
-                    effect.material.dispose();
+                    impactPool.push(effect);
                     impactParticles.splice(i, 1);
                 }
             }
@@ -5409,7 +5478,12 @@ body.aiming #crosshair {visibility:hidden}
             });
         }
 
-        function showHitmarker(isKill = false) {
+        function showHitmarker(isKill = false, isHead = false) {
+            if (isHead) runStats.criticalHits++;
+            if (isKill || isHead) {
+                combatFeedback.textContent = isKill ? (isHead ? 'ELIMINAÇÃO CRÍTICA' : 'ALVO ELIMINADO') : 'ACERTO CRÍTICO';
+                combatFeedbackTimer = 0.85;
+            }
             hitmarkerAmount = 1;
             if (isKill) {
                 hitmarkerKillAmount = 1;
@@ -5545,6 +5619,7 @@ body.aiming #crosshair {visibility:hidden}
             lastShotTime = now;
 
             pw.ammoInMag--;
+            runStats.shots++;
             weaponRecoil = Math.min(0.22, weaponRecoil + (cfg.id === "shotgun" || cfg.id === "sniper" || cfg.id === "ray_gun" ? 0.18 : 0.075));
 
             if (cfg.id === "shotgun" || cfg.id === "sniper" || cfg.id === "ray_gun") {
@@ -5650,7 +5725,7 @@ body.aiming #crosshair {visibility:hidden}
                         }
                     }
 
-                    showHitmarker(zombie.userData.health <= 0);
+                    showHitmarker(zombie.userData.health <= 0, isHead);
                     updateZombieHealthBar(zombie);
 
                     if (zombie.userData.health <= 0) {
@@ -5735,7 +5810,7 @@ body.aiming #crosshair {visibility:hidden}
                         }
                     }
 
-                    showHitmarker(zombie.userData.health <= 0);
+                    showHitmarker(zombie.userData.health <= 0, isHead);
                     updateZombieHealthBar(zombie);
 
                     if (zombie.userData.health <= 0) {
@@ -6007,6 +6082,7 @@ body.aiming #crosshair {visibility:hidden}
             disposeObject3D(zombie.userData.healthBarGroup);
 
             if (awardScore) {
+                runStats.kills++;
                 score += (doublePointsTimer > 0 ? (zombie.userData.scoreValue ?? 10) * 2 : (zombie.userData.scoreValue ?? 10));
             }
             updateUI();
@@ -6334,12 +6410,18 @@ body.aiming #crosshair {visibility:hidden}
                 const armL = zombie.userData.armL;
                 const armR = zombie.userData.armR;
 
+                // Distant animation can run at 10 Hz; movement and attacks stay full-rate.
+                zombie.userData.visualTimer = (zombie.userData.visualTimer || 0) - delta;
+                if (dist < 35 || zombie.userData.visualTimer <= 0) {
+                zombie.userData.visualTimer = 0.1;
                 legL.rotation.x = -Math.sin(zombie.userData.swing) * 0.45;
                 legR.rotation.x = Math.sin(zombie.userData.swing) * 0.45;
                 const reach=dist<3 ? -0.95 : -0.35;
                 armL.rotation.x = reach + Math.sin(zombie.userData.swing) * 0.28;
                 armR.rotation.x = reach - Math.sin(zombie.userData.swing+0.35) * 0.28;
                 zombie.userData.head.rotation.z = zombie.userData.headBaseTilt + Math.sin(zombie.userData.swing * 0.5) * 0.07;
+                }
+                zombie.userData.healthBarGroup.visible = dist < 45;
 
                 if (zombie.userData.energyCore) {
                     const pulse = 1 + Math.sin(performance.now() * 0.009 + i) * 0.16;
@@ -6396,7 +6478,8 @@ body.aiming #crosshair {visibility:hidden}
                 if (dist > 1.8) {
                     moveZombieWithNavigation(zombie, playerPos, delta);
 
-                    if (zombie.userData.isShooter && dist < 40 && zombie.userData.attackCooldown <= 0) {
+                    if (zombie.userData.isShooter && dist < 40 && zombie.userData.attackCooldown <= 0
+                        && hasClearNavigationLine(zombie.position, playerPos, 0.1)) {
                         const startPos = new THREE.Vector3(zombie.position.x, zombie.position.y + 1.5, zombie.position.z);
                         const targetPos = playerPos.clone();
                         targetPos.y = playerEyeHeight - 0.2;
@@ -6407,7 +6490,7 @@ body.aiming #crosshair {visibility:hidden}
                     }
                 } else {
                     updateZombieNavigationProgress(zombie, playerPos, delta, 0, noCollisionResult, false);
-                    if (zombie.userData.attackCooldown <= 0) {
+                    if (zombie.userData.attackCooldown <= 0 && hasClearNavigationLine(zombie.position, playerPos, 0.1)) {
                         playZombieVoice(zombie, "attack");
                         applyDamage(zombie.userData.attackDamage);
                         zombie.userData.attackCooldown = zombie.userData.attackInterval;
@@ -6542,6 +6625,7 @@ body.aiming #crosshair {visibility:hidden}
 
         function resetAim() {
             aimHeld = false; aimBlend = 0;
+            if (controls) controls.pointerSpeed = settings.sensitivity;
             document.body.classList.remove('aiming');
             if (camera) { camera.fov=75; camera.updateProjectionMatrix(); }
             playerWeapons.forEach(w=>{ if(w.model?.userData.optic) w.model.userData.optic.visible=false; });
@@ -6552,6 +6636,7 @@ body.aiming #crosshair {visibility:hidden}
             if (!activeWeaponModel) return;
             const aiming = aimHeld && controls.isLocked && !gameOver && !isReloading && !isSwitchingWeapon && papState !== 'upgrading';
             aimBlend = THREE.MathUtils.damp(aimBlend,aiming ? 1 : 0,16,delta);
+            controls.pointerSpeed = settings.sensitivity * THREE.MathUtils.lerp(1, 0.65, aimBlend);
             document.body.classList.toggle('aiming',aimBlend > 0.85 && aiming);
             if (activeWeaponModel.userData.optic) activeWeaponModel.userData.optic.visible = aimBlend > 0.05;
 
@@ -6563,8 +6648,9 @@ body.aiming #crosshair {visibility:hidden}
                 weaponBobTime += delta * (8 + movementIntensity * (10 + sprintBlend * 8));
             }
 
-            const bobX = Math.sin(weaponBobTime) * 0.012 * movementIntensity * (1-aimBlend*0.95);
-            const bobY = Math.abs(Math.cos(weaponBobTime * 2)) * 0.012 * movementIntensity * (1-aimBlend*0.95);
+            const motionScale = settings.reducedMotion ? 0 : 1;
+            const bobX = Math.sin(weaponBobTime) * 0.012 * movementIntensity * (1-aimBlend*0.95) * motionScale;
+            const bobY = Math.abs(Math.cos(weaponBobTime * 2)) * 0.012 * movementIntensity * (1-aimBlend*0.95) * motionScale;
 
             const reloadOffsetY = isReloading ? -0.05 : 0;
             const reloadOffsetZ = isReloading ? 0.04 : 0;
@@ -6588,7 +6674,7 @@ body.aiming #crosshair {visibility:hidden}
             const cfg = weaponConfigs[playerWeapons[currentWeaponIndex].configId];
             weaponRecoil = THREE.MathUtils.lerp(weaponRecoil, 0, delta * (cfg.id === "shotgun" || cfg.id === "sniper" ? 8 : 14));
 
-            const targetFov = THREE.MathUtils.lerp(75 + sprintBlend * 9,55,aimBlend);
+            const targetFov = THREE.MathUtils.lerp(75 + sprintBlend * 9 * motionScale,55,aimBlend);
             const nextFov = THREE.MathUtils.lerp(camera.fov, targetFov, delta * 7);
             if (Math.abs(nextFov - camera.fov) > 0.001) {
                 camera.fov = nextFov;
@@ -6623,7 +6709,7 @@ body.aiming #crosshair {visibility:hidden}
             damageText.style.transform = `translate(-50%, -50%) scale(${(0.86 + damageTextAmount * 0.32).toFixed(3)})`;
 
             if (controls.isLocked) {
-                const shakeY = Math.cos(performance.now() * 0.08) * screenShakeAmount * 0.06;
+                const shakeY = settings.reducedMotion ? 0 : Math.cos(performance.now() * 0.08) * screenShakeAmount * 0.06;
                 camera.position.y = playerEyeHeight + shakeY;
             }
 
@@ -6685,6 +6771,14 @@ body.aiming #crosshair {visibility:hidden}
         }
 
         function updateUI() {
+            const reloadTrack = document.getElementById('reload-track');
+            reloadTrack.style.display = isReloading ? 'block' : 'none';
+            if (isReloading) {
+                const duration = weaponConfigs[playerWeapons[currentWeaponIndex].configId].reloadDuration * (hasSpeedCola ? 0.3 : 1);
+                const progress = THREE.MathUtils.clamp(1 - reloadTimer / duration, 0, 1);
+                document.getElementById('reload-fill').style.transform = `scaleX(${progress})`;
+                reloadTrack.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+            }
             const activeWeapon = playerWeapons[currentWeaponIndex];
             const state = [Math.floor(health), hasJuggernog, wave, score, zombies.length, currentWeaponIndex,
                 activeWeapon.ammoInMag, activeWeapon.reserveAmmo, activeWeapon.packapunched, activeWeapon.configId,
@@ -6815,6 +6909,9 @@ body.aiming #crosshair {visibility:hidden}
 
         function resetGame() {
             resetAim();
+            Object.keys(runStats).forEach(key => runStats[key] = 0);
+            combatFeedbackTimer = 0;
+            combatFeedback.style.opacity = '0';
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
                 clearZombieDebugPath(zombie);
@@ -7103,6 +7200,9 @@ body.aiming #crosshair {visibility:hidden}
                 return;
             }
             sceneNeedsRender = true;
+            if (controls.isLocked && !gameOver) runStats.seconds += delta;
+            combatFeedbackTimer = Math.max(0, combatFeedbackTimer - delta);
+            combatFeedback.style.opacity = String(Math.min(1, combatFeedbackTimer * 3));
             hudElapsed += delta;
             if (hudElapsed >= 0.1) { updateUI(); hudElapsed = 0; }
 
@@ -7156,6 +7256,7 @@ body.aiming #crosshair {visibility:hidden}
 
                         if (pw.model) {
                             camera.remove(pw.model);
+                            disposeObject3D(pw.model);
                         }
 
                         pw.configId = mysteryBoxRolledId;
@@ -7170,6 +7271,7 @@ body.aiming #crosshair {visibility:hidden}
 
                         mysteryBoxState = "idle";
                         mysteryBox.remove(mysteryBoxWeaponMesh);
+                        disposeObject3D(mysteryBoxWeaponMesh);
                         mysteryBoxWeaponMesh = null;
 
                         playGameSound("weaponPickup", mysteryBox.position);

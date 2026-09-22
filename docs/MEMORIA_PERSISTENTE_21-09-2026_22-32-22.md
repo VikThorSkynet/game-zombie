@@ -65,6 +65,21 @@ Teste em Chrome headless, qualidades baixa e alta, sem erro de JavaScript:
 
 ## Limitações e continuidade
 
+### Correção posterior — iluminação ao mirar
+
+- Corrigida a sobre-exposição da arma ao centralizar o red dot: a lanterna
+  tinha origem junto à câmera, iluminando o modelo a uma distância muito curta.
+  O emissor agora fica duas unidades à frente da câmera, além do cano mais longo,
+  com o alvo deslocado igualmente para preservar a direção do feixe.
+  Intensidade, alcance, exposição global e ponto vermelho foram preservados.
+  Superfícies anteriores ao emissor recebem apenas as demais luzes da cena.
+- Arquivos alterados: HTML atual, esta memória e README (correção do nome da branch).
+- Validação: módulo aprovado por `node --check`; suíte `verify-v14.cjs` aprovada
+  no Chrome headless, com renderização baixa/alta e sem erros JavaScript.
+  Mira, recarga, troca, retomada e Esc passaram; captura da mira em qualidade
+  baixa inspecionada visualmente, sem o branco estourado na arma.
+  Alinhamento medido da ótica: desvio de 0,05 pixel em 1440×960.
+
 O mapa maior acrescenta geometria e aumenta a grade. Fragmentos instanciados e
 agrupamento estático reduzem chamadas, mas não há afirmação de aumento de FPS:
 não foi realizado benchmark prolongado com hordas. Os modelos continuam
