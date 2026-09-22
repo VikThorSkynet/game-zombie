@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v13 • 21/09/2026 21:22:04</title>
+    <title>Protocolo Sobreviva — v14 • 21/09/2026 22:32:22</title>
 
     <style>
         * {
@@ -757,7 +757,7 @@
             #weapon { font-size: 21px; }
             #ammo { font-size: 38px; }
         }
-    /* v13: readable HUD and lightweight menu */
+    /* v14: readable HUD and lightweight menu */
 #panel {max-width:760px;text-align:left;padding:clamp(22px,4vw,48px);max-height:90dvh;overflow:auto;border-radius:12px;border-top:3px solid #69efae}
 #panel h1 {font-size:clamp(30px,5vw,52px);letter-spacing:-2px;line-height:1.05}
 .menu-kicker {font-size:11px;letter-spacing:3px;color:#69efae;margin-bottom:16px}
@@ -777,6 +777,9 @@ button:focus-visible,select:focus-visible {outline:3px solid #fff;outline-offset
 body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui,body.menu-open #mission-ui,body.menu-open #weapon-ui {visibility:hidden}
 #performance-label {position:fixed;bottom:14px;left:18px;color:#89a5b6;font:11px monospace;z-index:21;pointer-events:none}
 #perk-badges {display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+#ads-dot {display:none;position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#ff4545;box-shadow:0 0 5px #f22;z-index:12;pointer-events:none}
+body.aiming #ads-dot {display:block}
+body.aiming #crosshair {visibility:hidden}
 .perk-badge {display:inline-flex;align-items:center;gap:6px;color:#f3e8c9;font-size:11px}
 .perk-badge b {display:grid;place-items:center;width:27px;height:27px;border-radius:50%;border:2px solid #dbcda4;box-shadow:inset 0 0 0 2px #0007;background:var(--perk-color);font:bold 18px Georgia}
 .loading-line {height:3px;background:#69efae;margin:25px 0;transform-origin:left;animation:loading 1s ease-in-out infinite alternate}
@@ -846,6 +849,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
     </div>
 
     <div id="crosshair"></div>
+    <div id="ads-dot" aria-hidden="true"></div>
     <div id="hitmarker">
         <span class="tl"></span>
         <span class="tr"></span>
@@ -859,7 +863,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
     <div id="overlay">
         <div id="panel" role="region" aria-label="Menu do jogo">
-            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V13</div>
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V14</div>
             <h1>Prepare-se para a noite.</h1>
             <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
             <div class="loading-line"></div>
@@ -1337,8 +1341,10 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
         const playerRadius = 0.65;
         const zombieRadius = 0.72;
 
-        const arenaInnerLimit = 99;
-        const spawnAreaLimit = 92;
+        const arenaInnerLimit = 149;
+        const spawnAreaLimit = 142;
+        let aimHeld = false;
+        let aimBlend = 0;
 
         const baseMoveSpeed = 50;
         const sprintMultiplier = 1.78;
@@ -1470,6 +1476,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             camera.add(flashlight);
             camera.add(flashlight.target);
 
+            expandCityLayout();
             createNightSky();
             assignInteractableLocations();
             createMysteryBox();
@@ -1499,7 +1506,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             setOverlay(
                 "Sobreviva à noite.",
                 '<p class="menu-lead">A cidade caiu. Defenda sua posição, enfrente as ondas e melhore seu arsenal.</p>' +
-                '<div class="control-grid"><div><b>W A S D</b>Mover</div><div><b>MOUSE</b>Mirar e atirar</div><div><b>CTRL / SHIFT</b>Correr</div><div><b>R</b>Recarregar</div><div><b>E</b>Interagir</div><div><b>1 / 2 · ESC</b>Armas · Pausar</div></div>' +
+                '<div class="control-grid"><div><b>W A S D</b>Mover</div><div><b>MOUSE</b>Esquerdo: atirar · Direito: red dot</div><div><b>CTRL / SHIFT</b>Correr</div><div><b>R</b>Recarregar</div><div><b>E</b>Interagir</div><div><b>1 / 2 · ESC</b>Armas · Pausar</div></div>' +
                 '<label class="quality-row">Qualidade <select id="quality-select"><option value="auto">Automática</option><option value="low">Desempenho</option><option value="high">Alta</option></select><span>Automática ajusta a resolução durante a partida.</span></label>',
                 "INICIAR OPERAÇÃO", () => controls.lock()
             );
@@ -1523,6 +1530,8 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             });
 
             controls.addEventListener("unlock", () => {
+                resetAim();
+                mouseHeld = false;
                 moveForward = false;
                 moveBackward = false;
                 moveLeft = false;
@@ -1567,18 +1576,23 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             document.addEventListener("pointerdown", ensureAudioContext, { once: true });
             document.addEventListener("keydown", ensureAudioContext, { once: true });
             document.addEventListener("mousedown", (e) => {
+                if (e.button === 2 && controls.isLocked && !gameOver) { aimHeld = true; e.preventDefault(); }
                 if (e.button === 0) mouseHeld = true;
                 shoot(e);
             });
             document.addEventListener("mouseup", (e) => {
+                if (e.button === 2) aimHeld = false;
                 if (e.button === 0) mouseHeld = false;
             });
+            document.addEventListener('contextmenu', e => { if (controls.isLocked) e.preventDefault(); });
             window.addEventListener("blur", () => {
+                resetAim();
                 sprintKeysHeld.clear();
                 sprintHeld = false;
                 mouseHeld = false;
             });
             document.addEventListener("visibilitychange", () => {
+                if (document.hidden) { resetAim(); mouseHeld = false; }
                 if (!audioContext) return;
                 if (document.hidden && audioContext.state === "running") {
                     audioContext.suspend();
@@ -1620,11 +1634,11 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             document.body.classList.add("menu-open");
             sceneNeedsRender = true;
             panel.innerHTML = `
-        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V13</div>
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V14</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
-        <p class="release">V13 · 21/09/2026 às 21:22:04 · America/Sao_Paulo</p>
+        <p class="release">V14 · 21/09/2026 às 22:32:22 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
         }
@@ -1827,7 +1841,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 polygonOffset: true,
                 polygonOffsetFactor: -2
             });
-            for (let z = -88; z <= 88; z += 10) {
+            for (let z = -138; z <= 138; z += 10) {
                 const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 5.2), stripeMat);
                 stripe.rotation.x = -Math.PI / 2;
                 stripe.position.set(0, 0.025, z);
@@ -1836,7 +1850,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
             const curbMat = new THREE.MeshStandardMaterial({ color: 0x4b5056, roughness: 0.96 });
             [-8.5, 8.5].forEach(x => {
-                const curb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.18, 196), curbMat);
+                const curb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.18, 296), curbMat);
                 curb.position.set(x, 0.09, 0);
                 curb.receiveShadow = true;
                 scene.add(curb);
@@ -1889,7 +1903,8 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             const random = createSeededRandom(7301 + variant * 97 + cols * 13 + rows);
             for (let y = 0; y < rows; y++) {
                 for (let x = 0; x < cols; x++) {
-                    const lit = random() > (variant % 3 === 0 ? 0.25 : 0.47);
+                    const broken = random() < 0.42;
+                    const lit = !broken && random() > 0.72;
                     const color = variant % 3 === 0 ? '#79c8ad' : variant % 3 === 1 ? '#bed4c0' : '#e1dcc1';
                     ctx.fillStyle = lit ? color : (x % 3 === 0 ? '#28494b' : '#20383d');
                     ctx.fillRect(x * cw + 1.5, y * rh + 2, cw - 3, rh - 4);
@@ -1900,9 +1915,21 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                     // Montantes e reflexos verticais discretos no vidro.
                     ctx.fillStyle = '#426360';
                     ctx.fillRect(x * cw + cw * 0.52, y * rh + 2, 1, rh - 4);
+                    if (broken) {
+                        ctx.fillStyle='#090e11';ctx.fillRect(x*cw+2,y*rh+3,cw-4,rh-5);
+                        ctx.strokeStyle='#667875';ctx.beginPath();ctx.moveTo(x*cw+2,y*rh+3);
+                        ctx.lineTo((x+.55)*cw,(y+.45)*rh);ctx.lineTo((x+.9)*cw,y*rh+3);ctx.stroke();
+                    }
                 }
                 ctx.fillStyle = '#536460';
                 ctx.fillRect(0, y * rh, 256, 1);
+            }
+            for(let i=0;i<12;i++){
+                const x=random()*256,y=random()*240,w=12+random()*30,h=20+random()*100;
+                ctx.fillStyle='#08090788';ctx.fillRect(x,y,w,h);
+                glow.fillStyle='#000';glow.fillRect(x,y,w,h);
+                ctx.strokeStyle='#111613';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y);
+                ctx.lineTo(x+9,y+14);ctx.lineTo(x-4,y+28);ctx.lineTo(x+8,y+45);ctx.stroke();
             }
             const map = new THREE.CanvasTexture(surface);
             const emissiveMap = new THREE.CanvasTexture(emission);
@@ -1949,35 +1976,122 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 new THREE.MeshStandardMaterial({ color: 0x163838, metalness: 0.65, roughness: 0.2 }));
             box(0.08, 0.12, 2.2, side * (width / 2 + 0.04), 2.55, 0, light);
             box(0.08, 1.95, 0.055, side * (width / 2 + 0.055), 1.25, 0, trim);
+            const charred=new THREE.MeshStandardMaterial({color:0x4b3d2c,roughness:1});
+            for(const angle of [-0.65,0.65]){
+                const board=box(0.11,0.18,2.7,side*(width/2+.14),1.2,0,charred);board.rotation.x=angle;
+            }
+            if(index%2===0){
+                const brokenCanopy=box(0.9,0.13,3.0,side*(width/2+.35),2.6,0,stone);brokenCanopy.rotation.z=side*.25;
+                for(let i=0;i<4;i++){
+                    const rod=box(.06,1.2+i*.2,.06,-width*.3+i*.4,height+.35,depth*.3,trim);rod.rotation.z=(i-1.5)*.14;
+                }
+            }
         }
 
-        function detailVehicle(group) {
-            const metal = new THREE.MeshStandardMaterial({ color: 0x738083, metalness: 0.8, roughness: 0.4 });
-            const dark = new THREE.MeshStandardMaterial({ color: 0x111a1e, metalness: 0.4, roughness: 0.55 });
-            const glass = new THREE.MeshStandardMaterial({ color: 0x25474b, metalness: 0.65, roughness: 0.22 });
-            const box = (w, h, d, x, y, z, material) => {
-                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-                mesh.position.set(x, y, z);
-                group.add(mesh);
+        function expandCityLayout() {
+            // Append districts once; restart reuses the same static map.
+            if(baseMapLayout.expanded)return;baseMapLayout.expanded=true;
+            for(const x of [-112,112])for(const z of [-110,-60,0,60,110])
+                baseMapLayout.buildings.push({x,z,w:22,d:24,h:12+(Math.abs(z)%4)*3,color:0x46504c,antenna:z===0});
+            for(const z of [-123,123])for(const x of [-64,-26,26,64])
+                baseMapLayout.buildings.push({x,z,w:21,d:22,h:10+Math.abs(x)%13,color:0x474b43,antenna:false});
+            for(const x of [-88,88])for(const z of [-75,25,85])
+                baseMapLayout.cars.push({x:x+3,z,rotation:z<0?Math.PI:0,color:0x4f5553});
+            baseMapLayout.cars.push({x:-12,z:103,rotation:Math.PI/2,color:0x563c31},{x:15,z:-102,rotation:-Math.PI/2,color:0x3b4550});
+        }
+
+        function createRuinedDistricts() {
+            const street=new THREE.Group(),p=propParts(street);
+            const asphalt=new THREE.MeshStandardMaterial({color:0x1e2326,roughness:1});
+            const stripe=new THREE.MeshStandardMaterial({color:0x928663,roughness:1});
+            for(const x of [-88,88]){
+                p.box(13,.02,292,x,.016,0,asphalt);
+                for(let z=-135;z<=135;z+=12)p.box(.16,.01,4,x,.03,z,stripe);
+            }
+            for(const z of [-101,101]){
+                p.box(292,.02,13,0,.018,z,asphalt);
+                for(let x=-135;x<=135;x+=12)p.box(4,.01,.16,x,.035,z,stripe);
+            }
+            scene.add(batchModelDetails(street));
+            const concrete=new THREE.MeshStandardMaterial({color:0x57594e,roughness:1});
+            const rubble=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),concrete,180);
+            rubble.name='city-rubble';const transform=new THREE.Object3D(),random=createSeededRandom(140014);
+            for(let i=0;i<180;i++){
+                const b=baseMapLayout.buildings[i%baseMapLayout.buildings.length];
+                const side=b.x>0?-1:1;
+                transform.position.set(b.x+side*(b.w/2+.5+random()*2),.12,b.z+(random()-.5)*b.d);
+                transform.rotation.set(random(),random()*Math.PI,random());transform.scale.set(.15+random()*.3,.12,.15+random()*.4);
+                transform.updateMatrix();rubble.setMatrixAt(i,transform.matrix);
+            }
+            rubble.computeBoundingSphere();scene.add(rubble);
+            // Larger piles are solid to both movement and bullets; roads remain connected.
+            for(const x of [-77,77])for(const z of [-99,99]){
+                const pile=new THREE.Mesh(new THREE.BoxGeometry(2.8,.75,2.2),concrete);
+                pile.position.set(x,.375,z+8);pile.rotation.y=x>0?.24:-.24;
+                scene.add(pile);registerWorldCollider(pile);
+            }
+        }
+
+        function createWreckedVehicle(config, index=0) {
+            const group=new THREE.Group();group.name='wrecked-car';
+            const shell=new THREE.Group();const p=propParts(shell);
+            const paint=new THREE.MeshStandardMaterial({color:config.color || 0x4e5554,roughness:0.83,metalness:0.3});
+            const steel=new THREE.MeshStandardMaterial({color:0x666d68,roughness:0.56,metalness:0.7});
+            const rubber=new THREE.MeshStandardMaterial({color:0x141619,roughness:0.95});
+            const glass=new THREE.MeshStandardMaterial({color:0x132a30,roughness:0.34,metalness:0.35});
+            const rust=new THREE.MeshStandardMaterial({color:0x553a28,roughness:1});
+            // Extruded side profiles: sloped bonnet, windshield, roof and rear window.
+            const profile=(points,width,material)=>{
+                const shape=new THREE.Shape();points.forEach(([z,y],i)=>i?shape.lineTo(-z,y):shape.moveTo(-z,y));shape.closePath();
+                const geo=new THREE.ExtrudeGeometry(shape,{depth:width,bevelEnabled:false,steps:1});geo.translate(0,0,-width/2);geo.rotateY(Math.PI/2);
+                const mesh=new THREE.Mesh(geo,material);shell.add(mesh);return mesh;
             };
-            for (const x of [-0.865, 0.865]) {
-                for (const z of [-0.7, 0.28]) box(0.018, 0.42, 0.82, x, 1.6, z, glass);
-                box(0.025, 0.035, 0.18, x * 1.22, 1.02, -0.25, metal);
+            profile([[-2,0.55],[2,0.55],[1.93,0.87],[0.86,1.06],[-1.08,1.08],[-1.96,0.91]],2.08,paint);
+            profile([[-1.12,1.03],[0.94,1.03],[0.37,1.64],[-0.74,1.64]],1.69,glass);
+            p.box(1.76,0.085,1.14,0,1.67,-0.2,paint);
+            for(const x of [-0.86,0.86]){
+                for(const z of [-0.84,-0.17,0.68]){
+                    const pillar=p.box(0.045,0.68,0.048,x,1.34,z,paint);pillar.rotation.x=z>0?-.7:z<-.5?.5:0;
+                }
+                p.box(0.045,0.048,2.1,x,1.07,-0.1,steel);
+                for(const z of [-0.56,0.26]){
+                    p.box(0.02,0.36,0.018,x*1.22,0.82,z,rubber);
+                    p.box(0.035,0.033,0.16,x*1.22,0.99,z-0.18,steel);
+                }
+                p.box(0.18,0.12,0.23,x*1.23,1.18,0.7,rubber);
+                for(const z of [-1.28,1.24]){
+                    const wheel=p.cylinder(0.36,0.23,x*1.24,0.36,z,rubber);wheel.rotation.z=Math.PI/2;
+                    const hub=p.cylinder(0.205,0.245,x*1.24,0.36,z,steel);hub.rotation.z=Math.PI/2;
+                    const axle=p.cylinder(0.07,0.255,x*1.24,0.36,z,rubber);axle.rotation.z=Math.PI/2;
+                }
             }
-            box(0.95, 0.22, 0.025, 0, 0.73, 2.012, dark);
-            for (let i = 0; i < 3; i++) box(0.9, 0.02, 0.03, 0, 0.66 + i * 0.065, 2.029, metal);
-            box(1.58, 0.45, 0.018, 0, 1.61, -1.235, glass);
-            for (const x of [-1.205, 1.205]) for (const z of [-1.2, 1.2]) {
-                const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.025, 8), metal);
-                hub.rotation.z = Math.PI / 2;
-                hub.position.set(x, 0.35, z);
-                group.add(hub);
+            for(const z of [-2.025,2.025])p.box(2.13,0.14,0.15,0,0.56,z,steel);
+            p.box(0.85,0.21,0.028,0,0.78,1.97,rubber);
+            for(let i=0;i<4;i++)p.box(0.79,0.015,0.035,0,0.71+i*0.044,1.991,steel);
+            const lamps=new THREE.MeshStandardMaterial({color:0xb8ae82,emissive:0xe5af69,emissiveIntensity:index%3===0?0.9:0.06,roughness:0.45});
+            for(const x of [-0.76,0.76])p.box(0.34,0.18,0.038,x,0.82,1.98,lamps);
+            const tail=new THREE.MeshStandardMaterial({color:0x752b26,roughness:0.5});
+            for(const x of [-0.77,0.77])p.box(0.36,0.14,0.038,x,0.8,-2.011,tail);
+            // Scorched hood, scraped panels and a shattered-glass fracture pattern.
+            p.box(1.62,0.017,0.65,0,1.003,1.28,rust).rotation.x=0.15;
+            for(const x of [-1.05,1.05])for(let i=0;i<4;i++)p.box(0.014,0.02,0.43,x,0.75+i*0.045,-0.45+i*0.17,rust).rotation.x=.1;
+            for(let i=0;i<5;i++){
+                const crack=p.box(0.012,0.44,0.015,0.08+(i-2)*0.09,1.39,0.63,steel);
+                crack.rotation.set(-.71,0,(i-2)*.44);
             }
+            group.add(batchModelDetails(shell));
+            if(index%3===0){
+                const beam=new THREE.SpotLight(0xffd5a0,15,24,Math.PI/7,.65,1.7);
+                beam.position.set(0,.88,2.1);const target=new THREE.Object3D();target.position.set(0,.2,15);beam.target=target;
+                beam.userData={kind:'vehicleHeadlight',phase:index*1.37,baseIntensity:15,lensMaterial:lamps,lenses:[]};
+                group.add(beam,target);environmentLights.push(beam);
+            }
+            return group;
         }
 
         function createArena() {
             // === CHÃO DE CONCRETO/ASFALTO ===
-            const floorGeo = new THREE.PlaneGeometry(220, 220, 20, 20);
+            const floorGeo = new THREE.PlaneGeometry(320, 320, 1, 1);
             const asphaltTexture = createGrungeTexture("#292d31", "#101318", 22);
             const floorMat = new THREE.MeshStandardMaterial({
                 color: 0x73777c,
@@ -1995,6 +2109,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             bulletBlockers.push(floor);
 
             createStreetDetails();
+            createRuinedDistricts();
 
             // === PAREDES DE CONCRETO ===
             const wallMat = new THREE.MeshStandardMaterial({
@@ -2004,20 +2119,20 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 metalness: 0.1
             });
 
-            const wallGeoH = new THREE.BoxGeometry(220, 8, 2);
-            const wallGeoV = new THREE.BoxGeometry(2, 8, 220);
+            const wallGeoH = new THREE.BoxGeometry(302, 8, 2);
+            const wallGeoV = new THREE.BoxGeometry(2, 8, 302);
 
             const wall1 = new THREE.Mesh(wallGeoH, wallMat);
-            wall1.position.set(0, 4, -100);
+            wall1.position.set(0, 4, -150);
 
             const wall2 = new THREE.Mesh(wallGeoH, wallMat);
-            wall2.position.set(0, 4, 100);
+            wall2.position.set(0, 4, 150);
 
             const wall3 = new THREE.Mesh(wallGeoV, wallMat);
-            wall3.position.set(-100, 4, 0);
+            wall3.position.set(-150, 4, 0);
 
             const wall4 = new THREE.Mesh(wallGeoV, wallMat);
-            wall4.position.set(100, 4, 0);
+            wall4.position.set(150, 4, 0);
 
             [wall1, wall2, wall3, wall4].forEach(wall => {
                 wall.castShadow = true;
@@ -2060,6 +2175,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                     }
 
                     dressCityBuilding(bGroup, bW, bH, bD, index);
+                    batchModelDetails(bGroup);
 
                     bGroup.position.set(x, 0, z);
                     scene.add(bGroup);
@@ -2076,95 +2192,12 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             });
 
             // === CARROS ABANDONADOS ===
-            const carColors = [0x882222, 0x224488, 0x228844, 0x888822, 0x666666];
+
 
             baseMapLayout.cars.forEach((carConfig, index) => {
                     const { x, z } = carConfig;
 
-                    const carGroup = new THREE.Group();
-                    const cColor = carConfig.color || carColors[index % carColors.length];
-                    const carMat = new THREE.MeshStandardMaterial({ color: cColor, roughness: 0.6, metalness: 0.4 });
-
-                    // Corpo do carro
-                    const carBody = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.72, 4.0), carMat);
-                    carBody.position.y = 0.7;
-                    carBody.castShadow = true;
-                    carBody.receiveShadow = true;
-                    carGroup.add(carBody);
-
-                    // Teto
-                    const roof = new THREE.Mesh(
-                        new THREE.BoxGeometry(1.72, 0.7, 2.05),
-                        carMat
-                    );
-                    roof.position.set(0, 1.6, -0.2);
-                    roof.castShadow = true;
-                    carGroup.add(roof);
-
-                    // Janelas (vidro)
-                    const glassMat = new THREE.MeshStandardMaterial({
-                        color: 0x88aacc,
-                        roughness: 0.1,
-                        metalness: 0.8,
-                        transparent: true,
-                        opacity: 0.6
-                    });
-                    const windshield = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.7), glassMat);
-                    windshield.position.set(0, 1.5, 0.95);
-                    windshield.rotation.x = -0.3;
-                    carGroup.add(windshield);
-
-                    const bumperMat = new THREE.MeshStandardMaterial({ color: 0x16191c, metalness: 0.75, roughness: 0.35 });
-                    [-2.08, 2.08].forEach(zPos => {
-                        const bumper = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.18, 0.16), bumperMat);
-                        bumper.position.set(0, 0.52, zPos);
-                        carGroup.add(bumper);
-                    });
-
-                    const lightMat = new THREE.MeshStandardMaterial({
-                        color: 0xffd6a0,
-                        emissive: 0xff7b24,
-                        emissiveIntensity: 2.8,
-                        roughness: 0.25
-                    });
-                    const headlightLenses = [];
-                    [-0.68, 0.68].forEach(xPos => {
-                        const light = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.18, 0.05), lightMat);
-                        light.position.set(xPos, 0.76, 2.03);
-                        carGroup.add(light);
-                        headlightLenses.push(light);
-                    });
-
-                    // Feixe combinado dos dois faróis, preso à orientação do carro.
-                    const headlightBeam = new THREE.SpotLight(0xffe2b8, 20, 28, Math.PI / 7, 0.62, 1.7);
-                    headlightBeam.position.set(0, 0.88, 2.18);
-                    headlightBeam.castShadow = false;
-                    const headlightTarget = new THREE.Object3D();
-                    headlightTarget.position.set(0, 0.18, 15);
-                    headlightBeam.target = headlightTarget;
-                    carGroup.add(headlightBeam, headlightTarget);
-                    headlightBeam.userData.kind = "vehicleHeadlight";
-                    headlightBeam.userData.phase = index * 1.37;
-                    headlightBeam.userData.baseIntensity = 18 + (index % 4) * 1.3;
-                    headlightBeam.userData.lensMaterial = lightMat;
-                    headlightBeam.userData.lenses = headlightLenses;
-                    environmentLights.push(headlightBeam);
-
-                    // Rodas
-                    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
-                    const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 12);
-                    const wheelPositions = [
-                        [-1.1, 0.35, 1.2], [1.1, 0.35, 1.2],
-                        [-1.1, 0.35, -1.2], [1.1, 0.35, -1.2]
-                    ];
-                    wheelPositions.forEach(wp => {
-                        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                        wheel.position.set(...wp);
-                        wheel.rotation.z = Math.PI / 2;
-                        carGroup.add(wheel);
-                    });
-
-                    detailVehicle(carGroup);
+                    const carGroup = createWreckedVehicle(carConfig, index);
                     carGroup.position.set(x, 0, z);
                     carGroup.rotation.y = carConfig.rotation;
                     scene.add(carGroup);
@@ -3156,7 +3189,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
             // Apply PaP glowing camo to all mesh children
             gun.traverse(child => {
-                if (child.isMesh && child.material) {
+                if (child.isMesh && child.material && !child.userData.keepOptic) {
                     const originalColor = child.material.color ? child.material.color.clone() : new THREE.Color(0x444444);
                     const papColor = originalColor.clone().lerp(new THREE.Color(0x8844ff), 0.4);
 
@@ -3206,7 +3239,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
             // Subtle emissive pulse on all PaP weapon meshes
             pw.model.traverse(child => {
-                if (child.isMesh && child.material && child.material.emissive && !child.userData.papEnergy) {
+                if (child.isMesh && child.material && child.material.emissive && !child.userData.papEnergy && !child.userData.keepOptic) {
                     if (child.material.emissiveIntensity !== undefined) {
                         child.material.emissiveIntensity = 0.6 + Math.sin(time * 4) * 0.3;
                     }
@@ -3474,6 +3507,18 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             wrist.rotation.z = -0.42;
             gun.userData.muzzleLocal = new THREE.Vector3(0.28, -0.2, muzzleZ);
             batchModelDetails(gun);
+            const optic = new THREE.Group();
+            const opticParts = propParts(optic);
+            const sightY = kind === 'sniper' ? 0.08 : -0.015;
+            const opticHousing = new THREE.MeshBasicMaterial({color:0x182124});
+            for (const x of [0.231,0.329]) opticParts.box(0.012,0.09,0.045,x,sightY,-0.62,opticHousing);
+            for (const y of [sightY-.045,sightY+.045]) opticParts.box(0.11,0.012,0.045,0.28,y,-0.62,opticHousing);
+            opticParts.box(0.055,0.04,0.07,0.28,sightY-.071,-0.62,opticHousing);
+            batchModelDetails(optic);
+            const lens = new THREE.Mesh(new THREE.PlaneGeometry(0.085,0.078),new THREE.MeshBasicMaterial({color:0x81c4cc,transparent:true,opacity:0.08,depthWrite:false,side:THREE.DoubleSide}));
+            lens.position.set(0.28,sightY,-0.62);optic.add(lens);
+            optic.traverse(part=>{part.userData.keepOptic=true;});
+            optic.visible=false;gun.add(optic);gun.userData.optic=optic;gun.userData.sightY=sightY;
             gun.traverse(mesh => { if (mesh.isMesh) { mesh.castShadow = false; mesh.receiveShadow = false; } });
             return gun;
         }
@@ -4064,6 +4109,21 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             const leather = new THREE.MeshStandardMaterial({ color: 0x22282a, roughness: 0.88 });
             const bone = new THREE.MeshStandardMaterial({ color: 0xafa887, roughness: 0.85 });
             const skin = head.material;
+            skin.color.lerp(new THREE.Color(0x8a927d),0.62);
+            skin.emissiveIntensity=0.04;
+            skin.roughness=0.96;
+            if(!detailZombieModel.skinTexture){
+                const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+                const c=canvas.getContext('2d'),random=createSeededRandom(140099);
+                c.fillStyle='#c6c8b6';c.fillRect(0,0,128,128);
+                for(let i=0;i<180;i++){
+                    c.fillStyle=i%4?'#5b68502b':'#5e343244';c.beginPath();c.ellipse(random()*128,random()*128,1+random()*5,1+random()*2,random()*3,0,Math.PI*2);c.fill();
+                }
+                detailZombieModel.skinTexture=new THREE.CanvasTexture(canvas);detailZombieModel.skinTexture.colorSpace=THREE.SRGBColorSpace;
+            }
+            skin.map=detailZombieModel.skinTexture;
+            const shadowSkin=new THREE.MeshStandardMaterial({color:0x32382f,roughness:1});
+            const torn=new THREE.MeshStandardMaterial({color:0x493e35,roughness:1});
             // Troca apenas materiais; as sete malhas usadas pelos tiros conservam suas geometrias.
             torso.material = cloth;
             pelvis.material = trousers;
@@ -4080,6 +4140,8 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 sleeve.position.y = 0.23;
                 arm.add(sleeve);
                 box(arm, 0.13, 0.15, 0.13, 0, -0.36, 0.025, skin);
+                for(let i=0;i<3;i++)box(arm,.026,.12,.04,-.04+i*.038,-.46,.056,skin).rotation.z=(i-1)*.12;
+                box(arm,.07,.15,.02,.06,-.09,.095,torn).rotation.z=.25;
             }
             for (const leg of [legL, legR]) box(leg, 0.26, 0.18, 0.34, 0, -0.29, 0.06, leather);
             box(pelvis, 0.675, 0.065, 0.435, 0, 0.09, 0, leather);
@@ -4088,11 +4150,15 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             // Preserva a posição inicial do rosto e prende os detalhes à cabeça animada.
             zombie.updateMatrixWorld(true);
             for (const mesh of faceParts) head.attach(mesh);
+            for(const mesh of faceParts)if(mesh.geometry.type==='SphereGeometry')mesh.scale.setScalar(.68);
             box(head, 0.09, 0.13, 0.08, 0, -0.02, 0.285, skin);
             for (const x of [-0.125, 0.125]) {
-                box(head, 0.16, 0.042, 0.075, x, 0.095, 0.27, cloth).rotation.z = x < 0 ? -0.16 : 0.16;
+                box(head, 0.16, 0.042, 0.075, x, 0.095, 0.27, shadowSkin).rotation.z = x < 0 ? -0.16 : 0.16;
+                box(head,.13,.045,.035,x,-.09,.29,shadowSkin).rotation.z=x<0?-.35:.35;
+                box(head,.07,.16,.09,x<0?-.295:.295,-.02,0,skin);
             }
             box(head, 0.15, 0.035, 0.025, 0.025, -0.16, 0.241, bone);
+            for(let i=0;i<4;i++)box(torso,.065,.14,.014,-.28+i*.16,-.31+(i%2)*.025,.32,torn).rotation.z=(i-1)*.18;
             if (typeConfig.name === 'Bruto') {
                 box(torso, 0.55, 0.07, 0.035, 0, 0.08, 0.425, leather);
             } else if (typeConfig.isExploder) {
@@ -4100,6 +4166,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             } else if (typeConfig.isShooter) {
                 box(torso, 0.035, 0.5, 0.025, -0.26, -0.01, 0.285, bone);
             }
+            for(const part of [head,torso,pelvis,armL,armR,legL,legR])batchModelDetails(part);
         }
 
 
@@ -4306,6 +4373,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 armL: armL,
                 armR: armR,
                 head: head,
+                headBaseTilt: head.rotation.z,
                 energyCore: zombie.children.find(child => child.userData.energyCore) || null,
                 explosionCore: zombie.children.find(child => child.userData.explosionCore) || null,
                 hitMeshes,
@@ -4405,25 +4473,49 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             const body = new THREE.Mesh(
                 new THREE.BoxGeometry(0.9, 0.45, 0.55),
                 new THREE.MeshStandardMaterial({
-                    color: 0x2d6cdf,
-                    emissive: 0x123a7a,
-                    roughness: 0.5
+                    color: 0x45533b,
+                    roughness: 0.85,
+                    metalness: 0.35
                 })
             );
 
             const stripe = new THREE.Mesh(
                 new THREE.BoxGeometry(0.95, 0.12, 0.6),
                 new THREE.MeshStandardMaterial({
-                    color: 0xf1c40f,
-                    emissive: 0x6b5600
+                    color: 0x807850,
+                    roughness: 0.75
                 })
             );
-            stripe.position.y = 0.02;
+            stripe.position.y = 0.19;
+            stripe.scale.y = 0.35;
+            const details=new THREE.Group(),p=propParts(details);
+            const hardware=new THREE.MeshStandardMaterial({color:0x202823,metalness:.65,roughness:.6});
+            const brass=new THREE.MeshStandardMaterial({color:0x9e8650,metalness:.6,roughness:.5});
+            for(const x of [-.33,.33]){
+                p.box(.075,.42,.59,x,0,0,hardware);
+                p.box(.09,.12,.03,x,.08,.301,brass);
+            }
+            p.box(.32,.04,.04,0,.3,0,hardware);
+            for(const x of [-.14,.14])p.box(.035,.08,.045,x,.27,0,hardware);
+            for(let i=0;i<4;i++){
+                const round=p.cylinder(.024,.13,-.12+i*.08,.26,.16,brass);round.rotation.z=Math.PI/2;
+            }
+            group.add(batchModelDetails(details));
+            if(!createAmmoPickup.labelTexture){
+                const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
+                const c=canvas.getContext('2d');c.fillStyle='#182118';c.fillRect(0,0,256,64);
+                c.strokeStyle='#c2bd82';c.lineWidth=3;c.strokeRect(3,3,250,58);
+                c.fillStyle='#f1e7bb';c.font='bold 27px Arial';c.textAlign='center';c.fillText('MUNIÇÃO',128,43);
+                createAmmoPickup.labelTexture=new THREE.CanvasTexture(canvas);
+                createAmmoPickup.labelTexture.colorSpace=THREE.SRGBColorSpace;
+            }
+            const label=new THREE.Sprite(new THREE.SpriteMaterial({map:createAmmoPickup.labelTexture,depthTest:true,depthWrite:false}));
+            label.position.y=.85;label.scale.set(1.2,.3,1);group.add(label);
 
             const glow = new THREE.Mesh(
                 new THREE.PlaneGeometry(1.4, 1.4),
                 new THREE.MeshBasicMaterial({
-                    color: 0x66aaff,
+                    color: 0xd8ca77,
                     transparent: true,
                     opacity: 0.25,
                     depthWrite: false,
@@ -4431,15 +4523,15 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 })
             );
             glow.rotation.x = -Math.PI / 2;
-            glow.position.y = -0.18;
+            glow.position.y = -0.25;
 
             group.add(body, stripe, glow);
             group.position.copy(position);
-            group.position.y = 0.7;
+            group.position.y = 0.3;
 
             group.userData = {
                 amount: ammoPickupAmount,
-                baseY: 0.7,
+                baseY: 0.3,
                 bobOffset: Math.random() * Math.PI * 2
             };
 
@@ -4704,8 +4796,10 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
         function getRandomAmmoPosition() {
             for (let i = 0; i < 50; i++) {
-                const x = THREE.MathUtils.randFloat(-88, 88);
-                const z = THREE.MathUtils.randFloat(-88, 88);
+                const angle=Math.random()*Math.PI*2;
+                const distance=12+Math.random()*30;
+                const x = THREE.MathUtils.clamp(camera.position.x+Math.cos(angle)*distance,-spawnAreaLimit,spawnAreaLimit);
+                const z = THREE.MathUtils.clamp(camera.position.z+Math.sin(angle)*distance,-spawnAreaLimit,spawnAreaLimit);
 
                 if (distanceSquaredXZ(x, z, camera.position.x, camera.position.z) < 100) continue;
                 if (isPositionBlocked(x, z, 1.2)) continue;
@@ -4720,11 +4814,13 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 }
 
                 if (!tooClose) {
-                    return new THREE.Vector3(x, 0, z);
+                    const target=new THREE.Vector3(x,0,z);
+                    if(findNavigationPath(camera.position,target,playerRadius).length) return target;
                 }
             }
 
-            return getRandomFreePosition(10, 1.2, 88, 60);
+            // Rare fallback: the player already stands on a reachable area.
+            return new THREE.Vector3(camera.position.x,0,camera.position.z);
         }
 
         function startWave(number) {
@@ -4800,10 +4896,11 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             for (let i = ammoPickups.length - 1; i >= 0; i--) {
                 const pickup = ammoPickups[i];
 
-                pickup.rotation.y += delta * 2.2;
-                pickup.position.y = pickup.userData.baseY + Math.sin(time * 2.5 + pickup.userData.bobOffset) * 0.15;
+                pickup.rotation.y += delta * 0.25;
+                pickup.position.y = pickup.userData.baseY + Math.sin(time * 2.5 + pickup.userData.bobOffset) * 0.025;
 
-                if (controls.isLocked && pickup.position.distanceTo(camera.position) < 2.2) {
+                if (controls.isLocked && !gameOver && distanceSquaredXZ(pickup.position.x,pickup.position.z,camera.position.x,camera.position.z) < 2.2**2
+                    && hasClearNavigationLine(camera.position,pickup.position,0.2)) {
                     playerWeapons.forEach(pw => {
                         if (pw.configId) {
                             pw.reserveAmmo += weaponConfigs[pw.configId].magSize * 2;
@@ -5469,11 +5566,11 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
             for (let p = 0; p < cfg.pellets; p++) {
                 if (cfg.id === "ray_gun") {
-                    fireLaser(cfg.damageHead, cfg.damageBody, cfg.spread, cfg.penetration || 1, cfg.color);
+                    fireLaser(cfg.damageHead, cfg.damageBody, cfg.spread * (aimBlend > 0.85 ? 0.35 : 1), cfg.penetration || 1, cfg.color);
                 } else {
                     // Três rastros já comunicam a dispersão da shotgun sem criar
                     // oito conjuntos completos de geometria, materiais e luzes.
-                    fireBullet(cfg.damageHead, cfg.damageBody, cfg.spread, cfg.penetration || 1, p === 0, p < 3);
+                    fireBullet(cfg.damageHead, cfg.damageBody, cfg.spread * (aimBlend > 0.85 ? 0.35 : 1), cfg.penetration || 1, p === 0, p < 3);
                 }
             }
         }
@@ -6239,9 +6336,10 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
                 legL.rotation.x = -Math.sin(zombie.userData.swing) * 0.45;
                 legR.rotation.x = Math.sin(zombie.userData.swing) * 0.45;
-                armL.rotation.x = Math.sin(zombie.userData.swing) * 0.55;
-                armR.rotation.x = -Math.sin(zombie.userData.swing) * 0.55;
-                zombie.userData.head.rotation.z += Math.sin(zombie.userData.swing * 0.5) * delta * 0.035;
+                const reach=dist<3 ? -0.95 : -0.35;
+                armL.rotation.x = reach + Math.sin(zombie.userData.swing) * 0.28;
+                armR.rotation.x = reach - Math.sin(zombie.userData.swing+0.35) * 0.28;
+                zombie.userData.head.rotation.z = zombie.userData.headBaseTilt + Math.sin(zombie.userData.swing * 0.5) * 0.07;
 
                 if (zombie.userData.energyCore) {
                     const pulse = 1 + Math.sin(performance.now() * 0.009 + i) * 0.16;
@@ -6353,7 +6451,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             direction.normalize();
 
             const moving = direction.lengthSq() > 0;
-            const sprintIntent = moving && direction.z > 0.15 && sprintHeld;
+            const sprintIntent = moving && direction.z > 0.15 && sprintHeld && !aimHeld;
 
             if (sprintCooldownTimer > 0) {
                 sprintCooldownTimer = Math.max(0, sprintCooldownTimer - delta);
@@ -6442,9 +6540,20 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             camera.position.y = playerEyeHeight;
         }
 
+        function resetAim() {
+            aimHeld = false; aimBlend = 0;
+            document.body.classList.remove('aiming');
+            if (camera) { camera.fov=75; camera.updateProjectionMatrix(); }
+            playerWeapons.forEach(w=>{ if(w.model?.userData.optic) w.model.userData.optic.visible=false; });
+        }
+
         function updateWeapon(delta) {
             const activeWeaponModel = playerWeapons[currentWeaponIndex]?.model;
             if (!activeWeaponModel) return;
+            const aiming = aimHeld && controls.isLocked && !gameOver && !isReloading && !isSwitchingWeapon && papState !== 'upgrading';
+            aimBlend = THREE.MathUtils.damp(aimBlend,aiming ? 1 : 0,16,delta);
+            document.body.classList.toggle('aiming',aimBlend > 0.85 && aiming);
+            if (activeWeaponModel.userData.optic) activeWeaponModel.userData.optic.visible = aimBlend > 0.05;
 
             if (!controls.isLocked) {
                 movementIntensity = THREE.MathUtils.lerp(movementIntensity, 0, delta * 8);
@@ -6454,8 +6563,8 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
                 weaponBobTime += delta * (8 + movementIntensity * (10 + sprintBlend * 8));
             }
 
-            const bobX = Math.sin(weaponBobTime) * 0.012 * movementIntensity;
-            const bobY = Math.abs(Math.cos(weaponBobTime * 2)) * 0.012 * movementIntensity;
+            const bobX = Math.sin(weaponBobTime) * 0.012 * movementIntensity * (1-aimBlend*0.95);
+            const bobY = Math.abs(Math.cos(weaponBobTime * 2)) * 0.012 * movementIntensity * (1-aimBlend*0.95);
 
             const reloadOffsetY = isReloading ? -0.05 : 0;
             const reloadOffsetZ = isReloading ? 0.04 : 0;
@@ -6468,8 +6577,8 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 
             const switchOffsetY = isSwitchingWeapon ? -0.35 : 0;
 
-            activeWeaponModel.position.x = THREE.MathUtils.lerp(activeWeaponModel.position.x, bobX, delta * 12);
-            activeWeaponModel.position.y = THREE.MathUtils.lerp(activeWeaponModel.position.y, -bobY + reloadOffsetY + sprintOffsetY + switchOffsetY, delta * 12);
+            activeWeaponModel.position.x = THREE.MathUtils.lerp(activeWeaponModel.position.x, bobX - 0.28*aimBlend, delta * 12);
+            activeWeaponModel.position.y = THREE.MathUtils.lerp(activeWeaponModel.position.y, -bobY + reloadOffsetY + sprintOffsetY + switchOffsetY - activeWeaponModel.userData.sightY*aimBlend, delta * 12);
             activeWeaponModel.position.z = THREE.MathUtils.lerp(activeWeaponModel.position.z, -weaponRecoil + reloadOffsetZ + sprintOffsetZ, delta * 18);
 
             activeWeaponModel.rotation.x = THREE.MathUtils.lerp(activeWeaponModel.rotation.x, weaponRecoil * 0.85 + reloadTiltX + sprintTiltX, delta * 16);
@@ -6479,7 +6588,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             const cfg = weaponConfigs[playerWeapons[currentWeaponIndex].configId];
             weaponRecoil = THREE.MathUtils.lerp(weaponRecoil, 0, delta * (cfg.id === "shotgun" || cfg.id === "sniper" ? 8 : 14));
 
-            const targetFov = 75 + sprintBlend * 9;
+            const targetFov = THREE.MathUtils.lerp(75 + sprintBlend * 9,55,aimBlend);
             const nextFov = THREE.MathUtils.lerp(camera.fov, targetFov, delta * 7);
             if (Math.abs(nextFov - camera.fov) > 0.001) {
                 camera.fov = nextFov;
@@ -6705,6 +6814,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
         }
 
         function resetGame() {
+            resetAim();
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
                 clearZombieDebugPath(zombie);
@@ -6877,6 +6987,7 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
             }
 
             switch (event.code) {
+                case "Escape": resetAim(); if(controls.isLocked)controls.unlock(); break;
                 case "KeyW": moveForward = true; break;
                 case "KeyS": moveBackward = true; break;
                 case "KeyA": moveLeft = true; break;
