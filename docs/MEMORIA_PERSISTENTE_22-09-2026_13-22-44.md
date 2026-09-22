@@ -63,3 +63,28 @@ Prancha, drops e ADS inspecionados visualmente. O ajuste final de intensidade
 Custos são adaptações para esta economia, não reprodução exata de um título COD.
 Não há benchmark prolongado de FPS ou multiplayer. As fontes não substituem
 playtest de balanceamento. Histórico: memória da v15 preservada em docs.
+
+## Revisão — 22/09/2026 às 14:27:28
+
+Solicitação: remover munição aleatória, manter três depósitos distantes, aplicar
+o MP3 de facada fornecido e ajustar progressão de velocidade e rastejantes.
+
+- Removidos timer, rotina e chamada do spawner automático de caixas comuns.
+  O bônus Max Ammo dos zumbis foi preservado, conforme distinção entre os sistemas.
+- Depósitos somente em `(-86,0)`, `(86,0)`, `(0,130)`. Teste confirma exatamente
+  três, distância mínima 155,87 unidades e caminhos da origem às áreas de acesso.
+  A descrição anterior de cinco posições é substituída por esta revisão.
+- `facada.mp3` copiado do Downloads informado pelo usuário, SHA-256
+  `B11E956FFC12B3A8ED274CF22994AD80848C07CEFCB5B74C945026D001673C1A`.
+  Registrado no sistema de preload/áudio e tocado em cada golpe válido com volume
+  0,8, respeitando o volume geral. Substitui o som de recarga usado como provisório.
+- `getZombieBaseSpeed` limita somente o fator da onda a 15. Variação aleatória,
+  diferenças de tipos e progressão de vida/quantidade continuam existentes.
+- Lógica das pernas unificada em `applyLegDamage`, usada por bala e laser.
+  Ferimentos desaceleram gradualmente; pernas destruídas usam 45% da velocidade
+  original em vez de 25%. Dano subsequente não restaura velocidade/postura.
+- Arquivos: HTML atual, README, esta memória, `tests/smoke.cjs`, novo MP3.
+- Chrome headless baixa/alta aprovados: limite de velocidade em todos os tipos
+  (14 < 15 = 100 com mesma variação), três depósitos e rotas, ferimento/rastejar,
+  som MP3 decodificado e regressões de bônus, compras, facada, ADS e efeitos.
+  Nenhum erro JavaScript. Teste estático garante ausência do spawner automático.

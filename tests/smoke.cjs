@@ -7,8 +7,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 const filename = fs.readFileSync(path.join(root, 'README.md'), 'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
 const html = fs.readFileSync(path.join(root, filename), 'utf8');
+assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
 const api = `window.qa = { THREE, settings, runStats, impactParticles, impactPool, maxImpactEffects,
+ getZombieBaseSpeed, zombieTypeConfigs, applyLegDamage, findNavigationPath, loadAudioAsset,
  spawnPowerup, createBonusModel, floatingLabel, bonusNames, powerupTypes, applyPowerup, updatePowerups, powerups, ammoStations, saleBoxes, interactSupply, nearestSupply, ammoPrice, getMysteryPrice, updateSaleBoxes, meleeAttack, updateMelee, createZombie, updateWeapon, renderScene,
  get renderer(){return renderer},
  get flashlight(){return flashlight}, get fireSaleTimer(){return fireSaleTimer}, set score(v){score=v},
@@ -40,6 +42,19 @@ const server = http.createServer((req, res) => {
             await page.goto(`${url}?quality=${quality}`);
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
+            const balance = await page.evaluate(() => {
+                const q=qa,T=q.THREE,stations=q.ammoStations;
+                const distances=stations.flatMap((a,i)=>stations.slice(i+1).map(b=>a.position.distanceTo(b.position)));
+                const reachable=stations.every(s=>q.findNavigationPath(new T.Vector3(),s.position.clone().add(new T.Vector3(0,0,2)),0.65).length>0);
+                const capped=Object.values(q.zombieTypeConfigs).every(t=>q.getZombieBaseSpeed(t,14,0.5)<q.getZombieBaseSpeed(t,15,0.5) && q.getZombieBaseSpeed(t,15,0.5)===q.getZombieBaseSpeed(t,100,0.5));
+                q.createZombie(new T.Vector3(0,0,-10));const z=q.zombies.at(-1),base=z.userData.baseSpeed;
+                q.applyLegDamage(z,z.userData.legMaxHealth/2);const injured=z.userData.speed<base&&z.userData.speed>base*0.45;
+                q.applyLegDamage(z,z.userData.legMaxHealth);const crawling=z.userData.legsDestroyed&&Math.abs(z.userData.speed/base-0.45)<1e-8;
+                q.applyLegDamage(z,100);const staysCrawling=Math.abs(z.userData.speed/base-0.45)<1e-8;
+                q.resetGame();return {count:stations.length,distance:Math.min(...distances),reachable,capped,injured,crawling,staysCrawling};
+            });
+            assert(balance.count===3&&balance.distance>155&&balance.reachable&&balance.capped&&balance.injured&&balance.crawling&&balance.staysCrawling,JSON.stringify(balance));
+            console.log(JSON.stringify({quality,balance}));
             await page.locator('#sensitivity').fill('1.5');
             await page.locator('#volume').fill('0.3');
             await page.locator('#reduced-motion').check();
@@ -63,6 +78,7 @@ const server = http.createServer((req, res) => {
             });
             assert(pool.bounded && pool.reused && pool.active === 0);
             await page.getByRole('button', {name: 'INICIAR OPERAÇÃO'}).click();
+            assert(await page.evaluate(async()=>{const clip=await qa.loadAudioAsset('melee');return clip?.duration>0;}),'melee MP3 decodes');
             await page.mouse.down({button: 'right'});
             await page.waitForFunction(() => document.body.classList.contains('aiming') && qa.camera.fov < 56 && qa.flashlight.intensity < 0.6, null, {timeout:15000});
             assert(await page.evaluate(() => document.body.classList.contains('aiming') && qa.camera.fov < 57 && qa.controls.pointerSpeed < 1));
