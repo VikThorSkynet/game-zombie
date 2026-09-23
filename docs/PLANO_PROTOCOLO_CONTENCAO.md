@@ -10,7 +10,7 @@ playtest; não considerar o conjunto inteiro entregue por existir infraestrutura
 | Etapa | Entrega | Estado |
 |---|---|---|
 | 1 | Balanceamento central, eventos de combate, controlador de ondas | Concluída e testada na v18 |
-| 2 | Armadura, revisão econômica e raridades | Pendente |
+| 2 | Armadura, revisão econômica e raridades | Concluída e testada na v19; balanceamento inicial |
 | 3 | Três geradores, primeira porta e navegação dinâmica | Pendente |
 | 4 | Cão, rodadas especiais e névoa variável | Pendente |
 | 5 | Instalação separada, carregamento e preservação de estado | Pendente |

@@ -6,12 +6,15 @@ const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 const filename = fs.readFileSync(path.join(root, 'README.md'), 'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
+const releaseTag = 'v' + filename.match(/^game_version(\d+)_/)[1];
 const html = fs.readFileSync(path.join(root, filename), 'utf8');
 assert(!html.includes('createOscillator'), 'only MP3 audio sources');
 assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
 const api = `window.qa = { THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
  BALANCE, waveDirector, gameEvents, startWave, updateWave, damageEnemy, killZombie, applyDamage,
+ armor, scrap, upgradeStations, updateArmorPlate, startArmorPlate, switchWeapon, shoot, startPackAPunch, finishPackAPunch, weaponMultiplier, fireBullet, fireLaser, interact, updateInteractables,
+ get isReloading(){return isReloading}, get currentWeaponIndex(){return currentWeaponIndex}, get mysteryBox(){return mysteryBox},
  getZombieBaseSpeed, zombieTypeConfigs, applyLegDamage, findNavigationPath, loadAudioAsset,
  spawnPowerup, createBonusModel, floatingLabel, bonusNames, powerupTypes, applyPowerup, updatePowerups, powerups, ammoStations, saleBoxes, interactSupply, nearestSupply, ammoPrice, getMysteryPrice, updateSaleBoxes, meleeAttack, updateMelee, createZombie, updateWeapon, renderScene,
  get renderer(){return renderer},
@@ -69,7 +72,7 @@ const server = http.createServer((req, res) => {
             assert.deepEqual(await page.evaluate(() => ({...qa.settings})), {sensitivity: 1.5, volume: 0.3, reducedMotion: true});
             if (process.env.QA_SCREENSHOTS) {
                 fs.mkdirSync(process.env.QA_SCREENSHOTS, {recursive: true});
-                await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `v17-menu-${quality}.png`)});
+                await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `${releaseTag}-menu-${quality}.png`)});
             }
             const pool = await page.evaluate(() => {
                 const q = qa, point = q.camera.position.clone(); point.z -= 4;
@@ -89,7 +92,7 @@ const server = http.createServer((req, res) => {
             await page.waitForFunction(() => document.body.classList.contains('aiming') && qa.camera.fov < 56 && qa.flashlight.intensity < 0.6, null, {timeout:15000});
             assert(await page.evaluate(() => document.body.classList.contains('aiming') && qa.camera.fov < 57 && qa.controls.pointerSpeed < 1));
             assert(await page.evaluate(() => qa.flashlight.intensity < 0.6 && qa.flashlight.position.z === 0), 'ADS flashlight dimming');
-            if (process.env.QA_SCREENSHOTS) await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `v17-ads-${quality}.png`)});
+            if (process.env.QA_SCREENSHOTS) await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `${releaseTag}-ads-${quality}.png`)});
             await page.mouse.up({button: 'right'});
             const scope=await page.evaluate(()=>{
                 const q=qa,w=q.weapons[0];q.camera.remove(w.model);w.configId='sniper';w.model=q.weaponConfigs.sniper.createModel();q.camera.add(w.model);return true;
@@ -97,7 +100,7 @@ const server = http.createServer((req, res) => {
             await page.mouse.down({button:'right'});
             await page.waitForFunction(()=>document.body.classList.contains('scoped')&&qa.camera.fov<22.5);
             assert(await page.evaluate(()=>!qa.weapons[0].model.visible&&!qa.weapons[0].model.userData.optic.visible&&qa.controls.pointerSpeed<0.4));
-            if(process.env.QA_SCREENSHOTS)await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-scope-${quality}.png`)});
+            if(process.env.QA_SCREENSHOTS)await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${releaseTag}-scope-${quality}.png`)});
             await page.mouse.up({button:'right'});
             await page.waitForFunction(()=>!document.body.classList.contains('scoped'));
             const lod=await page.evaluate(()=>{
@@ -224,6 +227,7 @@ const server = http.createServer((req, res) => {
             });
             assert(Object.values(lifecycle).every(Boolean),JSON.stringify(lifecycle));
             console.log(JSON.stringify({quality,lifecycle}));
+            await require('./progression.cjs')(page,assert,quality);
             if (process.env.QA_SCREENSHOTS) {
                 await page.waitForTimeout(150);
                 await page.evaluate(() => {
@@ -232,7 +236,7 @@ const server = http.createServer((req, res) => {
                     q.powerupTypes.forEach((type,i)=>q.spawnPowerup(new T.Vector3((i-2)*2,0,-3),type));
                     document.querySelectorAll('body>div').forEach(e=>e.style.display='none');q.renderScene();
                 });
-                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-drops-${quality}.png`)});
+                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${releaseTag}-drops-${quality}.png`)});
                 await page.evaluate(() => {
                     const q=qa,T=q.THREE,scene=new T.Scene();scene.background=new T.Color(0x081511);
                     scene.add(new T.HemisphereLight(0xffefca,0x224d36,3));
@@ -242,7 +246,7 @@ const server = http.createServer((req, res) => {
                     const camera=new T.OrthographicCamera(-5.6,5.6,3.73,-3.73,0.1,100);camera.position.set(0,0,8);
                     document.querySelectorAll('body>div').forEach(e=>e.style.display='none');q.renderer.render(scene,camera);
                 });
-                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-bonus-${quality}.png`)});
+                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${releaseTag}-bonus-${quality}.png`)});
             }
             if(process.env.QA_SCREENSHOTS){
                 await page.evaluate(()=>{
@@ -251,7 +255,7 @@ const server = http.createServer((req, res) => {
                     for(const [i,sale] of [false,true].entries()){const box=q.buildMysteryCrate(sale);box.position.x=(i-.5)*3.4;box.userData.lid.rotation.x=-0.45;scene.add(box);}
                     const camera=new T.PerspectiveCamera(45,1.5,0.1,150);camera.position.set(4,4,10);camera.lookAt(0,1,0);q.renderer.render(scene,camera);
                 });
-                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-crates-${quality}.png`)});
+                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${releaseTag}-crates-${quality}.png`)});
             }
             console.log(JSON.stringify({quality, pool, attacks, passed: true}));
         }
