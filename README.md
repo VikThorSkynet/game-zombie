@@ -1,13 +1,13 @@
-# Protocolo Sobreviva — v21
+# Protocolo Sobreviva — v22
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version21_23-09-2026_12-47-58.html](game_version21_23-09-2026_12-47-58.html)
+[game_version22_23-09-2026_13-15-17.html](game_version22_23-09-2026_13-15-17.html)
 
-Atualização: **23/09/2026 às 12:47:58**, America/Sao_Paulo (UTC−03:00).
-Versão: **v21 — Protocolo de Contenção, etapa 4/7**.
+Atualização: **23/09/2026 às 13:15:17**, America/Sao_Paulo (UTC−03:00).
+Versão: **v22 — correção de abertura por dois cliques; etapa 4/7 preservada**.
 Branch: `codex/protocolo-contencao`.
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -45,13 +45,15 @@ modelos simplificados à distância, detalhe restaurado de perto ou pela luneta.
 
 ## Executar
 
-Mantenha o HTML, `game-systems.mjs` e os MP3 na mesma pasta. Sirva a raiz por HTTP:
+Abra o HTML atual com **dois cliques**. Mantenha os MP3 na mesma pasta.
+As regras já estão incorporadas ao HTML; `game-systems.mjs` é a fonte de desenvolvimento.
+Também é possível servir a raiz por HTTP:
 
 ```sh
 python -m http.server 8000
 ```
 
-Abra [o jogo](http://localhost:8000/game_version21_23-09-2026_12-47-58.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version22_23-09-2026_13-15-17.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -191,6 +193,11 @@ Os modelos são procedurais próprios; nenhum asset do jogo de referência foi i
 
 ## Verificação
 
+Após editar `game-systems.mjs`, execute `node scripts/build-game.mjs` para atualizar
+as regras incorporadas. `node scripts/build-game.mjs --check` verifica sincronização.
+Não edite o bloco gerado diretamente. `node tests/boot.cjs` verifica abertura do HTML
+original por `file://` e HTTP, sem instrumentação, e falha de carregamento do motor.
+
 Com Node.js, execute `node --test tests/systems.test.mjs` para ondas, armadura e progressão.
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
@@ -206,7 +213,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_12-47-58.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_13-15-17.md)
+
+[Histórico v21](docs/MEMORIA_PERSISTENTE_23-09-2026_12-47-58.md)
 
 [Histórico v20](docs/MEMORIA_PERSISTENTE_23-09-2026_12-32-09.md)
 
