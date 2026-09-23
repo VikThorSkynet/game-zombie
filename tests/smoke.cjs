@@ -11,6 +11,7 @@ assert(!html.includes('createOscillator'), 'only MP3 audio sources');
 assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
 const api = `window.qa = { THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
+ BALANCE, waveDirector, gameEvents, startWave, updateWave, damageEnemy, killZombie, applyDamage,
  getZombieBaseSpeed, zombieTypeConfigs, applyLegDamage, findNavigationPath, loadAudioAsset,
  spawnPowerup, createBonusModel, floatingLabel, bonusNames, powerupTypes, applyPowerup, updatePowerups, powerups, ammoStations, saleBoxes, interactSupply, nearestSupply, ammoPrice, getMysteryPrice, updateSaleBoxes, meleeAttack, updateMelee, createZombie, updateWeapon, renderScene,
  get renderer(){return renderer},
@@ -24,6 +25,9 @@ const server = http.createServer((req, res) => {
     if (name.endsWith('.html')) {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.end(html.replace('        init();', api + '\n        init();'));
+    } else if (name === 'game-systems.mjs') {
+        res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+        fs.createReadStream(path.join(root, name)).pipe(res);
     } else if (name.endsWith('.mp3') && fs.existsSync(path.join(root, name))) {
         res.setHeader('Content-Type', 'audio/mpeg');
         fs.createReadStream(path.join(root, name)).pipe(res);
@@ -187,6 +191,39 @@ const server = http.createServer((req, res) => {
             });
             assert(Object.values(bonuses).every(Boolean),JSON.stringify(bonuses));
             console.log(JSON.stringify({quality,bonuses}));
+            const lifecycle = await page.evaluate(() => {
+                const q=qa,T=q.THREE,kills=[],hits=[];
+                const offKill=q.gameEvents.on('enemyKilled',e=>kills.push(e));
+                const offHit=q.gameEvents.on('enemyDamaged',e=>hits.push(e));
+                q.controls.isLocked=true;q.camera.position.set(0,1.8,0);q.camera.rotation.set(0,0,0);
+                q.createZombie(new T.Vector3(0,0,-1.5),q.zombieTypeConfigs.normal);
+                const target=q.zombies.at(-1);target.userData.health=100;
+                const before=q.score;q.meleeAttack();const paid=q.score;
+                q.killZombie(target,{cause:'melee'});
+                const once=kills.length===1&&hits.length===1&&hits[0].amount===100&&kills[0].cause==='melee'&&paid>before&&q.score===paid;
+                offKill();offHit();q.resetGame();q.controls.isLocked=true;
+                q.startWave(20);
+                for(let i=0;i<100;i++)q.updateWave(1);
+                const cap=q.zombies.length===q.waveDirector.maxActive&&q.waveDirector.spawned===q.zombies.length;
+                const count=q.waveDirector.spawned;q.updateWave(100);
+                const noBurst=q.waveDirector.spawned===count;
+                q.resetGame();q.controls.isLocked=true;
+                // Exhaust a real wave through the game adapter, then kill its remaining enemies.
+                for(let i=0;i<100&&q.waveDirector.spawned<q.waveDirector.total;i++)q.updateWave(1);
+                [...q.zombies].forEach(z=>q.killZombie(z,{awardScore:false,allowPowerup:false}));
+                q.updateWave(0);const countdown=q.waveDirector.phase==='intermission'&&q.waveDirector.remaining===10&&!document.getElementById('wave-break').hidden;
+                q.controls.isLocked=false;q.updateWave(20);
+                const paused=q.waveDirector.remaining===10;
+                document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyN'}));
+                const blockedSkip=q.waveDirector.remaining===10;
+                q.controls.isLocked=true;
+                document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyN'}));q.updateWave(0);
+                const skipped=q.waveDirector.number===2&&q.waveDirector.phase==='combat';
+                q.controls.isLocked=false;q.resetGame();
+                return {once,cap,noBurst,countdown,paused,blockedSkip,skipped};
+            });
+            assert(Object.values(lifecycle).every(Boolean),JSON.stringify(lifecycle));
+            console.log(JSON.stringify({quality,lifecycle}));
             if (process.env.QA_SCREENSHOTS) {
                 await page.waitForTimeout(150);
                 await page.evaluate(() => {

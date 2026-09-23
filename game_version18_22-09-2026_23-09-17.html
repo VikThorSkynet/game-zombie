@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v16 • 22/09/2026 13:22:44</title>
+    <title>Protocolo Sobreviva — v18 • 22/09/2026 23:09:17</title>
 
     <style>
         * {
@@ -776,6 +776,8 @@ button:focus-visible,select:focus-visible {outline:3px solid #fff;outline-offset
 #weapon-ui.low-ammo #ammo-hint {color:#ffcd6b}
 body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui,body.menu-open #mission-ui,body.menu-open #weapon-ui {visibility:hidden}
 #performance-label {position:fixed;bottom:14px;left:18px;color:#89a5b6;font:11px monospace;z-index:21;pointer-events:none}
+#wave-break {position:fixed;top:22%;left:50%;transform:translateX(-50%);padding:10px 16px;background:#06121de8;border:1px solid #6fd9dc;color:#dcf8ff;font:13px monospace;z-index:15;pointer-events:none;text-align:center}
+#wave-break[hidden],body.menu-open #wave-break {display:none}
 #perk-badges {display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 #ads-dot {display:none;position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#ff4545;box-shadow:0 0 5px #f22;z-index:12;pointer-events:none}
 body.aiming #ads-dot {display:block}
@@ -815,6 +817,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
 <body class="menu-open">
 <div id="sniper-scope" aria-hidden="true"></div>
+<div id="wave-break" hidden aria-live="polite"></div>
     <div id="performance-label">CARREGANDO RECURSOS</div>
     <div id="ui">
         <div class="resource-card health-card" id="health-container">
@@ -903,6 +906,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
         import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
         import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+        import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed } from './game-systems.mjs';
 
         let scene, camera, renderer, composer, bloomPass, controls, clock;
         let muzzleFlashTexture;
@@ -1279,11 +1283,8 @@ body.menu-open #combat-feedback {visibility:hidden}
         let score = 0;
         let wave = 1;
 
-        let zombiesToSpawn = 0;
-        let zombiesSpawned = 0;
-        let spawnTimer = 0;
-        let waitingNextWave = false;
-        let waveDelay = 0;
+        const gameEvents = new GameEvents();
+        const waveDirector = new WaveDirector(lowQuality ? BALANCE.waves.maxActiveLow : BALANCE.waves.maxActiveHigh);
 
         let gameOver = false;
         let lastShotTime = 0;
@@ -1298,7 +1299,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         let hitmarkerKillAmount = 0;
         let screenShakeAmount = 0;
 
-        const mysteryBoxCost = 950;
+        const mysteryBoxCost = BALANCE.economy.mystery;
         let mysteryBox = null;
         let mysteryBoxState = "idle"; // "idle", "rolling", "waiting_pickup"
         let mysteryBoxTimer = 0;
@@ -1308,13 +1309,13 @@ body.menu-open #combat-feedback {visibility:hidden}
         const mysteryBoxWaitDuration = 8.0;
 
         // --- Pack-a-Punch ---
-        const papCost = 5000;
+        const papCost = BALANCE.economy.packAPunch;
         let papMachine = null;
         let papState = "idle"; // "idle", "upgrading"
         let papTimer = 0;
         const papUpgradeDuration = 3.5;
-        const papDamageMultiplier = 2.5;
-        const papMagMultiplier = 1.5;
+        const papDamageMultiplier = BALANCE.upgrades.damage;
+        const papMagMultiplier = BALANCE.upgrades.magazine;
         const papNames = {
             pistol: "Mustang",
             shotgun: "Hades",
@@ -3977,7 +3978,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
 
         function getZombieBaseSpeed(typeConfig, round, variation = Math.random()) {
-            return Math.max(typeConfig.minSpeed || 1.2, 1.8 + Math.min(round, 15) * 0.18 + variation * 0.4 + typeConfig.speedBonus);
+            return enemySpeed(round, typeConfig, variation);
         }
 
         function applyLegDamage(zombie, damage) {
@@ -4160,7 +4161,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             zombie.scale.setScalar(typeConfig.scale);
             zombie.position.copy(position);
 
-            const maxHealth = Math.floor((100 + wave * 12) * typeConfig.healthMultiplier);
+            const maxHealth = enemyHealth(wave, typeConfig.healthMultiplier);
             const hitMeshes = [torso, pelvis, head, legL, legR, armL, armR];
             const healthBar = createHealthBar();
 
@@ -4173,7 +4174,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                 maxHealth,
                 baseSpeed: baseSpeed,
                 speed: baseSpeed,
-                attackDamage: (8 + wave * 0.7) * typeConfig.damageMultiplier,
+                attackDamage: enemyDamage(wave, typeConfig.damageMultiplier),
                 attackInterval: typeConfig.attackInterval,
                 attackCooldown: Math.random() * 0.3,
                 swing: Math.random() * Math.PI * 2,
@@ -4652,11 +4653,9 @@ body.menu-open #combat-feedback {visibility:hidden}
 
         function startWave(number) {
             wave = number;
-            zombiesToSpawn = 4 + wave * 3;
-            zombiesSpawned = 0;
-            spawnTimer = 0;
-            waitingNextWave = false;
-            waveDelay = 0;
+            waveDirector.start(number);
+            gameEvents.emit('waveStarted', { wave, total: waveDirector.total });
+            updateWaveHud();
             showWaveMessage(`Onda ${wave}`);
             if (audioContext) playGameSound("wave");
 
@@ -4681,27 +4680,26 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function updateWave(delta) {
-            if (!controls.isLocked || gameOver) return;
-
-            if (zombiesSpawned < zombiesToSpawn) {
-                spawnTimer -= delta;
-
-                if (spawnTimer <= 0) {
-                    createZombie(getSpawnPosition(), getZombieTypeConfig());
-                    zombiesSpawned++;
-                    spawnTimer = Math.max(0.25, 0.95 - wave * 0.05);
-                }
-            } else if (zombies.length === 0 && !waitingNextWave) {
-                waitingNextWave = true;
-                waveDelay = 2.2;
+            const action = waveDirector.step(delta, zombies.length, controls.isLocked && !gameOver);
+            if (action === 'spawn') {
+                const position = getSpawnPosition();
+                const safe = position && position.distanceTo(camera.position) >= BALANCE.enemies.minSpawnDistance
+                    && !isPositionBlocked(position.x, position.z, zombieRadius + 0.25);
+                if (safe) createZombie(position, getZombieTypeConfig());
+                waveDirector.acknowledgeSpawn(Boolean(safe));
+            } else if (action === 'completed') {
+                gameEvents.emit('waveCompleted', { wave });
+            } else if (action === 'next') {
+                startWave(wave + 1);
             }
+            updateWaveHud();
+        }
 
-            if (waitingNextWave) {
-                waveDelay -= delta;
-                if (waveDelay <= 0) {
-                    startWave(wave + 1);
-                }
-            }
+        function updateWaveHud() {
+            const hud = document.getElementById('wave-break');
+            hud.hidden = waveDirector.phase !== 'intermission' || gameOver;
+            const text = `Próxima onda em ${Math.ceil(waveDirector.remaining)}s · [N] Antecipar`;
+            if (hud.textContent !== text) hud.textContent = text;
         }
 
         function updateAmmoPickups(delta) {
@@ -4776,8 +4774,8 @@ body.menu-open #combat-feedback {visibility:hidden}
             return batchModelDetails(g);
         }
 
-        function getMysteryPrice() { return fireSaleTimer > 0 ? 10 : mysteryBoxCost; }
-        function ammoPrice() { const w=playerWeapons[currentWeaponIndex]; return w.configId==='ray_gun' ? (w.packapunched?3000:1500) : w.packapunched ? 1000 : 250; }
+        function getMysteryPrice() { return fireSaleTimer > 0 ? BALANCE.economy.sale : mysteryBoxCost; }
+        function ammoPrice() { const w=playerWeapons[currentWeaponIndex],b=BALANCE.economy; return w.configId==='ray_gun' ? (w.packapunched?b.upgradedRayAmmo:b.rayAmmo) : w.packapunched ? b.upgradedAmmo : b.ammo; }
         function refillWeapon(w) {
             const mag = Math.ceil(weaponConfigs[w.configId].magSize * (w.packapunched ? papMagMultiplier : 1));
             w.ammoInMag=mag; w.reserveAmmo=Math.max(w.reserveAmmo,mag*4);
@@ -4894,23 +4892,24 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
         function meleeAttack() {
             if(!controls.isLocked || gameOver || meleeTimer>0 || isReloading || isSwitchingWeapon || papState==='upgrading')return;
-            meleeTimer=0.55;knifeModel.visible=true;updateMelee(0);
+            meleeTimer=BALANCE.melee.duration;knifeModel.visible=true;updateMelee(0);
             const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
-            let target=null, closest=2.5;
+            let target=null, closest=BALANCE.melee.range;
             for(const z of zombies){const dir=z.position.clone().sub(camera.position);dir.y=0;const d=dir.length();
-                if(d<closest && dir.normalize().dot(forward)>0.72 && hasClearNavigationLine(camera.position,z.position,0.1)){target=z;closest=d;}}
+                if(d<closest && dir.normalize().dot(forward)>BALANCE.melee.coneDot && hasClearNavigationLine(camera.position,z.position,0.1)){target=z;closest=d;}}
             playAudioAsset('melee', {volume:0.8});
             if(target){
-                target.userData.meleeStagger=0.22;
-                moveObjectWithCollisions(target,forward.x*0.3,forward.z*0.3,target.userData.radius||0.65);
+                target.userData.meleeStagger=BALANCE.melee.stagger;
+                moveObjectWithCollisions(target,forward.x*BALANCE.melee.knockback,forward.z*BALANCE.melee.knockback,target.userData.radius||0.65);
                 if(!settings.reducedMotion)screenShakeAmount=Math.max(screenShakeAmount,0.28);
-                combatFeedback.textContent=instaKillTimer>0?'FACADA · MORTE INSTANTÂNEA':'FACADA · −150';combatFeedbackTimer=0.8;
-                target.userData.health-=instaKillTimer>0?999999:150;const point=target.position.clone();point.y+=1.3;createZombieHitEffect(point);showHitmarker(target.userData.health<=0);updateZombieHealthBar(target);if(target.userData.health<=0)killZombie(target);}
+                combatFeedback.textContent=instaKillTimer>0?'FACADA · MORTE INSTANTÂNEA':`FACADA · −${BALANCE.melee.damage}`;combatFeedbackTimer=0.8;
+                damageEnemy(target, instaKillTimer>0?999999:BALANCE.melee.damage, 'melee');
+                const point=target.position.clone();point.y+=1.3;createZombieHitEffect(point);showHitmarker(target.userData.health<=0);updateZombieHealthBar(target);if(target.userData.health<=0)killZombie(target,{cause:'melee'});}
         }
         function updateMelee(delta) {
             if(meleeTimer<=0)return;
             meleeTimer=Math.max(0,meleeTimer-delta);
-            const swing=Math.pow(meleeTimer/0.55,0.45);
+            const swing=Math.pow(meleeTimer/BALANCE.melee.duration,0.45);
             knifeModel.position.set(0.35-swing*0.5,-0.3+swing*0.13,-0.4-swing*0.4);
             knifeModel.rotation.z=-swing*1.2;
             const model=playerWeapons[currentWeaponIndex]?.model;if(model)model.visible=meleeTimer<=0;
@@ -4958,11 +4957,11 @@ body.menu-open #combat-feedback {visibility:hidden}
             }else if(type==='nuke'){
                 playAudioAsset('nuke',{volume:0.62});
                 const victims=[...zombies];runStats.kills+=victims.length;
-                victims.forEach(z=>killZombie(z,{awardScore:false,allowPowerup:false}));
-                score+=400*(doublePointsTimer>0?2:1);
-            }else if(type==='insta_kill')instaKillTimer=30;
-            else if(type==='double_points')doublePointsTimer=30;
-            else if(type==='fire_sale'){fireSaleTimer=30;updateSaleBoxes(0);}
+                victims.forEach(z=>killZombie(z,{awardScore:false,allowPowerup:false,cause:'nuke'}));
+                score+=BALANCE.economy.nuke*(doublePointsTimer>0?2:1);
+            }else if(type==='insta_kill')instaKillTimer=BALANCE.drops.duration;
+            else if(type==='double_points')doublePointsTimer=BALANCE.drops.duration;
+            else if(type==='fire_sale'){fireSaleTimer=BALANCE.drops.duration;updateSaleBoxes(0);}
             showWaveMessage(bonusNames[type] || 'BÔNUS');updateUI();
         }
 
@@ -5510,6 +5509,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
             pw.ammoInMag--;
             runStats.shots++;
+            gameEvents.emit('weaponFired', { wave, weapon: cfg.id });
             weaponRecoil = Math.min(0.22, weaponRecoil + (cfg.id === "shotgun" || cfg.id === "sniper" || cfg.id === "ray_gun" ? 0.18 : 0.075));
 
             if (cfg.id === "shotgun" || cfg.id === "sniper" || cfg.id === "ray_gun") {
@@ -5592,7 +5592,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                     if (playerWeapons[currentWeaponIndex].packapunched) damage *= papDamageMultiplier;
                     if (instaKillTimer > 0) damage = 999999;
 
-                    zombie.userData.health -= damage;
+                    damageEnemy(zombie, damage, 'bullet', isHead);
                     createZombieHitEffect(hit.point, isHead);
                     if (zombie.userData.health > 0) playZombieVoice(zombie, "hurt");
 
@@ -5602,7 +5602,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                     updateZombieHealthBar(zombie);
 
                     if (zombie.userData.health <= 0) {
-                        killZombie(zombie);
+                        killZombie(zombie, { cause: 'bullet', headshot: isHead });
                     }
 
                 penetrationsLeft--;
@@ -5660,7 +5660,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                     if (playerWeapons[currentWeaponIndex].packapunched) damage *= papDamageMultiplier;
                     if (instaKillTimer > 0) damage = 999999;
 
-                    zombie.userData.health -= damage;
+                    damageEnemy(zombie, damage, 'laser', isHead);
                     createZombieHitEffect(hit.point, isHead, 0x16ffd0);
                     if (zombie.userData.health > 0) playZombieVoice(zombie, "hurt");
 
@@ -5670,7 +5670,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                     updateZombieHealthBar(zombie);
 
                     if (zombie.userData.health <= 0) {
-                        killZombie(zombie);
+                        killZombie(zombie, { cause: 'laser', headshot: isHead });
                     }
 
                 penetrationsLeft--;
@@ -5802,21 +5802,30 @@ body.menu-open #combat-feedback {visibility:hidden}
                 if (distance >= explosionRadius) return;
 
                 const damage = zombieSplashDamage * (1 - distance / explosionRadius);
-                target.userData.health -= damage;
+                damageEnemy(target, damage, 'explosion');
                 createZombieHitEffect(target.position.clone().add(new THREE.Vector3(0, 1.25, 0)), false, 0xff8a24);
                 updateZombieHealthBar(target);
                 if (target.userData.health <= 0) {
-                    killZombie(target, { awardScore: false, allowPowerup: false });
+                    killZombie(target, { awardScore: false, allowPowerup: false, cause: 'explosion' });
                 }
             });
 
-            killZombie(zombie, { awardScore: false, allowPowerup: false });
+            killZombie(zombie, { awardScore: false, allowPowerup: false, cause: 'explosion' });
         }
 
-        function killZombie(zombie, { awardScore = true, allowPowerup = true } = {}) {
-            playZombieVoice(zombie, "death");
+        function damageEnemy(zombie, amount, cause, headshot = false) {
+            if (!zombies.includes(zombie) || zombie.userData.health <= 0 || !Number.isFinite(amount) || amount <= 0) return;
+            const dealt = Math.min(zombie.userData.health, amount);
+            zombie.userData.health -= amount;
+            gameEvents.emit('enemyDamaged', { wave, enemyId: zombie.id, enemyType: zombie.userData.typeName,
+                amount: dealt, cause, headshot });
+        }
+
+        function killZombie(zombie, { awardScore = true, allowPowerup = true, cause = 'unknown', headshot = false } = {}) {
             const idx = zombies.indexOf(zombie);
-            if (idx !== -1) zombies.splice(idx, 1);
+            if (idx === -1) return; // A kill, its drops and its event are paid exactly once.
+            zombies.splice(idx, 1);
+            playZombieVoice(zombie, "death");
 
             zombie.userData.hitMeshes.forEach(mesh => {
                 const i = zombieHitMeshes.indexOf(mesh);
@@ -5830,21 +5839,27 @@ body.menu-open #combat-feedback {visibility:hidden}
             disposeObject3D(zombie);
             disposeObject3D(zombie.userData.healthBarGroup);
 
+            let reward = 0;
             if (awardScore) {
                 runStats.kills++;
-                score += (doublePointsTimer > 0 ? (zombie.userData.scoreValue ?? 10) * 2 : (zombie.userData.scoreValue ?? 10));
+                reward = (zombie.userData.scoreValue ?? BALANCE.economy.fallbackKill) * (doublePointsTimer > 0 ? 2 : 1);
+                score += reward;
             }
+            gameEvents.emit('enemyKilled', { wave, enemyId: zombie.id, enemyType: zombie.userData.typeName,
+                cause, headshot, reward });
             updateUI();
 
-            if (allowPowerup && Math.random() < 0.09) {
+            if (allowPowerup && Math.random() < BALANCE.drops.chance) {
                 spawnPowerup(zombie.position);
             }
         }
 
         function applyDamage(amount) {
-            if (gameOver) return;
+            if (gameOver || !Number.isFinite(amount) || amount <= 0) return;
 
+            const lostHealth = Math.min(health, amount);
             health -= amount;
+            gameEvents.emit('playerDamaged', { wave, amount, lostHealth });
             damageFlashAmount = Math.min(1.45, damageFlashAmount + 0.55 + amount * 0.02);
             damageTextAmount = 1;
             screenShakeAmount = Math.min(1, screenShakeAmount + 0.35 + amount * 0.02);
@@ -6660,6 +6675,8 @@ body.menu-open #combat-feedback {visibility:hidden}
 
         function endGame() {
             gameOver = true;
+            gameEvents.emit('gameEnded', { wave, kills: runStats.kills, seconds: runStats.seconds });
+            updateWaveHud();
             damageFlashAmount = 1;
             playAudioAsset("gameOver", { volume: 0.58 });
             controls.unlock();
@@ -6764,11 +6781,8 @@ body.menu-open #combat-feedback {visibility:hidden}
             score = 0;
             wave = 1;
 
-            zombiesToSpawn = 0;
-            zombiesSpawned = 0;
-            spawnTimer = 0;
-            waitingNextWave = false;
-            waveDelay = 0;
+            waveDirector.reset();
+            gameEvents.emit('gameReset');
 
             playerWeapons.forEach(pw => {
                 if (pw.model) {
@@ -6841,7 +6855,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
         function onKeyDown(event) {
             if (!controls.isLocked && event.code !== 'Escape') return;
-            if (event.repeat && ['KeyV', 'KeyE'].includes(event.code)) return;
+            if (event.repeat && ['KeyV', 'KeyE', 'KeyN'].includes(event.code)) return;
             if (controls.isLocked && ["ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight"].includes(event.code)) {
                 event.preventDefault();
             }
@@ -6857,6 +6871,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                 case "Digit2": switchWeapon(1); break;
                 case "KeyE": interact(); break;
                 case "KeyV": meleeAttack(); break;
+                case "KeyN": if (!gameOver) waveDirector.skipIntermission(); break;
                 case "ControlLeft":
                 case "ControlRight":
                 case "ShiftLeft":
