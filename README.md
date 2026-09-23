@@ -1,14 +1,21 @@
-# Protocolo Sobreviva — v17
+# Protocolo Sobreviva — v18
 
-FPS de zumbis em um único HTML com Three.js, modelos procedurais e MP3 locais.
+FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version17_22-09-2026_22-34-52.html](game_version17_22-09-2026_22-34-52.html)
+[game_version18_22-09-2026_23-09-17.html](game_version18_22-09-2026_23-09-17.html)
 
-Atualização: **22/09/2026 às 22:34:52**, America/Sao_Paulo (UTC−03:00).
-Versão: **v17 — luneta, áudio MP3, facada e LOD**.
-Branch: `codex/bonus-facada-iluminacao-v16`.
+Atualização: **22/09/2026 às 23:09:17**, America/Sao_Paulo (UTC−03:00).
+Versão: **v18 — Protocolo de Contenção, etapa 1/7**.
+Branch: `codex/protocolo-contencao`.
+
+Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
+Intervalo de dez segundos entre ondas; **N** antecipa a próxima. Pausar congela o intervalo.
+Até 24 inimigos simultâneos em Desempenho/automática baixa e 32 nos demais modos,
+preservando o total de inimigos de cada onda. Economia e atributos mantêm os valores
+da v17 nesta etapa; armadura e raridade pertencem à próxima entrega.
+O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 
 v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
 com formas próprias, dourado e halo verde; facada com **V** e depósitos de munição
@@ -36,13 +43,13 @@ modelos simplificados à distância, detalhe restaurado de perto ou pela luneta.
 
 ## Executar
 
-Mantenha o HTML e os MP3 na mesma pasta. Sirva a raiz por HTTP:
+Mantenha o HTML, `game-systems.mjs` e os MP3 na mesma pasta. Sirva a raiz por HTTP:
 
 ```sh
 python -m http.server 8000
 ```
 
-Abra [o jogo](http://localhost:8000/game_version17_22-09-2026_22-34-52.html).
+Abra [o jogo](http://localhost:8000/game_version18_22-09-2026_23-09-17.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -52,7 +59,7 @@ O Three.js 0.160.0 é carregado por CDN e requer internet.
 Trocar a qualidade recarrega a página. O seletor aparece antes de iniciar a partida.
 WASD: mover; mouse esquerdo: atirar; segurar botão direito: red dot ou luneta na sniper;
 Ctrl ou Shift: correr; R: recarregar; V: facada;
-E: interagir; 1/2: trocar arma; Esc: pausar.
+E: interagir; 1/2: trocar arma; N: antecipar a próxima onda durante o intervalo; Esc: pausar.
 A interface se adapta a telas menores; o jogo continua exigindo teclado e mouse.
 
 Para inspeção visual, use `?preview&quality=low` ou `?preview&quality=high`.
@@ -97,7 +104,8 @@ Os modelos são procedurais próprios; nenhum asset do jogo de referência foi i
 
 ## Verificação
 
-Com Node.js, Playwright e seu Chromium instalados, execute `node tests/smoke.cjs`.
+Com Node.js, execute `node --test tests/systems.test.mjs` para regras e ciclos de ondas.
+Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
 `PLAYWRIGHT_MODULE` permite indicar uma instalação existente do Playwright;
 `CHROME_PATH` permite usar um Chrome instalado. `QA_SCREENSHOTS` define uma pasta
@@ -105,7 +113,9 @@ opcional para capturas. A instrumentação existe apenas na resposta HTTP do tes
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_22-09-2026_22-34-52.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_22-09-2026_23-09-17.md)
+
+[Histórico v17](docs/MEMORIA_PERSISTENTE_22-09-2026_22-34-52.md)
 
 [Histórico v14](docs/MEMORIA_PERSISTENTE_21-09-2026_22-32-22.md)
 
