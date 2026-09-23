@@ -779,6 +779,10 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 #perk-badges {display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 #ads-dot {display:none;position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#ff4545;box-shadow:0 0 5px #f22;z-index:12;pointer-events:none}
 body.aiming #ads-dot {display:block}
+#sniper-scope {display:none;position:fixed;left:50%;top:50%;width:80vmin;height:80vmin;transform:translate(-50%,-50%);border-radius:50%;border:10px solid #11181a;box-shadow:0 0 0 150vmax #020405,inset 0 0 35px #000;pointer-events:none;z-index:4;background:linear-gradient(90deg,transparent calc(50% - 1px),#101b19 50%,transparent calc(50% + 1px)),linear-gradient(transparent calc(50% - 1px),#101b19 50%,transparent calc(50% + 1px))}
+#sniper-scope::after {content:'4×  ·  LONGINUS';position:absolute;bottom:14%;left:0;right:0;text-align:center;color:#a8beb3;font:12px monospace;letter-spacing:3px}
+body.scoped #sniper-scope {display:block}
+body.scoped #ads-dot {display:none}
 body.aiming #crosshair {visibility:hidden}
 .settings-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;padding:16px;background:#09141dc9;border:1px solid #ffffff18;border-radius:8px}
 .settings-grid label {display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:#b9ced9;font-size:12px}
@@ -810,6 +814,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 </head>
 
 <body class="menu-open">
+<div id="sniper-scope" aria-hidden="true"></div>
     <div id="performance-label">CARREGANDO RECURSOS</div>
     <div id="ui">
         <div class="resource-card health-card" id="health-container">
@@ -963,7 +968,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function applySettings() {
-            if (controls) controls.pointerSpeed = settings.sensitivity * THREE.MathUtils.lerp(1, 0.65, aimBlend);
+            if (controls) controls.pointerSpeed = settings.sensitivity * THREE.MathUtils.lerp(1, playerWeapons[currentWeaponIndex]?.configId === 'sniper' ? 0.22 : 0.65, aimBlend);
             if (audioMasterGain && audioContext) audioMasterGain.gain.setTargetAtTime(settings.volume, audioContext.currentTime, 0.03);
             try { localStorage.setItem(settingsKey, JSON.stringify(settings)); } catch { /* Session settings still work. */ }
         }
@@ -1120,6 +1125,8 @@ body.menu-open #combat-feedback {visibility:hidden}
         let fireSaleTimer = 0;
         let flashlight, knifeModel;
         let meleeTimer = 0;
+        const worldLODs = [];
+        const lodPosition = new THREE.Vector3();
         const ammoStations = [], saleBoxes = [];
         const bonusLabelTextures = new Map();
         const powerupTypes = ['max_ammo', 'nuke', 'insta_kill', 'double_points', 'fire_sale'];
@@ -1129,11 +1136,9 @@ body.menu-open #combat-feedback {visibility:hidden}
         let audioMasterGain = null;
         let audioSfxGain = null;
         let audioZombieGain = null;
-        let sharedNoiseBuffer = null;
         let activeZombieVoices = 0;
         let lastPlayerHurtSoundTime = -Infinity;
         const maxZombieVoices = 6;
-        const zombieVoicePitchByType = { Normal: 76, Corredor: 105, Bruto: 53, Atirador: 125, Detonador: 88 };
         const audioForwardScratch = new THREE.Vector3();
         const audioAssetPaths = Object.freeze({
             pistol: "pistol-sound-effect_zejYI9w.mp3",
@@ -1468,7 +1473,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x050811);
-            scene.fog = new THREE.FogExp2(0x07101a, 0.0135);
+            scene.fog = new THREE.FogExp2(0x101c25, 0.006);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
             camera.position.set(0, playerEyeHeight, 0);
@@ -2142,7 +2147,10 @@ body.menu-open #combat-feedback {visibility:hidden}
                 const crack=p.box(0.012,0.44,0.015,0.08+(i-2)*0.09,1.39,0.63,steel);
                 crack.rotation.set(-.71,0,(i-2)*.44);
             }
-            group.add(batchModelDetails(shell));
+            const simple=new THREE.Group(),sp=propParts(simple);
+            sp.box(2.08,0.65,4,0,0.65,0,paint);sp.box(1.69,0.62,2,0,1.27,-0.1,glass);
+            for(const x of [-1.04,1.04])for(const z of [-1.28,1.24])sp.box(0.24,0.65,0.65,x,0.34,z,rubber);
+            addWorldLOD(group,batchModelDetails(shell),batchModelDetails(simple),42);
             if(index%3===0){
                 const beam=new THREE.SpotLight(0xffd5a0,15,24,Math.PI/7,.65,1.7);
                 beam.position.set(0,.88,2.1);const target=new THREE.Object3D();target.position.set(0,.2,15);beam.target=target;
@@ -2241,7 +2249,9 @@ body.menu-open #combat-feedback {visibility:hidden}
                     batchModelDetails(bGroup);
 
                     bGroup.position.set(x, 0, z);
-                    scene.add(bGroup);
+                    const buildingRoot=new THREE.Group();buildingRoot.position.copy(bGroup.position);bGroup.position.set(0,0,0);
+                    const simpleBuilding=new THREE.Group();simpleBuilding.add(body.clone());
+                    addWorldLOD(buildingRoot,bGroup,simpleBuilding,65);scene.add(buildingRoot);
 
                     // Colisão
                     const collider = new THREE.Mesh(
@@ -2772,6 +2782,12 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         // Static decorative meshes are batched per material, separately from hitboxes.
+        function addWorldLOD(parent, detailed, simplified, distance) {
+            const lod=new THREE.LOD();lod.autoUpdate=false;
+            lod.addLevel(detailed,0);lod.addLevel(simplified,distance,0.12);
+            parent.add(lod);worldLODs.push(lod);return lod;
+        }
+
         function batchModelDetails(group) {
             group.updateMatrixWorld(true);
             const buckets = new Map();
@@ -2881,9 +2897,8 @@ body.menu-open #combat-feedback {visibility:hidden}
             group.add(batchModelDetails(decor));
         }
 
-        function createMysteryBox() {
-            mysteryBox = new THREE.Group();
-            const location = interactableLocations.mysteryBox;
+        function buildMysteryCrate(onSale = false) {
+            const mysteryBox = new THREE.Group();
 
             const boxMat = new THREE.MeshStandardMaterial({
                 color: 0x4a2a12,
@@ -2936,6 +2951,16 @@ body.menu-open #combat-feedback {visibility:hidden}
             light.position.set(0, 1.5, 0);
 
             mysteryBox.add(boxMesh, accentMesh, beacon, light);
+            mysteryBox.userData.body=boxMesh;
+            if(onSale){
+                beacon.material=beacon.material.clone();beacon.material.color.set(0xffc354);light.color.set(0xffc354);
+                const tag=floatingLabel('ON SALE · 10','#ffdf78');tag.position.set(0,2.5,0);mysteryBox.add(tag);
+            }
+            return mysteryBox;
+        }
+        function createMysteryBox() {
+            mysteryBox=buildMysteryCrate();
+            const location=interactableLocations.mysteryBox;
             mysteryBox.position.set(location.x, 0, location.z);
             faceInteractableTowardStreet(mysteryBox, location);
             scene.add(mysteryBox);
@@ -2947,7 +2972,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                 minZ: location.z - 1.7,
                 maxZ: location.z + 1.7
             });
-            bulletBlockers.push(boxMesh);
+            bulletBlockers.push(mysteryBox.userData.body);
         }
 
         function createPerkMachines() {
@@ -3310,82 +3335,9 @@ body.menu-open #combat-feedback {visibility:hidden}
             });
         }
 
-        function playPackAPunchSound(position = null) {
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-            const now = ctx.currentTime;
+        function playPackAPunchSound() { /* No dedicated MP3: intentionally silent. */ }
 
-            // Rising energy charge
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(100, now);
-            osc.frequency.exponentialRampToValueAtTime(800, now + 2.0);
-            osc.frequency.exponentialRampToValueAtTime(1200, now + 3.0);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.15, now + 0.5);
-            gain.gain.setValueAtTime(0.15, now + 2.5);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
-            osc.connect(gain);
-            connectAudioOutput(ctx, gain, position, "sfx", 55);
-            osc.start(now);
-            osc.stop(now + 3.6);
-
-            // Electric crackling
-            const noiseBuffer = getSharedNoiseBuffer(ctx);
-            const noise = ctx.createBufferSource();
-            const filter = ctx.createBiquadFilter();
-            const noiseGain = ctx.createGain();
-            noise.buffer = noiseBuffer;
-            noise.loop = true;
-            filter.type = "bandpass";
-            filter.frequency.value = 2000;
-            filter.Q.value = 2;
-            noiseGain.gain.setValueAtTime(0.0001, now);
-            noiseGain.gain.exponentialRampToValueAtTime(0.08, now + 0.3);
-            noiseGain.gain.setValueAtTime(0.08, now + 2.8);
-            noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
-            noise.connect(filter);
-            filter.connect(noiseGain);
-            connectAudioOutput(ctx, noiseGain, position, "sfx", 55);
-            noise.start(now);
-            noise.stop(now + 3.6);
-        }
-
-        function playPackAPunchFinishSound(position = null) {
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-            const now = ctx.currentTime;
-
-            // Triumphant chord
-            [523.25, 659.25, 783.99].forEach((freq, i) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = "sine";
-                osc.frequency.setValueAtTime(freq, now);
-                gain.gain.setValueAtTime(0.0001, now);
-                gain.gain.exponentialRampToValueAtTime(0.2, now + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.5);
-                osc.connect(gain);
-                connectAudioOutput(ctx, gain, position, "sfx", 55);
-                osc.start(now + i * 0.08);
-                osc.stop(now + 1.6);
-            });
-
-            // Power burst
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = "square";
-            osc2.frequency.setValueAtTime(1500, now);
-            osc2.frequency.exponentialRampToValueAtTime(200, now + 0.3);
-            gain2.gain.setValueAtTime(0.0001, now);
-            gain2.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
-            gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-            osc2.connect(gain2);
-            connectAudioOutput(ctx, gain2, position, "sfx", 55);
-            osc2.start(now);
-            osc2.stop(now + 0.5);
-        }
+        function playPackAPunchFinishSound() { /* No dedicated MP3: intentionally silent. */ }
 
         function disposeObject3D(object) {
             const geometries = new Set();
@@ -3572,7 +3524,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             batchModelDetails(gun);
             const optic = new THREE.Group();
             const opticParts = propParts(optic);
-            const sightY = kind === 'sniper' ? 0.08 : -0.015;
+            const sightY = kind === 'sniper' ? -0.04 : -0.015;
             const opticHousing = new THREE.MeshBasicMaterial({color:0x182124});
             for (const x of [0.231,0.329]) opticParts.box(0.012,0.09,0.045,x,sightY,-0.62,opticHousing);
             for (const y of [sightY-.045,sightY+.045]) opticParts.box(0.11,0.012,0.045,0.28,y,-0.62,opticHousing);
@@ -3766,13 +3718,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             return audioContext;
         }
 
-        function getSharedNoiseBuffer(ctx) {
-            if (sharedNoiseBuffer && sharedNoiseBuffer.sampleRate === ctx.sampleRate) return sharedNoiseBuffer;
-            sharedNoiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-            const channel = sharedNoiseBuffer.getChannelData(0);
-            for (let i = 0; i < channel.length; i++) channel[i] = Math.random() * 2 - 1;
-            return sharedNoiseBuffer;
-        }
+
 
         function getSpatialAudioSettings(position, maxDistance = 48) {
             if (!position || !camera) return { audible: true, attenuation: 1, pan: 0 };
@@ -3900,189 +3846,21 @@ body.menu-open #combat-feedback {visibility:hidden}
             return true;
         }
 
-        function playSynthTone({
-            frequency = 220,
-            endFrequency = frequency,
-            duration = 0.12,
-            volume = 0.08,
-            type = "sine",
-            delay = 0,
-            position = null,
-            bus = "sfx",
-            maxDistance = 48
-        } = {}) {
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-            const spatial = getSpatialAudioSettings(position, maxDistance);
-            if (!spatial.audible) return;
 
-            const start = ctx.currentTime + delay;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(Math.max(20, frequency), start);
-            osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), start + duration);
-            gain.gain.setValueAtTime(0.0001, start);
-            gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), start + Math.min(0.018, duration * 0.2));
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-            osc.connect(gain);
-            const route = connectAudioOutput(ctx, gain, position, bus, maxDistance);
-            osc.onended = () => {
-                osc.disconnect();
-                gain.disconnect();
-                route.distanceGain.disconnect();
-                if (route.panner) route.panner.disconnect();
-            };
-            osc.start(start);
-            osc.stop(start + duration + 0.02);
-        }
-
-        function playNoiseBurst({ duration = 0.12, volume = 0.06, frequency = 900, filterType = "bandpass", position = null, bus = "sfx", maxDistance = 48 } = {}) {
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-            const spatial = getSpatialAudioSettings(position, maxDistance);
-            if (!spatial.audible) return;
-
-            const now = ctx.currentTime;
-            const noise = ctx.createBufferSource();
-            const filter = ctx.createBiquadFilter();
-            const gain = ctx.createGain();
-            noise.buffer = getSharedNoiseBuffer(ctx);
-            filter.type = filterType;
-            filter.frequency.value = frequency;
-            filter.Q.value = 1.4;
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(volume, now + 0.008);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-            noise.connect(filter);
-            filter.connect(gain);
-            const route = connectAudioOutput(ctx, gain, position, bus, maxDistance);
-            noise.onended = () => {
-                noise.disconnect();
-                filter.disconnect();
-                gain.disconnect();
-                route.distanceGain.disconnect();
-                if (route.panner) route.panner.disconnect();
-            };
-            noise.start(now, Math.random() * 0.7, duration);
-            noise.stop(now + duration + 0.02);
-        }
 
         function playGameSound(kind, position = null) {
-            if (kind === "start") {
-                playSynthTone({ frequency: 120, endFrequency: 260, duration: 0.28, volume: 0.1, type: "sawtooth" });
-            } else if (kind === "wave") {
-                playSynthTone({ frequency: 82, endFrequency: 62, duration: 0.7, volume: 0.1, type: "sawtooth" });
-                playSynthTone({ frequency: 164, endFrequency: 124, duration: 0.62, delay: 0.08, volume: 0.055, type: "triangle" });
-            } else if (kind === "switch") {
-                playNoiseBurst({ duration: 0.045, volume: 0.026, frequency: 1800, filterType: "highpass" });
-                playSynthTone({ frequency: 145, endFrequency: 210, duration: 0.065, volume: 0.035, type: "square" });
-            } else if (kind === "reloadStart") {
-                if (playAudioAsset("reload", { volume: 0.48 })) return;
-                playNoiseBurst({ duration: 0.055, volume: 0.035, frequency: 1500, filterType: "highpass" });
-                playSynthTone({ frequency: 170, endFrequency: 110, duration: 0.075, volume: 0.045, type: "square" });
-            } else if (kind === "reloadEnd") {
-                playSynthTone({ frequency: 240, endFrequency: 460, duration: 0.07, volume: 0.055, type: "square" });
-            } else if (kind === "ammo") {
-                [440, 660, 880].forEach((frequency, index) => playSynthTone({ frequency, endFrequency: frequency * 1.08, duration: 0.13, delay: index * 0.065, volume: 0.07, position }));
-            } else if (kind === "heal") {
-                [330, 440, 660].forEach((frequency, index) => playSynthTone({ frequency, endFrequency: frequency * 1.15, duration: 0.18, delay: index * 0.08, volume: 0.065, type: "sine", position }));
-            } else if (kind === "powerup") {
-                [260, 520, 780].forEach((frequency, index) => playSynthTone({ frequency, endFrequency: frequency * 1.2, duration: 0.2, delay: index * 0.055, volume: 0.075, type: "triangle", position }));
-            } else if (kind === "perk") {
-                [392, 494, 659, 784].forEach((frequency, index) => playSynthTone({ frequency, duration: 0.22, delay: index * 0.07, volume: 0.07, position }));
-            } else if (kind === "mystery") {
-                if (playAudioAsset("mystery", { position, volume: 0.5, maxDistance: 55 })) return;
-                playNoiseBurst({ duration: 0.35, volume: 0.05, frequency: 1200, position });
-                playSynthTone({ frequency: 180, endFrequency: 720, duration: 0.42, volume: 0.08, type: "sawtooth", position });
-            } else if (kind === "weaponPickup") {
-                playSynthTone({ frequency: 310, endFrequency: 930, duration: 0.24, volume: 0.09, type: "triangle", position });
-            } else if (kind === "hurt") {
-                const ctx = ensureAudioContext();
-                if (!ctx || ctx.currentTime - lastPlayerHurtSoundTime < 0.12) return;
-                lastPlayerHurtSoundTime = ctx.currentTime;
-                if (playAudioAsset("playerHurt", { volume: 0.55 })) return;
-                playNoiseBurst({ duration: 0.1, volume: 0.055, frequency: 280, filterType: "lowpass" });
-                playSynthTone({ frequency: 92, endFrequency: 48, duration: 0.2, volume: 0.08, type: "sawtooth" });
-            } else if (kind === "zombieShot") {
-                playSynthTone({ frequency: 740, endFrequency: 150, duration: 0.2, volume: 0.13, type: "square", position, maxDistance: 55 });
-            }
+            const clips={reloadStart:'reload', mystery:'mystery', hurt:'playerHurt', zombieShot:'pistol'};
+            if(kind==='hurt') { const now=performance.now()/1000;if(now-lastPlayerHurtSoundTime<0.12)return;lastPlayerHurtSoundTime=now; }
+            if(clips[kind])playAudioAsset(clips[kind],{position,volume:kind==='hurt'?0.55:0.48,maxDistance:55});
         }
 
-        function playZombieVoice(zombie, mood = "idle") {
-            if (!zombie || !audioContext || audioContext.state !== "running" || activeZombieVoices >= maxZombieVoices) return;
-            const spatial = getSpatialAudioSettings(zombie.position, 48);
-            if (!spatial.audible) return;
-
-            const data = zombie.userData;
-            const now = audioContext.currentTime;
-            if (mood === "hurt" && now - (data.audioLastHurtTime || 0) < 0.18) return;
-            if (mood === "hurt") data.audioLastHurtTime = now;
-            if (mood !== "hurt" && mood !== "death" && now - (data.audioLastVoiceTime || 0) < 0.3) return;
-            if (mood !== "hurt") data.audioLastVoiceTime = now;
-
-            if ((mood === "idle" || mood === "attack") && now >= (data.audioVoiceBusyUntil || 0)) {
-                const assetKey = data.typeName === "Bruto"
-                    ? "zombieBrute"
-                    : data.typeName === "Detonador"
-                        ? "zombieDetonator"
-                        : "zombieNormal";
-                const playbackRate = (data.typeName === "Corredor" || data.typeName === "Atirador" ? 1.14 : 1)
-                    * THREE.MathUtils.randFloat(0.94, 1.06);
-                const sampleBuffer = audioAssetBuffers.get(assetKey);
-                if (playAudioAsset(assetKey, {
-                    position: zombie.position,
-                    volume: mood === "attack" ? 0.38 : 0.3,
-                    playbackRate,
-                    bus: "zombie",
-                    maxDistance: 48,
-                    trackZombieVoice: true
-                })) {
-                    data.audioVoiceBusyUntil = now + (sampleBuffer ? sampleBuffer.duration / playbackRate : 1.5);
-                    return;
-                }
-            }
-
-            const base = (zombieVoicePitchByType[data.typeName] || 76) * THREE.MathUtils.randFloat(0.9, 1.1);
-            const duration = mood === "death" ? 0.9 : mood === "attack" ? 0.48 : mood === "hurt" ? 0.32 : THREE.MathUtils.randFloat(0.55, 0.85);
-            const moodVolume = mood === "attack" ? 0.28 : mood === "death" ? 0.25 : mood === "hurt" ? 0.18 : 0.22;
-            const endMultiplier = mood === "death" ? 0.48 : mood === "attack" ? 1.3 : mood === "hurt" ? 1.65 : 0.72;
-
-            const primary = audioContext.createOscillator();
-            const sub = audioContext.createOscillator();
-            const filter = audioContext.createBiquadFilter();
-            const gain = audioContext.createGain();
-            primary.type = data.typeName === "Corredor" ? "square" : "sawtooth";
-            sub.type = "triangle";
-            primary.frequency.setValueAtTime(base, now);
-            primary.frequency.exponentialRampToValueAtTime(Math.max(28, base * endMultiplier), now + duration);
-            sub.frequency.setValueAtTime(base * 0.53, now);
-            sub.frequency.exponentialRampToValueAtTime(Math.max(22, base * 0.4), now + duration);
-            filter.type = "lowpass";
-            filter.frequency.setValueAtTime(data.typeName === "Atirador" ? 1250 : 620, now);
-            filter.Q.value = 2.2;
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(moodVolume, now + 0.035);
-            gain.gain.setValueAtTime(moodVolume * 0.72, now + duration * 0.55);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-            primary.connect(filter);
-            sub.connect(filter);
-            filter.connect(gain);
-            const route = connectAudioOutput(audioContext, gain, zombie.position, "zombie", 48);
-            activeZombieVoices++;
-            primary.onended = () => {
-                activeZombieVoices = Math.max(0, activeZombieVoices - 1);
-                primary.disconnect();
-                sub.disconnect();
-                filter.disconnect();
-                gain.disconnect();
-                route.distanceGain.disconnect();
-                if (route.panner) route.panner.disconnect();
-            };
-            primary.start(now);
-            sub.start(now);
-            primary.stop(now + duration + 0.02);
-            sub.stop(now + duration + 0.02);
+        function playZombieVoice(zombie, mood = 'idle') {
+            if(!zombie || !audioContext || audioContext.state!=='running' || activeZombieVoices>=maxZombieVoices)return;
+            const data=zombie.userData, now=audioContext.currentTime;
+            if(now<(data.audioVoiceBusyUntil||0))return;
+            const key=data.typeName==='Bruto'?'zombieBrute':data.typeName==='Detonador'?'zombieDetonator':'zombieNormal';
+            const rate=THREE.MathUtils.randFloat(0.94,1.06),buffer=audioAssetBuffers.get(key);
+            if(playAudioAsset(key,{position:zombie.position,volume:mood==='idle'?0.3:0.38,playbackRate:rate,bus:'zombie',maxDistance:48,trackZombieVoice:true}))data.audioVoiceBusyUntil=now+(buffer?buffer.duration/rate:1.5);
         }
 
         function updateZombieAudio(zombie, distance, delta) {
@@ -4097,43 +3875,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             playZombieVoice(zombie, distance < 4 ? "attack" : "idle");
         }
 
-        function playGunshotSound(config = null) {
-            if ((!config || config.id === "pistol") && playAudioAsset("pistol", { volume: 0.42 })) return;
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-
-            const now = ctx.currentTime;
-
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "triangle";
-            osc.frequency.setValueAtTime(190, now);
-            osc.frequency.exponentialRampToValueAtTime(70, now + 0.09);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.22, now + 0.003);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
-            osc.connect(gain);
-            connectAudioOutput(ctx, gain);
-            osc.start(now);
-            osc.stop(now + 0.14);
-
-            const noiseBuffer = getSharedNoiseBuffer(ctx);
-
-            const noise = ctx.createBufferSource();
-            const filter = ctx.createBiquadFilter();
-            const noiseGain = ctx.createGain();
-            noise.buffer = noiseBuffer;
-            filter.type = "highpass";
-            filter.frequency.value = 900;
-            noiseGain.gain.setValueAtTime(0.0001, now);
-            noiseGain.gain.exponentialRampToValueAtTime(0.09, now + 0.002);
-            noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-            noise.connect(filter);
-            filter.connect(noiseGain);
-            connectAudioOutput(ctx, noiseGain);
-            noise.start(now, Math.random() * 0.7);
-            noise.stop(now + 0.09);
-        }
+        function playGunshotSound(config = null) { playAudioAsset(config?.id==='sniper'?'shotgun':'pistol',{volume:0.42,playbackRate:config?.id==='sniper'?0.85:1}); }
 
         function getZombieTypeConfig() {
             const candidates = [
@@ -5077,6 +4819,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             updateUI();
         }
         function updateSaleBoxes(delta) {
+            for(const box of saleBoxes)box.userData.lid.rotation.x=THREE.MathUtils.damp(box.userData.lid.rotation.x,box.userData.state==='idle'?0:-1.12,7,delta);
             for(const box of saleBoxes) {
                 if(box.userData.state!=='idle') {
                     box.userData.timer-=delta;
@@ -5107,11 +4850,8 @@ body.menu-open #combat-feedback {visibility:hidden}
             }
             const occupied=[interactableLocations.mysteryBox,interactableLocations.packAPunch,...Object.values(interactableLocations.perks)];
             for(const pos of interactableSpawnPoints.filter(p=>occupied.every(o=>Math.hypot(o.x-p.x,o.z-p.z)>4)).slice(0,4)){
-                const g=new THREE.Group(),p=propParts(g);
-                p.box(2.4,1,1.1,0,0.5,0,new THREE.MeshStandardMaterial({color:0x684223,roughness:0.85}));
-                for(const x of [-0.9,0.9])p.box(0.12,1.1,1.18,x,0.55,0,trim);
-                p.box(2.3,0.06,1,0,1.05,0,glow);
-                const label=floatingLabel('LIQUIDAÇÃO · 10','#ffdf78');label.position.y=2.4;g.add(label);
+                const g=buildMysteryCrate(true);
+                faceInteractableTowardStreet(g,pos);
                 g.position.set(pos.x,0,pos.z);g.userData.kind='sale';g.userData.state='idle';g.visible=false;scene.add(g);saleBoxes.push(g);
             }
             // Small ground details share geometry/material via instancing.
@@ -5154,18 +4894,23 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
         function meleeAttack() {
             if(!controls.isLocked || gameOver || meleeTimer>0 || isReloading || isSwitchingWeapon || papState==='upgrading')return;
-            meleeTimer=0.55;knifeModel.visible=true;
+            meleeTimer=0.55;knifeModel.visible=true;updateMelee(0);
             const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
             let target=null, closest=2.5;
             for(const z of zombies){const dir=z.position.clone().sub(camera.position);dir.y=0;const d=dir.length();
                 if(d<closest && dir.normalize().dot(forward)>0.72 && hasClearNavigationLine(camera.position,z.position,0.1)){target=z;closest=d;}}
             playAudioAsset('melee', {volume:0.8});
-            if(target){target.userData.health-=instaKillTimer>0?999999:150;const point=target.position.clone();point.y+=1.3;createZombieHitEffect(point);showHitmarker(target.userData.health<=0);updateZombieHealthBar(target);if(target.userData.health<=0)killZombie(target);}
+            if(target){
+                target.userData.meleeStagger=0.22;
+                moveObjectWithCollisions(target,forward.x*0.3,forward.z*0.3,target.userData.radius||0.65);
+                if(!settings.reducedMotion)screenShakeAmount=Math.max(screenShakeAmount,0.28);
+                combatFeedback.textContent=instaKillTimer>0?'FACADA · MORTE INSTANTÂNEA':'FACADA · −150';combatFeedbackTimer=0.8;
+                target.userData.health-=instaKillTimer>0?999999:150;const point=target.position.clone();point.y+=1.3;createZombieHitEffect(point);showHitmarker(target.userData.health<=0);updateZombieHealthBar(target);if(target.userData.health<=0)killZombie(target);}
         }
         function updateMelee(delta) {
             if(meleeTimer<=0)return;
             meleeTimer=Math.max(0,meleeTimer-delta);
-            const swing=Math.sin((1-meleeTimer/0.55)*Math.PI);
+            const swing=Math.pow(meleeTimer/0.55,0.45);
             knifeModel.position.set(0.35-swing*0.5,-0.3+swing*0.13,-0.4-swing*0.4);
             knifeModel.rotation.z=-swing*1.2;
             const model=playerWeapons[currentWeaponIndex]?.model;if(model)model.visible=meleeTimer<=0;
@@ -5984,120 +5729,13 @@ body.menu-open #combat-feedback {visibility:hidden}
             });
         }
 
-        function playShotgunSound() {
-            if (playAudioAsset("shotgun", { volume: 0.5 })) return;
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
+        function playShotgunSound() { playAudioAsset('shotgun',{volume:0.5}); }
 
-            const now = ctx.currentTime;
+        function playRayGunSound() { playAudioAsset('pistol',{volume:0.42,playbackRate:1.2}); }
 
-            // Deep boom
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(120, now);
-            osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.3, now + 0.004);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-            osc.connect(gain);
-            connectAudioOutput(ctx, gain);
-            osc.start(now);
-            osc.stop(now + 0.23);
+        function playDetonatorBeep() { /* No dedicated MP3: intentionally silent. */ }
 
-            // Loud noise burst
-            const noiseBuffer = getSharedNoiseBuffer(ctx);
-
-            const noise = ctx.createBufferSource();
-            const filter = ctx.createBiquadFilter();
-            const noiseGain = ctx.createGain();
-            noise.buffer = noiseBuffer;
-            filter.type = "lowpass";
-            filter.frequency.value = 2500;
-            noiseGain.gain.setValueAtTime(0.0001, now);
-            noiseGain.gain.exponentialRampToValueAtTime(0.18, now + 0.003);
-            noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
-            noise.connect(filter);
-            filter.connect(noiseGain);
-            connectAudioOutput(ctx, noiseGain);
-            noise.start(now, Math.random() * 0.7);
-            noise.stop(now + 0.15);
-        }
-
-        function playRayGunSound() {
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-
-            const now = ctx.currentTime;
-
-            // Pew pew sci-fi (PITCH DROP)
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sine"; // som limpo e sintético
-            osc.frequency.setValueAtTime(1400, now);
-            osc.frequency.exponentialRampToValueAtTime(100, now + 0.2); // cai rapidamente
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.35, now + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
-            osc.connect(gain);
-            connectAudioOutput(ctx, gain);
-            osc.start(now);
-            osc.stop(now + 0.21);
-
-            // Zapper estalado (noise)
-            const noiseBuffer = getSharedNoiseBuffer(ctx);
-            const noise = ctx.createBufferSource();
-            const filter = ctx.createBiquadFilter();
-            const noiseGain = ctx.createGain();
-            noise.buffer = noiseBuffer;
-            filter.type = "bandpass";
-            filter.frequency.value = 3000;
-            noiseGain.gain.setValueAtTime(0.0001, now);
-            noiseGain.gain.exponentialRampToValueAtTime(0.2, now + 0.005);
-            noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-            noise.connect(filter);
-            filter.connect(noiseGain);
-            connectAudioOutput(ctx, noiseGain);
-            noise.start(now, Math.random() * 0.7);
-            noise.stop(now + 0.11);
-        }
-
-        function playDetonatorBeep(progress, position = null) {
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-
-            const now = ctx.currentTime;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "square";
-            osc.frequency.setValueAtTime(300 + progress * 420, now);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.045, now + 0.012);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
-            osc.connect(gain);
-            connectAudioOutput(ctx, gain, position, "zombie", 55);
-            osc.start(now);
-            osc.stop(now + 0.08);
-        }
-
-        function playDetonatorExplosionSound(position = null) {
-            const ctx = ensureAudioContext();
-            if (!ctx) return;
-
-            const now = ctx.currentTime;
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(120, now);
-            osc.frequency.exponentialRampToValueAtTime(38, now + 0.32);
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
-            osc.connect(gain);
-            connectAudioOutput(ctx, gain, position, "sfx", 75);
-            osc.start(now);
-            osc.stop(now + 0.38);
-        }
+        function playDetonatorExplosionSound(position = null) { playAudioAsset('nuke',{position,volume:0.45,maxDistance:75}); }
 
         function armDetonator(zombie) {
             if (zombie.userData.isArmed) return;
@@ -6415,6 +6053,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function moveZombieWithNavigation(zombie, playerPos, delta, speedMultiplier = 1) {
+            if(zombie.userData.meleeStagger>0){zombie.userData.meleeStagger=Math.max(0,zombie.userData.meleeStagger-delta);return;}
             const data = zombie.userData;
             const target = getZombieNavigationTarget(zombie, playerPos, delta);
             let desiredX = target.x - zombie.position.x;
@@ -6738,7 +6377,8 @@ body.menu-open #combat-feedback {visibility:hidden}
             aimHeld = false; aimBlend = 0;
             if (flashlight) flashlight.intensity = 80;
             if (controls) controls.pointerSpeed = settings.sensitivity;
-            document.body.classList.remove('aiming');
+            document.body.classList.remove('aiming','scoped');
+            playerWeapons.forEach(w=>{if(w.model)w.model.visible=true;});
             if (camera) { camera.fov=75; camera.updateProjectionMatrix(); }
             playerWeapons.forEach(w=>{ if(w.model?.userData.optic) w.model.userData.optic.visible=false; });
         }
@@ -6746,12 +6386,16 @@ body.menu-open #combat-feedback {visibility:hidden}
         function updateWeapon(delta) {
             const activeWeaponModel = playerWeapons[currentWeaponIndex]?.model;
             if (!activeWeaponModel) return;
+            const isSniper = playerWeapons[currentWeaponIndex].configId === 'sniper';
             const aiming = aimHeld && controls.isLocked && !gameOver && !isReloading && !isSwitchingWeapon && meleeTimer <= 0 && papState !== 'upgrading';
             aimBlend = THREE.MathUtils.damp(aimBlend,aiming ? 1 : 0,16,delta);
             flashlight.intensity = THREE.MathUtils.lerp(80, 0.45, aimBlend);
-            controls.pointerSpeed = settings.sensitivity * THREE.MathUtils.lerp(1, 0.65, aimBlend);
+            controls.pointerSpeed = settings.sensitivity * THREE.MathUtils.lerp(1, isSniper ? 0.22 : 0.65, aimBlend);
             document.body.classList.toggle('aiming',aimBlend > 0.85 && aiming);
-            if (activeWeaponModel.userData.optic) activeWeaponModel.userData.optic.visible = aimBlend > 0.05;
+            const scoped = isSniper && aiming && aimBlend > 0.9;
+            document.body.classList.toggle('scoped',scoped);
+            activeWeaponModel.visible = !scoped && meleeTimer<=0;
+            if (activeWeaponModel.userData.optic) activeWeaponModel.userData.optic.visible = !isSniper && aimBlend > 0.05;
 
             if (!controls.isLocked) {
                 movementIntensity = THREE.MathUtils.lerp(movementIntensity, 0, delta * 8);
@@ -6787,7 +6431,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             const cfg = weaponConfigs[playerWeapons[currentWeaponIndex].configId];
             weaponRecoil = THREE.MathUtils.lerp(weaponRecoil, 0, delta * (cfg.id === "shotgun" || cfg.id === "sniper" ? 8 : 14));
 
-            const targetFov = THREE.MathUtils.lerp(75 + sprintBlend * 9 * motionScale,55,aimBlend);
+            const targetFov = THREE.MathUtils.lerp(75 + sprintBlend * 9 * motionScale,isSniper ? 21.7 : 55,aimBlend);
             const nextFov = THREE.MathUtils.lerp(camera.fov, targetFov, delta * 7);
             if (Math.abs(nextFov - camera.fov) > 0.001) {
                 camera.fov = nextFov;
@@ -7297,6 +6941,13 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function renderScene() {
+            camera.updateMatrixWorld();
+            for(const lod of worldLODs){
+                lod.updateWorldMatrix(true,false);
+                const distance=lod.getWorldPosition(lodPosition).distanceTo(camera.position)*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/Math.tan(THREE.MathUtils.degToRad(75/2));
+                const far=lod.levels[1],threshold=far.distance*(far.object.visible?0.88:1);
+                lod.levels[0].object.visible=distance<threshold;far.object.visible=distance>=threshold;
+            }
             // Low quality avoids the composer render targets and fullscreen passes.
             if (lowQuality) renderer.render(scene, camera);
             else composer.render();

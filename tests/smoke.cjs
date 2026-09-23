@@ -7,9 +7,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 const filename = fs.readFileSync(path.join(root, 'README.md'), 'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
 const html = fs.readFileSync(path.join(root, filename), 'utf8');
+assert(!html.includes('createOscillator'), 'only MP3 audio sources');
 assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
-const api = `window.qa = { THREE, settings, runStats, impactParticles, impactPool, maxImpactEffects,
+const api = `window.qa = { THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
  getZombieBaseSpeed, zombieTypeConfigs, applyLegDamage, findNavigationPath, loadAudioAsset,
  spawnPowerup, createBonusModel, floatingLabel, bonusNames, powerupTypes, applyPowerup, updatePowerups, powerups, ammoStations, saleBoxes, interactSupply, nearestSupply, ammoPrice, getMysteryPrice, updateSaleBoxes, meleeAttack, updateMelee, createZombie, updateWeapon, renderScene,
  get renderer(){return renderer},
@@ -19,7 +20,7 @@ const api = `window.qa = { THREE, settings, runStats, impactParticles, impactPoo
  get controls(){return controls}, get weapons(){return playerWeapons}, get zombies(){return zombies},
  get layout(){return baseMapLayout}, get projectiles(){return zombieProjectiles} };`;
 const server = http.createServer((req, res) => {
-    const name = path.basename(new URL(req.url, 'http://localhost').pathname);
+    const name = path.basename(decodeURIComponent(new URL(req.url, 'http://localhost').pathname));
     if (name.endsWith('.html')) {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.end(html.replace('        init();', api + '\n        init();'));
@@ -37,6 +38,7 @@ const server = http.createServer((req, res) => {
         browser = await chromium.launch({headless: true, ...(process.env.CHROME_PATH ? {executablePath: process.env.CHROME_PATH} : {})});
         const page = await browser.newPage({viewport: {width: 1440, height: 960}});
         const errors = [];
+        page.on('requestfailed', r=>console.error('Network:',r.url(),r.failure()?.errorText));
         page.on('pageerror', e => { errors.push(String(e)); console.error(e); });
         for (const quality of ['low', 'high']) {
             await page.goto(`${url}?quality=${quality}`);
@@ -63,7 +65,7 @@ const server = http.createServer((req, res) => {
             assert.deepEqual(await page.evaluate(() => ({...qa.settings})), {sensitivity: 1.5, volume: 0.3, reducedMotion: true});
             if (process.env.QA_SCREENSHOTS) {
                 fs.mkdirSync(process.env.QA_SCREENSHOTS, {recursive: true});
-                await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `v16-menu-${quality}.png`)});
+                await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `v17-menu-${quality}.png`)});
             }
             const pool = await page.evaluate(() => {
                 const q = qa, point = q.camera.position.clone(); point.z -= 4;
@@ -83,8 +85,28 @@ const server = http.createServer((req, res) => {
             await page.waitForFunction(() => document.body.classList.contains('aiming') && qa.camera.fov < 56 && qa.flashlight.intensity < 0.6, null, {timeout:15000});
             assert(await page.evaluate(() => document.body.classList.contains('aiming') && qa.camera.fov < 57 && qa.controls.pointerSpeed < 1));
             assert(await page.evaluate(() => qa.flashlight.intensity < 0.6 && qa.flashlight.position.z === 0), 'ADS flashlight dimming');
-            if (process.env.QA_SCREENSHOTS) await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `v16-ads-${quality}.png`)});
+            if (process.env.QA_SCREENSHOTS) await page.screenshot({path: path.join(process.env.QA_SCREENSHOTS, `v17-ads-${quality}.png`)});
             await page.mouse.up({button: 'right'});
+            const scope=await page.evaluate(()=>{
+                const q=qa,w=q.weapons[0];q.camera.remove(w.model);w.configId='sniper';w.model=q.weaponConfigs.sniper.createModel();q.camera.add(w.model);return true;
+            });
+            await page.mouse.down({button:'right'});
+            await page.waitForFunction(()=>document.body.classList.contains('scoped')&&qa.camera.fov<22.5);
+            assert(await page.evaluate(()=>!qa.weapons[0].model.visible&&!qa.weapons[0].model.userData.optic.visible&&qa.controls.pointerSpeed<0.4));
+            if(process.env.QA_SCREENSHOTS)await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-scope-${quality}.png`)});
+            await page.mouse.up({button:'right'});
+            await page.waitForFunction(()=>!document.body.classList.contains('scoped'));
+            const lod=await page.evaluate(()=>{
+                const q=qa,T=q.THREE,old=q.camera.position.clone(),item=q.worldLODs[0],pos=item.getWorldPosition(new T.Vector3());
+                q.resetAim();q.camera.position.copy(pos).add(new T.Vector3(0,2,5));q.renderScene();const near=item.levels[0].object.visible;
+                q.camera.position.copy(pos).add(new T.Vector3(0,2,110));q.renderScene();const far=item.levels[1].object.visible;
+                q.camera.fov=21.7;q.camera.updateProjectionMatrix();q.renderScene();const zoom=item.levels[0].object.visible;
+                q.camera.position.copy(old);q.resetAim();
+                const w=q.weapons[0];q.camera.remove(w.model);w.configId='pistol';w.model=q.weaponConfigs.pistol.createModel();q.camera.add(w.model);
+                return {count:q.worldLODs.length,near,far,zoom};
+            });
+            assert(lod.count>=50&&lod.near&&lod.far&&lod.zoom,JSON.stringify(lod));
+            console.log(JSON.stringify({quality,lod,scope}));
             const reload = await page.evaluate(() => {
                 qa.weapons[0].ammoInMag--; qa.startReload(); qa.updateUI();
                 const track = document.getElementById('reload-track');
@@ -143,6 +165,8 @@ const server = http.createServer((req, res) => {
                 const knife=!q.zombies.includes(zombie);
                 q.createZombie(new T.Vector3(0,0,-1.5));const guarded=q.zombies.at(-1);guarded.userData.health=10000;q.meleeAttack();
                 const cooldown=guarded.userData.health===10000;
+                q.updateMelee(1);const beforeHit=guarded.position.clone();q.meleeAttack();
+                const knifeFeedback=guarded.userData.health===9850&&guarded.userData.meleeStagger>0&&guarded.position.distanceTo(beforeHit)>0.1&&document.getElementById('combat-feedback').textContent.includes('150');
                 q.updateMelee(1);q.applyPowerup('insta_kill');q.meleeAttack();
                 const instaKnife=!q.zombies.includes(guarded);
                 q.updateMelee(1);
@@ -159,7 +183,7 @@ const server = http.createServer((req, res) => {
                 const pickup=!q.powerups.includes(drop)&&q.weapons[0].ammoInMag>0;
                 const far=q.spawnPowerup(new T.Vector3(100,0,100),'nuke');q.updatePowerups(26);const expiry=!q.powerups.includes(far);
                 q.controls.isLocked=false;q.resetGame();
-                return {near,bought,fullNoCharge,insufficient,maxAmmo,sale,rolled,expires,collected,knife,cooldown,instaKnife,knifeWall,range,nuke,upgradePrice,pickup,expiry};
+                return {near,bought,fullNoCharge,insufficient,maxAmmo,sale,rolled,expires,collected,knife,knifeFeedback,cooldown,instaKnife,knifeWall,range,nuke,upgradePrice,pickup,expiry};
             });
             assert(Object.values(bonuses).every(Boolean),JSON.stringify(bonuses));
             console.log(JSON.stringify({quality,bonuses}));
@@ -171,7 +195,7 @@ const server = http.createServer((req, res) => {
                     q.powerupTypes.forEach((type,i)=>q.spawnPowerup(new T.Vector3((i-2)*2,0,-3),type));
                     document.querySelectorAll('body>div').forEach(e=>e.style.display='none');q.renderScene();
                 });
-                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v16-drops-${quality}.png`)});
+                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-drops-${quality}.png`)});
                 await page.evaluate(() => {
                     const q=qa,T=q.THREE,scene=new T.Scene();scene.background=new T.Color(0x081511);
                     scene.add(new T.HemisphereLight(0xffefca,0x224d36,3));
@@ -181,7 +205,16 @@ const server = http.createServer((req, res) => {
                     const camera=new T.OrthographicCamera(-5.6,5.6,3.73,-3.73,0.1,100);camera.position.set(0,0,8);
                     document.querySelectorAll('body>div').forEach(e=>e.style.display='none');q.renderer.render(scene,camera);
                 });
-                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v16-bonus-${quality}.png`)});
+                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-bonus-${quality}.png`)});
+            }
+            if(process.env.QA_SCREENSHOTS){
+                await page.evaluate(()=>{
+                    const q=qa,T=q.THREE,scene=new T.Scene();scene.background=new T.Color(0x142028);
+                    scene.add(new T.HemisphereLight(0xffefdb,0x344754,3));const light=new T.DirectionalLight(0xffffff,3);light.position.set(1,5,5);scene.add(light);
+                    for(const [i,sale] of [false,true].entries()){const box=q.buildMysteryCrate(sale);box.position.x=(i-.5)*3.4;box.userData.lid.rotation.x=-0.45;scene.add(box);}
+                    const camera=new T.PerspectiveCamera(45,1.5,0.1,150);camera.position.set(4,4,10);camera.lookAt(0,1,0);q.renderer.render(scene,camera);
+                });
+                await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v17-crates-${quality}.png`)});
             }
             console.log(JSON.stringify({quality, pool, attacks, passed: true}));
         }

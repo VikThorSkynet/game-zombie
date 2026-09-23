@@ -1,8 +1,8 @@
-# Memória persistente — Protocolo Sobreviva v16
+# Memória persistente — Protocolo Sobreviva v17
 
-Atualização: **22/09/2026 às 13:22:44 — America/Sao_Paulo (UTC−03:00)**.
+Atualização: **22/09/2026 às 22:34:52 — America/Sao_Paulo (UTC−03:00)**.
 Branch: `codex/bonus-facada-iluminacao-v16`. Base: `0b3fe4f` (v15).
-HTML: `game_version16_22-09-2026_13-22-44.html`.
+HTML: `game_version17_22-09-2026_22-34-52.html`.
 
 ## Solicitação e decisões
 
@@ -56,7 +56,8 @@ Insta-Kill com facada, bloqueio por parede, Nuke e coleta/expiração de drops.
 Testes aprovados em Chrome headless nas qualidades baixa e alta, sem erros de
 JavaScript. Mantidas verificações de configurações, ADS, pool de efeitos e disparos
 dos zumbis. `node --check` do módulo e do teste e `git diff --check` aprovados.
-Capturas em `docs/previews/v16-*`: menu, ADS, prancha dos modelos e drops no mapa.
+Capturas históricas da v16 foram preservadas em seu commit. As capturas atuais
+estão em `docs/previews/v17-*`: menu, ADS, luneta, caixas, prancha dos modelos e drops no mapa.
 Prancha, drops e ADS inspecionados visualmente. O ajuste final de intensidade
 0,45 foi validado depois de uma primeira tentativa de 3 ainda produzir reflexos fortes.
 
@@ -88,3 +89,14 @@ o MP3 de facada fornecido e ajustar progressão de velocidade e rastejantes.
   (14 < 15 = 100 com mesma variação), três depósitos e rotas, ferimento/rastejar,
   som MP3 decodificado e regressões de bônus, compras, facada, ADS e efeitos.
   Nenhum erro JavaScript. Teste estático garante ausência do spawner automático.
+
+## Revisão v17 — luneta, MP3, facada e LOD (22/09/2026 às 22:34:52)
+
+- Sniper: alinhamento no eixo do telescópio (y=-0,04), sem red dot; máscara circular e retículo, FOV 21,7° (~4× sobre 75°), sensibilidade ADS 22%. Arma oculta ao completar ADS; saída, troca, recarga, pausa e facada retiram a máscara.
+- Áudio: removidos os geradores de osciladores e ruído, inclusive fallbacks. Armas reutilizam MP3 existentes (sniper usa shotgun mais grave; Ray Gun usa pistol). Eventos sem MP3 dedicado ficam silenciosos; nenhuma amostra nova foi inventada.
+- Facada: pose de contato imediata, recuperação de 0,55 s, recuo de 0,3 com colisão, pausa de movimento do alvo de 0,22 s, texto de dano e tremor leve respeitando movimento reduzido. Mantém 150 de dano, alcance, cooldown e bloqueio por obstáculos.
+- Mystery boxes usam o mesmo construtor, madeira, ferragens, fechadura e tampa animada. ON SALE tem placa dourada de 10 pontos e feixe dourado; normal mantém feixe azul. Temporárias preservam sorteios pagos após expiração.
+- Névoa leve FogExp2 0,006. LOD geométrico em 34 prédios + 16 carros, alternância a 65/42 unidades e histerese 12%. Silhuetas e colisões permanecem; distância ajustada ao FOV restaura detalhe ao usar luneta. Texturas de fachadas continuam com mipmaps padrão; resolução global adaptativa existente preservada.
+- Fontes: https://threejs.org/docs/pages/LOD.html e https://threejs.org/docs/pages/Fog.html.
+- Testes Chrome headless: baixa e alta aprovadas sem pageerrors; sniper, sensibilidade, máscara, LOD perto/longe/com zoom, feedback da facada, obstáculos, cooldown, bônus, compras, pool de impactos, configurações e áudio melee decodificado. Servidor de teste corrigido para nomes MP3 com espaços. Capturas scope/crates em docs/previews inspecionadas visualmente. Rede do sandbox bloqueou CDN; testes completos rodaram com permissão de rede. Sem benchmark prolongado nem avaliação auditiva humana.
+- Arquivos afetados: HTML atual, `tests/smoke.cjs`, README, esta memória e capturas `v17-*`.
