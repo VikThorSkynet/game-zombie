@@ -1,16 +1,16 @@
-# Protocolo Sobreviva — v16
+# Protocolo Sobreviva — v17
 
 FPS de zumbis em um único HTML com Three.js, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version16_22-09-2026_13-22-44.html](game_version16_22-09-2026_13-22-44.html)
+[game_version17_22-09-2026_22-34-52.html](game_version17_22-09-2026_22-34-52.html)
 
-Atualização: **22/09/2026 às 13:22:44**, America/Sao_Paulo (UTC−03:00).
-Revisão de balanceamento e áudio: **22/09/2026 às 14:27:28**.
+Atualização: **22/09/2026 às 22:34:52**, America/Sao_Paulo (UTC−03:00).
+Versão: **v17 — luneta, áudio MP3, facada e LOD**.
 Branch: `codex/bonus-facada-iluminacao-v16`.
 
-v16: lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
+v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
 com formas próprias, dourado e halo verde; facada com **V** e depósitos de munição
 com **E**. Novas barreiras de quarentena, placas, detritos e iluminação de apoio.
 
@@ -25,6 +25,15 @@ fachadas danificadas e entulho. Red dot ao segurar botão direito, caixas de
 munição revisadas e zumbis com pele, roupas e animação melhoradas.
 Inclui as máquinas, os perks e as opções de desempenho das versões anteriores.
 
+## Revisão de mira e renderização
+
+Sniper com luneta circular de aproximadamente 4× (botão direito); outras armas mantêm red dot.
+Somente MP3: efeitos sem arquivo dedicado ficam silenciosos; sniper e Ray Gun reutilizam os disparos disponíveis.
+Facada com indicação de dano, recuo e breve interrupção de movimento do alvo.
+Caixas ON SALE agora têm o mesmo baú da normal, com placa e feixe dourados.
+Névoa leve e [LOD — nível de detalhe](https://threejs.org/docs/pages/LOD.html) nos 34 prédios e 16 carros:
+modelos simplificados à distância, detalhe restaurado de perto ou pela luneta.
+
 ## Executar
 
 Mantenha o HTML e os MP3 na mesma pasta. Sirva a raiz por HTTP:
@@ -33,7 +42,7 @@ Mantenha o HTML e os MP3 na mesma pasta. Sirva a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo](http://localhost:8000/game_version16_22-09-2026_13-22-44.html).
+Abra [o jogo](http://localhost:8000/game_version17_22-09-2026_22-34-52.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -41,7 +50,7 @@ O Three.js 0.160.0 é carregado por CDN e requer internet.
 - Alta: mantém o pós-processamento e maior resolução.
 
 Trocar a qualidade recarrega a página. O seletor aparece antes de iniciar a partida.
-WASD: mover; mouse esquerdo: atirar; segurar botão direito: red dot;
+WASD: mover; mouse esquerdo: atirar; segurar botão direito: red dot ou luneta na sniper;
 Ctrl ou Shift: correr; R: recarregar; V: facada;
 E: interagir; 1/2: trocar arma; Esc: pausar.
 A interface se adapta a telas menores; o jogo continua exigindo teclado e mouse.
@@ -96,7 +105,7 @@ opcional para capturas. A instrumentação existe apenas na resposta HTTP do tes
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_22-09-2026_13-22-44.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_22-09-2026_22-34-52.md)
 
 [Histórico v14](docs/MEMORIA_PERSISTENTE_21-09-2026_22-32-22.md)
 
