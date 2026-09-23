@@ -8,7 +8,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
         c.reachable=q.generators.length===3&&q.generators.every(g=>q.findNavigationPath(new T.Vector3(),g.position.clone().add(new T.Vector3(0,0,2)),.65).length>0);
         near(q.containmentDoor);q.camera.position.z=135;q.interact();c.locked=!q.generatorNetwork.open;
         let completed=0,opened=0;const off=q.gameEvents.on('generatorCompleted',()=>completed++),offDoor=q.gameEvents.on('doorOpened',()=>opened++);
-        q.startWave(5);let spent=0;
+        q.startWave(4);let spent=0;
         for(const [order,id] of [2,0,1].entries()) {
             const g=q.generators[id];near(g);document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE'}));
             if(!q.generatorNetwork.active)throw new Error('Generator activation failed '+id);
@@ -39,7 +39,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
         c.open=q.generatorNetwork.open&&opened===1&&!q.isPositionBlocked(0,137,.65)&&q.hasClearNavigationLine(before,after,.65)&&q.findNavigationPath(before,after,.65).length>0;
         c.invalidate=z.userData.navPath.length===0&&z.userData.navRepathTimer===0;
         c.bullets=!q.bulletBlockers.includes(q.containmentDoor.userData.panel);
-        q.updateWave(1);c.resume=q.waveDirector.spawned>0;
+        for(let n=0;n<20&&q.waveDirector.spawned===0;n++)q.updateWave(1);c.resume=q.waveDirector.spawned>0;
         for(let n=0;n<3;n++)q.resetGame();
         c.reset=!q.generatorNetwork.open&&!q.generatorNetwork.active&&q.generatorNetwork.completed.size===0&&q.isPositionBlocked(0,137,.65)&&q.staticColliders.length===colliderCount&&q.bulletBlockers.length===blockerCount;
         near(q.generators[0]);q.controls.isLocked=true;q.interact();q.applyDamage(9999);

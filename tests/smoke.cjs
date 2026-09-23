@@ -13,6 +13,7 @@ assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be remo
 // Test hooks are injected in the response only, never in the released HTML.
 const api = `window.qa = { THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
  BALANCE, waveDirector, gameEvents, startWave, updateWave, damageEnemy, killZombie, applyDamage,
+ createDog, updateRoundAtmosphere, getZombieTypeConfig, enemyHealth, zombieHitMeshes,
  generatorNetwork, generators, get containmentDoor(){return containmentDoor}, updateContainment, isPositionBlocked, staticColliders, staticColliderGrid, bulletBlockers, hasClearNavigationLine,
  armor, scrap, upgradeStations, updateArmorPlate, startArmorPlate, switchWeapon, shoot, startPackAPunch, finishPackAPunch, weaponMultiplier, fireBullet, fireLaser, interact, updateInteractables,
  get isReloading(){return isReloading}, get currentWeaponIndex(){return currentWeaponIndex}, get mysteryBox(){return mysteryBox},
@@ -230,6 +231,7 @@ const server = http.createServer((req, res) => {
             console.log(JSON.stringify({quality,lifecycle}));
             await require('./progression.cjs')(page,assert,quality,releaseTag);
             await require('./containment.cjs')(page,assert,quality,releaseTag);
+            await require('./special-rounds.cjs')(page,assert,quality,releaseTag);
             if (process.env.QA_SCREENSHOTS) {
                 await page.waitForTimeout(150);
                 await page.evaluate(() => {

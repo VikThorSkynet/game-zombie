@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v20 • 23/09/2026 12:32:09</title>
+    <title>Protocolo Sobreviva — v21 • 23/09/2026 12:47:58</title>
 
     <style>
         * {
@@ -874,6 +874,8 @@ body.menu-open #combat-feedback {visibility:hidden}
         </div>
         <div class="text-info" id="status">STATUS · PRONTO</div>
         <div id="scrap-status">SUCATA · 0</div>
+        <div id="round-kind" style="margin-top:8px;color:#ffd16b;font-size:12px"></div>
+        <div id="dog-warning" hidden style="color:#ff906e;font-weight:bold;font-size:12px">CÃO PREPARANDO BOTE · ESQUIVE</div>
         <div id="containment-status" style="margin-top:10px;color:#a5e8dc;font-size:12px;line-height:1.5">ENERGIA · 0/3 GERADORES</div>
         <progress id="generator-progress" max="1" value="0" hidden style="width:100%;accent-color:#7ee7c8" aria-label="Carga do gerador"></progress>
         <div id="perk-badges" aria-label="Perks ativos"></div>
@@ -903,7 +905,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
     <div id="overlay">
         <div id="panel" role="region" aria-label="Menu do jogo">
-            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V20</div>
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V21</div>
             <h1>Prepare-se para a noite.</h1>
             <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
             <div class="loading-line"></div>
@@ -926,7 +928,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
         import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
         import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed,
-            ArmorState, ScrapWallet, GeneratorNetwork, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from './game-systems.mjs';
+            ArmorState, ScrapWallet, GeneratorNetwork, DogAttack, waveProfile, stepFog, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from './game-systems.mjs';
 
         let scene, camera, renderer, composer, bloomPass, controls, clock;
         let muzzleFlashTexture;
@@ -1224,6 +1226,8 @@ body.menu-open #combat-feedback {visibility:hidden}
         let navigationSearchScratch = null;
 
         const zombieTypeConfigs = {
+            dog: {name:'Cão',isDog:true,healthMultiplier:.65,speedBonus:1.7,minSpeed:2.2,
+                damageMultiplier:1.1,attackInterval:2,scale:1},
             normal: {
                 name: "Normal",
                 bodyColor: 0x4f7d39,
@@ -1314,6 +1318,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         let containmentDoor, doorCollider;
         let armorModel;
         const waveDirector = new WaveDirector(lowQuality ? BALANCE.waves.maxActiveLow : BALANCE.waves.maxActiveHigh);
+        let dogRewardGranted=false;
 
         let gameOver = false;
         let lastShotTime = 0;
@@ -1735,11 +1740,11 @@ body.menu-open #combat-feedback {visibility:hidden}
             document.body.classList.add("menu-open");
             sceneNeedsRender = true;
             panel.innerHTML = `
-        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V20</div>
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V21</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
-        <p class="release">V20 · 23/09/2026 às 12:32:09 · America/Sao_Paulo</p>
+        <p class="release">V21 · 23/09/2026 às 12:47:58 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
             mountSettings();
@@ -3899,6 +3904,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function playZombieVoice(zombie, mood = 'idle') {
+            if(zombie?.userData.isDog)return; // No dog MP3 supplied; never substitute human voices.
             if(!zombie || !audioContext || audioContext.state!=='running' || activeZombieVoices>=maxZombieVoices)return;
             const data=zombie.userData, now=audioContext.currentTime;
             if(now<(data.audioVoiceBusyUntil||0))return;
@@ -3922,6 +3928,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         function playGunshotSound(config = null) { playAudioAsset(config?.id==='sniper'?'shotgun':'pistol',{volume:0.42,playbackRate:config?.id==='sniper'?0.85:1}); }
 
         function getZombieTypeConfig() {
+            if(waveDirector.profile?.kind==='dogs')return zombieTypeConfigs.dog;
             const candidates = [
                 { config: zombieTypeConfigs.normal, weight: 52 }
             ];
@@ -3929,7 +3936,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             if (wave >= 2) candidates.push({ config: zombieTypeConfigs.runner, weight: 27 });
             if (wave >= 3) {
                 candidates.push({ config: zombieTypeConfigs.brute, weight: 14 });
-                candidates.push({ config: zombieTypeConfigs.shooter, weight: 10 });
+                if(waveDirector.profile?.kind!=='fog')candidates.push({ config: zombieTypeConfigs.shooter, weight: 10 });
             }
 
             const activeDetonators = zombies.filter(zombie => zombie.userData.isExploder).length;
@@ -4029,6 +4036,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             if (data.legsDestroyed) return;
             data.legHealth = Math.max(0, data.legHealth - damage);
             data.speed = data.baseSpeed * (0.6 + 0.4 * data.legHealth / data.legMaxHealth);
+            if(data.isDog){if(data.legHealth===0){data.legsDestroyed=true;data.speed=data.baseSpeed*.45;}return;}
             if (data.legHealth === 0) {
                 data.legsDestroyed = true;
                 data.speed = data.baseSpeed * 0.45;
@@ -4042,6 +4050,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function createZombie(position, typeConfig = getZombieTypeConfig()) {
+            if(typeConfig.isDog)return createDog(position);
             const zombie = new THREE.Group();
 
             const bodyMat = new THREE.MeshStandardMaterial({
@@ -4280,6 +4289,86 @@ body.menu-open #combat-feedback {visibility:hidden}
             scene.add(zombie);
             zombies.push(zombie);
             updateUI();
+        }
+
+        function createDog(position) {
+            const dog=new THREE.Group(),model=new THREE.Group();dog.add(model);
+            const fur=new THREE.MeshStandardMaterial({color:0x4f4943,roughness:.95});
+            const dark=new THREE.MeshStandardMaterial({color:0x241d1c,roughness:.85});
+            const wound=new THREE.MeshStandardMaterial({color:0x87362e,roughness:.8});
+            const bone=new THREE.MeshStandardMaterial({color:0xc3b894,roughness:.9});
+            const eyes=new THREE.MeshBasicMaterial({color:0xffaa44});
+            const hitMeshes=[],legs=[];
+            const part=(geometry,material,x,y,z,name='')=>{
+                const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.name=name;model.add(mesh);
+                if(name)hitMeshes.push(mesh);return mesh;
+            };
+            const torso=part(new THREE.SphereGeometry(.45,10,8),fur,0,.78,-.08,'torso');torso.scale.set(.78,.85,1.75);
+            const chest=part(new THREE.SphereGeometry(.34,10,8),fur,0,.9,.4,'torso');chest.scale.set(.9,1.25,1);
+            const head=part(new THREE.SphereGeometry(.29,10,8),fur,0,1.04,.73,'head');head.scale.set(.85,1,1.2);
+            part(new THREE.BoxGeometry(.32,.22,.43),dark,0,.97,1.02,'head');
+            for(const x of [-.18,.18]) {
+                const ear=part(new THREE.ConeGeometry(.14,.36,4),fur,x,1.36,.64);ear.rotation.z=x<0?-.2:.2;
+                part(new THREE.SphereGeometry(.05,6,5),eyes,x,1.12,.94);
+                for(const z of [.95,1.08])part(new THREE.ConeGeometry(.035,.11,5),bone,x*.65,.83,z).rotation.z=Math.PI;
+            }
+            for(const [x,z] of [[-.27,.42],[.27,.42],[-.24,-.52],[.24,-.52]]) {
+                const pivot=new THREE.Group();pivot.position.set(x,.65,z);model.add(pivot);legs.push(pivot);
+                const limb=new THREE.Mesh(new THREE.CapsuleGeometry(.085,.35,3,6),fur);limb.position.y=-.23;limb.name='leg';pivot.add(limb);hitMeshes.push(limb);
+                const paw=new THREE.Mesh(new THREE.BoxGeometry(.18,.11,.25),dark);paw.position.set(0,-.53,.05);pivot.add(paw);
+            }
+            const tail=part(new THREE.ConeGeometry(.09,.65,7),fur,0,.92,-.95);tail.rotation.x=-1.05;
+            for(const x of [-.34,.34])for(let i=0;i<3;i++)part(new THREE.BoxGeometry(.035,.27,.045),wound,x,.85,-.18+i*.14).rotation.x=-.3;
+            const warning=part(new THREE.RingGeometry(.65,.73,24),new THREE.MeshBasicMaterial({color:0xffa245,side:THREE.DoubleSide,transparent:true,opacity:.8,depthWrite:false}),0,.025,0);
+            warning.rotation.x=-Math.PI/2;warning.visible=false;dog.add(warning);
+            dog.position.copy(position);
+            const type=zombieTypeConfigs.dog,hp=enemyHealth(wave,type.healthMultiplier),bar=createHealthBar(),speed=getZombieBaseSpeed(type,wave);
+            dog.userData={isDog:true,typeName:type.name,health:hp,maxHealth:hp,baseSpeed:speed,speed,
+                attackDamage:enemyDamage(wave,type.damageMultiplier),attack:new DogAttack(),lungeDirection:new THREE.Vector3(),
+                model,legs,head,warning,eyes,swing:0,hitMeshes,healthBarGroup:bar.group,healthBarFill:bar.fill,healthBarWidth:bar.width,barHeight:1.8,
+                legMaxHealth:Math.floor(hp*.4),legHealth:Math.floor(hp*.4),legsDestroyed:false,radius:.65,
+                navPath:[],navPathIndex:0,navTargetCell:-1,navRepathTimer:0,navForceRepath:false,
+                navDirectCheckTimer:0,navHasDirectPath:false,navSampleTimer:0,navSampleDistance:0,
+                navStuckTime:0,navBlockedFrames:0,navRecoveryCooldown:0,navLastPosition:position.clone(),navDebugLine:null};
+            for(const mesh of hitMeshes){mesh.userData.parentZombie=dog;zombieHitMeshes.push(mesh);}
+            scene.add(dog);zombies.push(dog);updateZombieHealthBar(dog);updateUI();return dog;
+        }
+
+        function updateDog(dog,playerPos,delta) {
+            const d=dog.userData,a=d.attack;
+            const dist=Math.hypot(playerPos.x-dog.position.x,playerPos.z-dog.position.z);
+            const clear=hasClearNavigationLine(dog.position,playerPos,.1);
+            if(d.meleeStagger>0){d.meleeStagger=Math.max(0,d.meleeStagger-delta);a.recover();}
+            else {
+                const previous=a.phase;a.step(delta,dist,clear);
+                if(previous==='pursue'&&a.phase==='windup') {
+                    d.lungeDirection.set(playerPos.x-dog.position.x,0,playerPos.z-dog.position.z).normalize();
+                    faceZombieHorizontally(dog,playerPos.x,playerPos.z);
+                }
+                if(a.phase==='pursue')moveZombieWithNavigation(dog,playerPos,delta);
+                if(a.phase==='lunge') {
+                    // Swept movement in small increments prevents a fast leap tunneling through walls.
+                    const distance=12*(d.speed/d.baseSpeed)*Math.min(delta,.05),steps=Math.max(1,Math.ceil(distance/.12));
+                    for(let i=0;i<steps;i++) {
+                        const hit=moveObjectWithCollisions(dog,d.lungeDirection.x*distance/steps,d.lungeDirection.z*distance/steps,d.radius);
+                        if(hit.blockedX||hit.blockedZ){a.recover();break;}
+                        if(Math.hypot(playerPos.x-dog.position.x,playerPos.z-dog.position.z)<1.25
+                            &&hasClearNavigationLine(dog.position,playerPos,.1)&&a.consumeHit())applyDamage(d.attackDamage);
+                    }
+                }
+            }
+            d.swing+=delta*d.speed*3;
+            for(const [i,leg] of d.legs.entries())leg.rotation.x=a.phase==='pursue'?Math.sin(d.swing+(i===0||i===3?0:Math.PI))*.6: a.phase==='windup'?-.3:.15;
+            d.model.position.y=a.phase==='windup'?-.12:a.phase==='lunge'?Math.sin(Math.PI*(1-a.remaining/.35))*.3:0;
+            d.warning.visible=a.phase==='windup';d.eyes.color.setHex(a.phase==='windup'?0xffee77:0xff8844);
+            d.healthBarGroup.visible=dist<(scene.fog.density>.02?25:45);
+            d.healthBarGroup.position.set(dog.position.x,1.8,dog.position.z);d.healthBarGroup.lookAt(camera.position);
+        }
+
+        function updateRoundAtmosphere(delta) {
+            const target=waveDirector.phase==='combat'?(waveDirector.profile?.fogDensity||.006):.006;
+            scene.fog.density=stepFog(scene.fog.density,target,delta,controls.isLocked&&!gameOver);
+            document.getElementById('dog-warning').hidden=!controls.isLocked||gameOver||!zombies.some(z=>z.userData.isDog&&z.userData.attack.phase==='windup'&&z.position.distanceTo(camera.position)<9);
         }
 
         function createHealthBar() {
@@ -4697,10 +4786,11 @@ body.menu-open #combat-feedback {visibility:hidden}
         function startWave(number) {
             wave = number;
             scrap.beginRound(number);
-            waveDirector.start(number);
+            waveDirector.start(number,waveProfile(number,lowQuality?BALANCE.waves.maxActiveLow:BALANCE.waves.maxActiveHigh));
+            dogRewardGranted=false;
             gameEvents.emit('waveStarted', { wave, total: waveDirector.total });
             updateWaveHud();
-            showWaveMessage(`Onda ${wave}`);
+            showWaveMessage(`Onda ${wave}`+(waveDirector.profile.kind==='dogs'?' · CAÇADA':waveDirector.profile.kind==='fog'?' · NÉVOA DENSA':''));
             if (audioContext) playGameSound("wave");
 
             // Spawn med kit a cada 5 waves
@@ -4730,7 +4820,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                 const safe = position && position.distanceTo(camera.position) >= BALANCE.enemies.minSpawnDistance
                     && !isPositionBlocked(position.x, position.z, zombieRadius + 0.25)
                     && findNavigationPath(position, camera.position, zombieRadius).length > 0;
-                if (safe) createZombie(position, getZombieTypeConfig());
+                if (safe) {createZombie(position, getZombieTypeConfig());if(waveDirector.profile.kind==='dogs')zombies.at(-1).userData.dogWave=wave;}
                 waveDirector.acknowledgeSpawn(Boolean(safe));
             } else if (action === 'completed') {
                 gameEvents.emit('waveCompleted', { wave });
@@ -4891,6 +4981,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         function supplyPrompt(item) {
             if (item.userData.kind==='generator') {
                 const id=item.userData.generatorId;
+                if(!generatorNetwork.completed.has(id)&&waveDirector.phase==='combat'&&waveDirector.profile?.kind!=='normal')return 'GERADOR · Conclua a rodada especial para ativar';
                 return generatorNetwork.completed.has(id) ? `GERADOR ${id+1} · ONLINE`
                     : generatorNetwork.active ? 'DEFESA EM ANDAMENTO · Consulte o objetivo'
                     : `[E] ATIVAR GERADOR ${id+1} · Defesa ${[25,35,45][generatorNetwork.completed.size]} s · Grátis`;
@@ -5042,6 +5133,9 @@ body.menu-open #combat-feedback {visibility:hidden}
 
         function interactContainment(item) {
             if(nearestSupply()!==item)return;
+            if(item.userData.kind==='generator'&&waveDirector.phase==='combat'&&waveDirector.profile?.kind!=='normal') {
+                showWaveMessage('Conclua a rodada especial antes de ativar o gerador');return;
+            }
             if(item.userData.kind==='door') {
                 if(generatorNetwork.openDoor()) {
                     setContainmentDoor(true);showWaveMessage('Acesso norte liberado');
@@ -5505,6 +5599,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function updateEnvironment(delta) {
+            updateRoundAtmosphere(delta);
             const now = performance.now() * 0.001;
             environmentLights.forEach((light, index) => {
                 const data = light.userData;
@@ -5888,7 +5983,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
                     const localHitY = (hit.point.y - zombie.position.y) / zombie.scale.y;
                     const isLegByPosition = !isHead && !isLeg && localHitY < 0.9;
-                    const finalIsLeg = isLeg || isLegByPosition;
+                    const finalIsLeg = isLeg || (!zombie.userData.isDog && isLegByPosition);
 
                     let damage = isHead ? headDamage : bodyDamage;
                     damage *= weaponMultiplier(playerWeapons[currentWeaponIndex]);
@@ -5956,7 +6051,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
                     const localHitY = (hit.point.y - zombie.position.y) / zombie.scale.y;
                     const isLegByPosition = !isHead && !isLeg && localHitY < 0.9;
-                    const finalIsLeg = isLeg || isLegByPosition;
+                    const finalIsLeg = isLeg || (!zombie.userData.isDog && isLegByPosition);
 
                     let damage = isHead ? headDamage : bodyDamage;
                     damage *= weaponMultiplier(playerWeapons[currentWeaponIndex]);
@@ -6127,6 +6222,11 @@ body.menu-open #combat-feedback {visibility:hidden}
             const idx = zombies.indexOf(zombie);
             if (idx === -1) return; // A kill, its drops and its event are paid exactly once.
             zombies.splice(idx, 1);
+            if(zombie.userData.dogWave===wave&&waveDirector.profile?.kind==='dogs'&&!dogRewardGranted
+                &&waveDirector.spawned===waveDirector.total&&!zombies.some(z=>z.userData.dogWave===wave)) {
+                dogRewardGranted=true;spawnPowerup(zombie.position,'max_ammo');
+                gameEvents.emit('dogRoundReward',{wave});
+            }
             playZombieVoice(zombie, "death");
 
             zombie.userData.hitMeshes.forEach(mesh => {
@@ -6152,7 +6252,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                 cause, headshot, reward });
             updateUI();
 
-            if (allowPowerup && Math.random() < BALANCE.drops.chance) {
+            if (allowPowerup && !zombie.userData.isDog && Math.random() < BALANCE.drops.chance) {
                 spawnPowerup(zombie.position);
             }
         }
@@ -6467,6 +6567,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
+                if(zombie.userData.isDog){updateDog(zombie,playerPos,delta);continue;}
                 zombie.userData.attackCooldown -= delta;
                 zombie.userData.swing += delta * (7.2 + zombie.userData.speed * 1.4);
 
@@ -6493,7 +6594,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                 armR.rotation.x = reach - Math.sin(zombie.userData.swing+0.35) * 0.28;
                 zombie.userData.head.rotation.z = zombie.userData.headBaseTilt + Math.sin(zombie.userData.swing * 0.5) * 0.07;
                 }
-                zombie.userData.healthBarGroup.visible = dist < 45;
+                zombie.userData.healthBarGroup.visible = dist < (scene.fog.density>.02?25:45);
 
                 if (zombie.userData.energyCore) {
                     const pulse = 1 + Math.sin(performance.now() * 0.009 + i) * 0.16;
@@ -6850,6 +6951,8 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function updateUI() {
+            const kind=waveDirector.profile?.kind||'normal';
+            document.getElementById('round-kind').textContent=kind==='dogs'?'CAÇADA · CÃES':kind==='fog'?'NÉVOA DENSA · VISIBILIDADE REDUZIDA':'RODADA NORMAL';
             updateContainmentHud();
             updateProgressionHud();
             const reloadTrack = document.getElementById('reload-track');
@@ -7093,6 +7196,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             wave = 1;
 
             waveDirector.reset();
+            dogRewardGranted=false;scene.fog.density=.006;document.getElementById('dog-warning').hidden=true;
             generatorNetwork.reset();
             setContainmentDoor(false);
             updateContainmentHud();

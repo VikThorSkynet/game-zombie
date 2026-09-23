@@ -1,7 +1,42 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed,
-    ArmorState, ScrapWallet, GeneratorNetwork, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from '../game-systems.mjs';
+    ArmorState, ScrapWallet, GeneratorNetwork, DogAttack, waveProfile, stepFog, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from '../game-systems.mjs';
+
+test('special schedule has no adjacent events and caps finite dog populations',()=>{
+    let lastDog=0,lastSpecial=0;
+    for(let n=1;n<=100;n++) {
+        const p=waveProfile(n,24);
+        if(p.kind!=='normal'){assert(n-lastSpecial>1);lastSpecial=n;}
+        if(p.kind==='dogs') {
+            assert(lastDog?[5,6].includes(n-lastDog):n===5);lastDog=n;
+            assert(p.cap>=4&&p.cap<=8&&p.total>=p.cap&&p.total<=24);
+        }
+        if(p.kind==='fog'){assert(n>=8);assert(p.cap<24);assert.equal(p.fogDensity,.05);}
+        const d=new WaveDirector(24);d.start(n,p);
+        let count=0;while(count<p.total){assert.equal(d.step(1,0),'spawn');d.acknowledgeSpawn(true);count++;}
+        assert.equal(d.step(1,1),null);assert.equal(d.step(1,0),'completed');
+        assert.equal(d.step(10,0),'next');assert.equal(d.step(1,0),null);
+        d.reset();assert.equal(d.maxActive,24);assert.equal(d.profile,null);
+    }
+    assert.equal(waveProfile(8).kind,'fog');
+    assert.equal(stepFog(.006,.05,1),.014);
+    assert.equal(stepFog(.006,.05,100),.05);
+    assert.equal(stepFog(.05,.006,100),.006);
+    assert.equal(stepFog(.02,.05,3,false),.02);
+});
+
+test('dog telegraphs, attacks once, recovers and freezes when paused',()=>{
+    const a=new DogAttack();a.step(1,3,false);assert.equal(a.phase,'pursue');
+    a.step(0,3,true);assert.equal(a.phase,'windup');assert.equal(a.consumeHit(),false);
+    a.step(1,3,true,false);assert.equal(a.remaining,.7);
+    a.step(.69,3,true);assert.equal(a.phase,'windup');
+    a.step(.02,3,true);assert.equal(a.phase,'lunge');
+    assert(a.consumeHit());assert.equal(a.consumeHit(),false);
+    a.step(.36,3,true);assert.equal(a.phase,'recover');assert.equal(a.consumeHit(),false);
+    a.step(.96,3,true);assert.equal(a.phase,'pursue');
+    a.step(0,3,true);a.recover();assert.equal(a.phase,'recover');
+});
 
 test('generators retain progress, finite budgets and unique rewards across activation order', () => {
     const g=new GeneratorNetwork();
