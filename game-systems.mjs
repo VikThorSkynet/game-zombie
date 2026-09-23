@@ -27,6 +27,41 @@ export const RARITIES = Object.freeze([
     Object.freeze({ name: 'Épica', color: '#c396ff', multiplier: 1.9, cost: 350 }),
     Object.freeze({ name: 'Lendária', color: '#ffd16b', multiplier: 2.3, cost: 550 })
 ]);
+
+export function waveProfile(round, normalCap = BALANCE.waves.maxActiveHigh) {
+    let dogRound=5,index=0,previous=-10;
+    while(dogRound<round){previous=dogRound;dogRound+=index%2===0?5:6;index++;}
+    const dogs=round===dogRound;
+    const fog=!dogs&&round>=8&&round%4===0&&round-previous>1&&dogRound-round>1;
+    return Object.freeze({kind:dogs?'dogs':fog?'fog':'normal',
+        total:dogs?Math.min(24,6+index*2):BALANCE.waves.baseCount+round*BALANCE.waves.countPerRound,
+        cap:dogs?Math.min(normalCap,8,4+index):fog?Math.max(1,Math.floor(normalCap*.65)):normalCap,
+        fogDensity:fog?.05:.006});
+}
+
+export function stepFog(density,target,delta,active=true) {
+    if(!active||!Number.isFinite(delta)||delta<0)return density;
+    if(Math.abs(target-density)<=delta*.008)return target;
+    return density+Math.sign(target-density)*Math.min(Math.abs(target-density),delta*.008);
+}
+
+export class DogAttack {
+    constructor(){this.phase='pursue';this.remaining=0;this.hit=false;}
+    recover(){this.phase='recover';this.remaining=.95;}
+    step(delta,distance,clear,active=true){
+        if(!active||!Number.isFinite(delta)||delta<0)return;
+        if(this.phase==='pursue'){
+            if(distance<=5&&clear){this.phase='windup';this.remaining=.7;this.hit=false;}
+            return;
+        }
+        this.remaining=Math.max(0,this.remaining-delta);
+        if(this.remaining>0)return;
+        if(this.phase==='windup'){this.phase='lunge';this.remaining=.35;}
+        else if(this.phase==='lunge')this.recover();
+        else this.phase='pursue';
+    }
+    consumeHit(){if(this.phase!=='lunge'||this.hit)return false;this.hit=true;return true;}
+}
 export function rarityOf(weapon) {
     return weapon.configId === 'ray_gun'
         ? { name: 'Especial', color: '#69f5de', multiplier: 1, cost: 0 }
@@ -186,6 +221,7 @@ export class GameEvents {
  */
 export class WaveDirector {
     constructor(maxActive = BALANCE.waves.maxActiveHigh) {
+        this.baseMaxActive = maxActive;
         this.maxActive = maxActive;
         this.holds = new Set();
         this.advanceHolds = new Set();
@@ -193,13 +229,17 @@ export class WaveDirector {
     }
     reset() {
         this.number = 0; this.phase = 'idle'; this.total = 0; this.spawned = 0;
+        this.profile = null; this.maxActive = this.baseMaxActive;
         this.spawnTimer = 0; this.remaining = 0;
         this.holds.clear(); this.advanceHolds.clear();
     }
-    start(number) {
+    start(number, profile = null) {
         if (!Number.isInteger(number) || number < 1) throw new RangeError('Invalid wave');
         this.number = number;
         this.total = BALANCE.waves.baseCount + number * BALANCE.waves.countPerRound;
+        this.profile=profile;
+        this.maxActive=this.baseMaxActive;
+        if(profile){this.total=profile.total;this.maxActive=profile.cap;}
         this.spawned = 0; this.spawnTimer = 0; this.remaining = 0; this.phase = 'combat';
     }
     get spawnInterval() {
