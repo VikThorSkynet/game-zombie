@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v18 • 22/09/2026 23:09:17</title>
+    <title>Protocolo Sobreviva — v19 • 23/09/2026 10:29:08</title>
 
     <style>
         * {
@@ -778,6 +778,15 @@ body.menu-open #waveMessage,body.menu-open #interactionPrompt,body.menu-open #ui
 #performance-label {position:fixed;bottom:14px;left:18px;color:#89a5b6;font:11px monospace;z-index:21;pointer-events:none}
 #wave-break {position:fixed;top:22%;left:50%;transform:translateX(-50%);padding:10px 16px;background:#06121de8;border:1px solid #6fd9dc;color:#dcf8ff;font:13px monospace;z-index:15;pointer-events:none;text-align:center}
 #wave-break[hidden],body.menu-open #wave-break {display:none}
+#armor-status {color:#90d5ff;font:12px monospace;margin-top:12px;border-top:1px solid #5aa7c344;padding-top:10px;line-height:1.8}
+#armor-plates {display:flex;gap:6px;margin:4px 0}
+.armor-slot {width:36px;height:9px;background:#132638;border:1px solid #5482a0}
+.armor-slot.locked {opacity:.25}
+.armor-slot span {display:block;height:100%;background:#75c9f6}
+#armor-progress {height:3px;background:#163245;margin-top:4px}
+#armor-progress span {display:block;height:100%;background:#ddf4ff;transform-origin:left}
+#scrap-status {color:#f4d290;font:12px monospace;margin-top:8px}
+#rarity-status {font:12px monospace;letter-spacing:1px;margin:5px 0}
 #perk-badges {display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 #ads-dot {display:none;position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#ff4545;box-shadow:0 0 5px #f22;z-index:12;pointer-events:none}
 body.aiming #ads-dot {display:block}
@@ -846,6 +855,12 @@ body.menu-open #combat-feedback {visibility:hidden}
                 <span class="sprint-hint"><kbd>CTRL</kbd> SEGURE</span>
             </div>
         </div>
+        <div id="armor-status">
+            <div id="armor-caption">COLETE I · 0 / 50</div>
+            <div id="armor-plates" aria-label="Proteção do colete"><div class="armor-slot"><span></span></div><div class="armor-slot locked"><span></span></div><div class="armor-slot locked"><span></span></div></div>
+            <div id="armor-hint">[F] EQUIPAR · RESERVA 0/5</div>
+            <div id="armor-progress" role="progressbar" aria-label="Equipar placa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div>
+        </div>
     </div>
 
     <div id="mission-ui">
@@ -858,11 +873,13 @@ body.menu-open #combat-feedback {visibility:hidden}
             <div class="combat-stat"><span>AMEAÇAS</span><strong id="alive">0</strong></div>
         </div>
         <div class="text-info" id="status">STATUS · PRONTO</div>
+        <div id="scrap-status">SUCATA · 0</div>
         <div id="perk-badges" aria-label="Perks ativos"></div>
     </div>
 
     <div id="weapon-ui">
         <div id="weapon">🔫 Pistola [1]</div>
+        <div id="rarity-status">COMUM · DANO ×1</div>
         <div id="ammo">20 / 60</div>
         <div id="ammo-hint">R · RECARREGAR &nbsp; 1 / 2 · TROCAR</div>
         <div id="reload-track" role="progressbar" aria-label="Recarga" aria-valuemin="0" aria-valuemax="100"><div id="reload-fill"></div></div>
@@ -906,7 +923,8 @@ body.menu-open #combat-feedback {visibility:hidden}
         import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
         import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
         import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-        import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed } from './game-systems.mjs';
+        import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed,
+            ArmorState, ScrapWallet, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from './game-systems.mjs';
 
         let scene, camera, renderer, composer, bloomPass, controls, clock;
         let muzzleFlashTexture;
@@ -1001,8 +1019,8 @@ body.menu-open #combat-feedback {visibility:hidden}
                 icon: "💥",
                 fireRate: 600,
                 magSize: 6,
-                damageHead: 300,
-                damageBody: 150,
+                damageHead: BALANCE.weapons.shotgunHeadPerPellet,
+                damageBody: BALANCE.weapons.shotgunBodyPerPellet,
                 reloadDuration: 2.0,
                 spread: 0.015,
                 pellets: 8,
@@ -1013,10 +1031,10 @@ body.menu-open #combat-feedback {visibility:hidden}
                 id: "smg",
                 name: "SMG",
                 icon: "⚡",
-                fireRate: 20,
-                magSize: 100,
-                damageHead: 85,
-                damageBody: 65,
+                fireRate: BALANCE.weapons.smgInterval,
+                magSize: BALANCE.weapons.smgMagazine,
+                damageHead: BALANCE.weapons.smgHead,
+                damageBody: BALANCE.weapons.smgBody,
                 reloadDuration: 1.4,
                 spread: 0.02,
                 pellets: 1,
@@ -1071,6 +1089,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         let playerWeapons = [
             {
                 configId: "pistol",
+                rarity: 0,
                 ammoInMag: 20,
                 reserveAmmo: 60,
                 model: null,
@@ -1078,6 +1097,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             },
             {
                 configId: "shotgun",
+                rarity: 0,
                 ammoInMag: 6,
                 reserveAmmo: 24,
                 model: null,
@@ -1284,6 +1304,10 @@ body.menu-open #combat-feedback {visibility:hidden}
         let wave = 1;
 
         const gameEvents = new GameEvents();
+        const armor = new ArmorState();
+        const scrap = new ScrapWallet();
+        const upgradeStations = [];
+        let armorModel;
         const waveDirector = new WaveDirector(lowQuality ? BALANCE.waves.maxActiveLow : BALANCE.waves.maxActiveHigh);
 
         let gameOver = false;
@@ -1304,6 +1328,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         let mysteryBoxState = "idle"; // "idle", "rolling", "waiting_pickup"
         let mysteryBoxTimer = 0;
         let mysteryBoxRolledId = null;
+        let mysteryBoxRolledRarity = 0;
         let mysteryBoxWeaponMesh = null;
         const mysteryBoxRollDuration = 3.5;
         const mysteryBoxWaitDuration = 8.0;
@@ -1548,7 +1573,9 @@ body.menu-open #combat-feedback {visibility:hidden}
             createPackAPunchMachine();
             createArena();
             createSupplyDistricts();
+            createUpgradeStations();
             createKnife();
+            createArmorModel();
             buildNavigationGrid();
 
             // O cenário que projeta sombras é estático; atualizar o mapa uma vez
@@ -1572,7 +1599,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             setOverlay(
                 "Sobreviva à noite.",
                 '<p class="menu-lead">A cidade caiu. Defenda sua posição, enfrente as ondas e melhore seu arsenal.</p>' +
-                '<div class="control-grid"><div><b>W A S D</b>Mover</div><div><b>MOUSE</b>Esquerdo: atirar · Direito: red dot</div><div><b>CTRL / SHIFT</b>Correr</div><div><b>R / V</b>Recarregar · Facada</div><div><b>E</b>Interagir</div><div><b>1 / 2 · ESC</b>Armas · Pausar</div></div>' +
+                '<div class="control-grid"><div><b>W A S D</b>Mover</div><div><b>MOUSE</b>Atirar · Mirar</div><div><b>CTRL / SHIFT</b>Correr</div><div><b>R / V</b>Recarregar · Facada</div><div><b>E / G</b>Comprar · Ampliar colete na estação</div><div><b>F</b>Equipar placa</div><div><b>1 / 2 · ESC</b>Armas · Pausar</div><div><b>N</b>Antecipar onda no intervalo</div></div>' +
                 '<label class="quality-row">Qualidade <select id="quality-select"><option value="auto">Automática</option><option value="low">Desempenho</option><option value="high">Alta</option></select><span>Automática ajusta a resolução durante a partida.</span></label>',
                 "INICIAR OPERAÇÃO", () => controls.lock()
             );
@@ -3220,6 +3247,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function startPackAPunch() {
+            if (armor.plating || meleeTimer > 0 || !controls.isLocked || gameOver) return;
             const pw = playerWeapons[currentWeaponIndex];
             if (pw.packapunched) {
                 showWaveMessage("Arma já está melhorada!");
@@ -3547,6 +3575,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         function createRayGun() { return buildDetailedWeapon('ray_gun', -1.04, 0x00ffcc); }
 
         function switchWeapon(toIndex) {
+            if (armor.plating) return;
             if (meleeTimer > 0) return;
             if (isSwitchingWeapon) return;
             if (currentWeaponIndex === toIndex) return;
@@ -4653,6 +4682,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
         function startWave(number) {
             wave = number;
+            scrap.beginRound(number);
             waveDirector.start(number);
             gameEvents.emit('waveStarted', { wave, total: waveDirector.total });
             updateWaveHud();
@@ -4782,7 +4812,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
         function nearestSupply() {
             let nearest=null, distance=3.3;
-            for(const item of [...ammoStations,...saleBoxes]) {
+            for(const item of [...ammoStations,...saleBoxes,...upgradeStations]) {
                 if(!item.visible)continue;
                 const d=camera.position.distanceTo(item.position);
                 // Cabinets have their own solid collision, so check the approach point.
@@ -4796,7 +4826,10 @@ body.menu-open #combat-feedback {visibility:hidden}
             box.userData.weapon=null;box.userData.state='idle';box.userData.timer=0;box.visible=fireSaleTimer>0;
         }
         function interactSupply(item) {
-            if(isReloading || isSwitchingWeapon || papState==='upgrading')return;
+            if(!controls.isLocked || gameOver || meleeTimer>0 || armor.plating || isReloading || isSwitchingWeapon || papState==='upgrading')return;
+            if (item.userData.kind === 'armor' || item.userData.kind === 'arsenal') {
+                buyUpgrade(item); return;
+            }
             if(item.userData.kind==='ammo') {
                 const w=playerWeapons[currentWeaponIndex], mag=Math.ceil(weaponConfigs[w.configId].magSize*(w.packapunched?papMagMultiplier:1));
                 if(w.ammoInMag===mag && w.reserveAmmo>=mag*4){showWaveMessage('Munição já está completa');return;}
@@ -4806,11 +4839,13 @@ body.menu-open #combat-feedback {visibility:hidden}
             } else if(item.userData.state==='ready') {
                 const w=playerWeapons[currentWeaponIndex];camera.remove(w.model);disposeObject3D(w.model);
                 w.configId=item.userData.weaponId;w.packapunched=false;w.model=weaponConfigs[w.configId].createModel();camera.add(w.model);
+                w.rarity=item.userData.rarity;
                 w.reserveAmmo=0;refillWeapon(w);clearSaleBox(item);playGameSound('weaponPickup',item.position);
             } else if(item.userData.state==='idle' && fireSaleTimer>0) {
                 if(score<10){showWaveMessage('Pontos insuficientes!');return;}
                 score-=10;item.userData.state='rolling';item.userData.timer=3;
                 const keys=Object.keys(weaponConfigs);item.userData.weaponId=keys[Math.floor(Math.random()*keys.length)];
+                item.userData.rarity=item.userData.weaponId==='ray_gun'?0:rollRarity(wave);
                 const model=weaponConfigs[item.userData.weaponId].createModel();model.position.set(-0.28,1.7,0.5);item.add(model);item.userData.weapon=model;
                 playGameSound('mystery',item.position);
             }
@@ -4830,6 +4865,128 @@ body.menu-open #combat-feedback {visibility:hidden}
                 box.visible=fireSaleTimer>0 || box.userData.state!=='idle';
             }
         }
+        function canUseProgression() {
+            return controls.isLocked && !gameOver && !armor.plating && !isReloading
+                && !isSwitchingWeapon && meleeTimer <= 0 && papState !== 'upgrading';
+        }
+
+        function supplyPrompt(item) {
+            if (armor.plating) return 'EQUIPANDO PLACA…';
+            const kind=item.userData.kind;
+            if (kind==='armor') return `[E] PLACA · ${BALANCE.armor.plateCost} Pts · [F] Equipar`
+                + (armor.upgradeCost ? ` · [G] Colete ${armor.tier+1}: ${armor.upgradeCost} Pts` : ' · Colete máximo');
+            if (kind==='arsenal') {
+                const w=playerWeapons[currentWeaponIndex], next=RARITIES[(w.rarity||0)+1];
+                return w.configId==='ray_gun' ? 'RAY GUN · Especial · Melhore no Pack-a-Punch'
+                    : next ? `[E] ${rarityOf(w).name} → ${next.name} · ${next.cost} sucatas · dano ×${next.multiplier}` : 'ARMA LENDÁRIA · Raridade máxima';
+            }
+            if (kind==='ammo') return '[E] MUNIÇÃO · '+ammoPrice()+' Pts · arma equipada';
+            return item.userData.state==='ready' ? `[E] ${weaponConfigs[item.userData.weaponId].name} · ${rarityOf({configId:item.userData.weaponId,rarity:item.userData.rarity}).name}`
+                : item.userData.state==='rolling' ? 'SORTEANDO ARMA…' : '[E] CAIXA MISTERIOSA · 10 Pts';
+        }
+
+        function buyUpgrade(item, capacity=false) {
+            if (!canUseProgression() || nearestSupply()!==item) return;
+            const isArmor=item.userData.kind==='armor';
+            if (!isArmor && item.userData.kind!=='arsenal') return;
+            const result=isArmor ? (capacity?armor.upgrade(score):armor.buyPlate(score))
+                : rarityUpgrade(playerWeapons[currentWeaponIndex],scrap.amount);
+            if (result.ok) {
+                if (isArmor) score-=result.cost; else scrap.amount-=result.cost;
+                gameEvents.emit('purchase',{wave,item:isArmor?(capacity?'vest':'plate'):'rarity',currency:isArmor?'points':'scrap',cost:result.cost});
+            }
+            showWaveMessage(result.message);updateUI();
+        }
+
+        function upgradeArmorAtStation() {
+            const item=nearestSupply();
+            if (item?.userData.kind==='armor') buyUpgrade(item,true);
+        }
+
+        function startArmorPlate() {
+            if (!canUseProgression()) return;
+            if (!armor.start()) {
+                showWaveMessage(armor.protection>=armor.maximum?'Colete já está cheio':'Sem placas · procure a estação COLETE');return;
+            }
+            resetAim();updateArmorPlate(0);updateWeapon(0);updateUI();
+        }
+
+        function createArmorModel() {
+            armorModel=new THREE.Group();
+            const p=propParts(armorModel);
+            const plate=new THREE.MeshBasicMaterial({color:0x314956});
+            const trim=new THREE.MeshBasicMaterial({color:0x91b3c1});
+            const glove=new THREE.MeshBasicMaterial({color:0x19262c});
+            p.box(0.32,0.4,0.035,0,0,0,plate);
+            p.box(0.23,0.03,0.04,0,0.12,0.01,trim);
+            for(const x of [-0.18,0.18])p.box(0.09,0.13,0.09,x,-0.07,0.04,glove);
+            for(let i=0;i<3;i++)p.box(0.24,0.006,0.04,0,-0.01-i*0.035,0.01,trim);
+            armorModel.visible=false;camera.add(armorModel);
+        }
+
+        function updateArmorPlate(delta) {
+            if (!armorModel) return;
+            const completed=armor.step(delta,controls.isLocked&&!gameOver);
+            armorModel.visible=armor.plating&&!gameOver;
+            if (armor.plating) {
+                const progress=1-armor.remaining/BALANCE.armor.applyDuration;
+                const lift=settings.reducedMotion?0.8:Math.sin(progress*Math.PI);
+                armorModel.position.set(0,-0.65+lift*0.38,-0.65+progress*0.13);
+                armorModel.rotation.x=settings.reducedMotion?0:-0.25+progress*0.45;
+            }
+            if(completed) {
+                gameEvents.emit('plateEquipped',{wave,protection:armor.protection});
+                updateWeapon(0);updateUI();
+            }
+        }
+
+        function updateProgressionHud() {
+            document.getElementById('armor-caption').textContent=`COLETE ${armor.tier} · ${Math.ceil(armor.protection)} / ${armor.maximum}`;
+            document.querySelectorAll('#armor-plates .armor-slot').forEach((slot,i)=>{
+                slot.classList.toggle('locked',i>=armor.tier);
+                slot.firstElementChild.style.width=`${THREE.MathUtils.clamp((armor.protection-i*50)/50,0,1)*100}%`;
+            });
+            document.getElementById('armor-hint').textContent=armor.plating?'EQUIPANDO PLACA…':`[F] EQUIPAR · RESERVA ${armor.reserve}/${BALANCE.armor.reserveLimit}`;
+            const progress=document.getElementById('armor-progress'),value=armor.plating?1-armor.remaining/BALANCE.armor.applyDuration:0;
+            progress.hidden=!armor.plating;progress.setAttribute('aria-valuenow',String(Math.round(value*100)));
+            progress.firstElementChild.style.transform=`scaleX(${value})`;
+            document.getElementById('scrap-status').textContent=`SUCATA · ${scrap.amount}`;
+            const w=playerWeapons[currentWeaponIndex],r=rarityOf(w),label=document.getElementById('rarity-status');
+            label.textContent=`${r.name.toUpperCase()} · DANO ×${weaponMultiplier(w).toLocaleString('pt-BR',{maximumFractionDigits:2})}${w.packapunched?' · PaP':''}`;
+            label.style.color=r.color;
+        }
+
+        function createUpgradeStations() {
+            const occupied=[...ammoStations,...saleBoxes,mysteryBox,papMachine,...perkMachines.map(p=>p.mesh)];
+            for (const [i,kind] of ['armor','arsenal'].entries()) {
+                const side=i===0?1:-1;
+                const candidates=[12,20,36,44,68,90].map(z=>new THREE.Vector3(side*6,0,side*z));
+                const pos=candidates.find(p=>!isPositionBlocked(p.x,p.z,1.8)&&occupied.every(o=>o.position.distanceTo(p)>6));
+                if (!pos) throw new Error(`Sem posição livre para ${kind}`);
+                const g=new THREE.Group(),p=propParts(g);
+                const metal=new THREE.MeshBasicMaterial({color:0x293942});
+                const accent=new THREE.MeshBasicMaterial({color:i===0?0x75c9f6:0xe6bd69});
+                const trim=new THREE.MeshBasicMaterial({color:0x6a838d});
+                const body=p.box(1.5,0.9,0.85,0,.45,0,metal);
+                p.box(1.65,.08,.95,0,.94,0,trim);
+                for(const x of [-.65,.65])p.box(.07,1.2,.07,x,1.4,-.35,metal);
+                p.box(1.4,.8,.06,0,1.55,-.35,metal);
+                if(kind==='armor') {
+                    p.box(.65,.7,.12,0,1.5,-.24,trim);
+                    for(const x of [-.23,.23])p.box(.1,.6,.14,x,1.5,-.22,metal);
+                    for(let j=0;j<3;j++)p.box(.38,.2,.04,-.38+j*.35,1.1,0,trim);
+                } else {
+                    for(let j=0;j<5;j++)p.box(.18,.18,.06,-.48+j*.24,1.63,-.28,new THREE.MeshBasicMaterial({color:RARITIES[j].color}));
+                    p.box(.9,.09,.1,0,1.1,0,trim);p.box(.18,.15,.3,-.45,1.08,0,metal);
+                }
+                p.box(1.2,.045,.025,0,.72,.44,accent);
+                const label=floatingLabel(kind==='armor'?'COLETE · [E]':'ARSENAL · [E]',i===0?'#91d6ff':'#ffda92');
+                label.position.set(0,2.35,0);g.add(label);
+                g.position.copy(pos);g.userData.kind=kind;scene.add(g);g.updateMatrixWorld(true);
+                registerWorldCollider(body);upgradeStations.push(g);occupied.push(g);
+            }
+        }
+
         function createSupplyDistricts() {
             const metal=new THREE.MeshStandardMaterial({color:0x34463d,metalness:0.6,roughness:0.7});
             const trim=new THREE.MeshStandardMaterial({color:0xb5a56d,metalness:0.5,roughness:0.6});
@@ -4891,6 +5048,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             knifeModel.visible=false;camera.add(knifeModel);
         }
         function meleeAttack() {
+            if (armor.plating) return;
             if(!controls.isLocked || gameOver || meleeTimer>0 || isReloading || isSwitchingWeapon || papState==='upgrading')return;
             meleeTimer=BALANCE.melee.duration;knifeModel.visible=true;updateMelee(0);
             const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
@@ -4990,6 +5148,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
                         const keys = Object.keys(weaponConfigs);
                         mysteryBoxRolledId = keys[Math.floor(Math.random() * keys.length)];
+                        mysteryBoxRolledRarity = mysteryBoxRolledId === 'ray_gun' ? 0 : rollRarity(wave);
 
                         if (mysteryBoxWeaponMesh) {
                             mysteryBox.remove(mysteryBoxWeaponMesh);
@@ -5009,7 +5168,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
                     if (distBox < 4.5 && controls.isLocked) {
                         showPrompt = true;
-                        promptText = `Pressione [E] Pegar ${weaponConfigs[mysteryBoxRolledId].icon} ${weaponConfigs[mysteryBoxRolledId].name}`;
+                        promptText = `[E] Pegar ${weaponConfigs[mysteryBoxRolledId].name} · ${rarityOf({configId:mysteryBoxRolledId,rarity:mysteryBoxRolledRarity}).name}`;
                     }
 
                     if (mysteryBoxTimer <= 0) {
@@ -5052,7 +5211,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             const supply = controls.isLocked ? nearestSupply() : null;
             if (supply) {
                 showPrompt = true;
-                promptText = supply.userData.kind === 'ammo' ? '[E] MUNIÇÃO · '+ammoPrice()+' Pts · arma equipada' : supply.userData.state === 'ready' ? '[E] PEGAR ARMA · LIQUIDAÇÃO' : supply.userData.state === 'rolling' ? 'SORTEANDO ARMA…' : '[E] CAIXA MISTERIOSA · 10 Pts';
+                promptText = supplyPrompt(supply);
             }
             if (showPrompt && !gameOver) {
                 uiInteractionPrompt.textContent = promptText;
@@ -5440,6 +5599,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function startReload() {
+            if (armor.plating) return;
             if (meleeTimer > 0) return;
             if (gameOver) return;
             if (isReloading) return;
@@ -5487,6 +5647,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function shoot(event) {
+            if (armor.plating) return;
             if (meleeTimer > 0) return;
             if (event && event.button !== 0) return;
             if (!controls.isLocked || gameOver) return;
@@ -5503,7 +5664,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             }
 
             const now = performance.now();
-            const actualFireRate = cfg.fireRate * (hasDoubleTap ? 0.4 : 1.0);
+            const actualFireRate = cfg.fireRate * (hasDoubleTap ? BALANCE.weapons.doubleTapInterval : 1.0);
             if (now - lastShotTime < actualFireRate) return;
             lastShotTime = now;
 
@@ -5589,7 +5750,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                     const finalIsLeg = isLeg || isLegByPosition;
 
                     let damage = isHead ? headDamage : bodyDamage;
-                    if (playerWeapons[currentWeaponIndex].packapunched) damage *= papDamageMultiplier;
+                    damage *= weaponMultiplier(playerWeapons[currentWeaponIndex]);
                     if (instaKillTimer > 0) damage = 999999;
 
                     damageEnemy(zombie, damage, 'bullet', isHead);
@@ -5657,7 +5818,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                     const finalIsLeg = isLeg || isLegByPosition;
 
                     let damage = isHead ? headDamage : bodyDamage;
-                    if (playerWeapons[currentWeaponIndex].packapunched) damage *= papDamageMultiplier;
+                    damage *= weaponMultiplier(playerWeapons[currentWeaponIndex]);
                     if (instaKillTimer > 0) damage = 999999;
 
                     damageEnemy(zombie, damage, 'laser', isHead);
@@ -5842,8 +6003,9 @@ body.menu-open #combat-feedback {visibility:hidden}
             let reward = 0;
             if (awardScore) {
                 runStats.kills++;
-                reward = (zombie.userData.scoreValue ?? BALANCE.economy.fallbackKill) * (doublePointsTimer > 0 ? 2 : 1);
+                reward = killReward(cause, headshot, doublePointsTimer > 0);
                 score += reward;
+                scrap.awardKill();
             }
             gameEvents.emit('enemyKilled', { wave, enemyId: zombie.id, enemyType: zombie.userData.typeName,
                 cause, headshot, reward });
@@ -5857,9 +6019,13 @@ body.menu-open #combat-feedback {visibility:hidden}
         function applyDamage(amount) {
             if (gameOver || !Number.isFinite(amount) || amount <= 0) return;
 
-            const lostHealth = Math.min(health, amount);
-            health -= amount;
-            gameEvents.emit('playerDamaged', { wave, amount, lostHealth });
+            const protection = armor.absorb(amount);
+            const lostHealth = Math.min(health, protection.healthDamage);
+            health -= protection.healthDamage;
+            gameEvents.emit('playerDamaged', { wave, amount, lostHealth, absorbed: protection.absorbed });
+            if (protection.broken) {
+                combatFeedback.textContent='PLACA QUEBRADA';combatFeedbackTimer=0.8;
+            }
             damageFlashAmount = Math.min(1.45, damageFlashAmount + 0.55 + amount * 0.02);
             damageTextAmount = 1;
             screenShakeAmount = Math.min(1, screenShakeAmount + 0.35 + amount * 0.02);
@@ -6393,7 +6559,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             if (flashlight) flashlight.intensity = 80;
             if (controls) controls.pointerSpeed = settings.sensitivity;
             document.body.classList.remove('aiming','scoped');
-            playerWeapons.forEach(w=>{if(w.model)w.model.visible=true;});
+            playerWeapons.forEach((w,index)=>{if(w.model)w.model.visible=index===currentWeaponIndex&&meleeTimer<=0&&!armor.plating&&papState!=='upgrading';});
             if (camera) { camera.fov=75; camera.updateProjectionMatrix(); }
             playerWeapons.forEach(w=>{ if(w.model?.userData.optic) w.model.userData.optic.visible=false; });
         }
@@ -6402,14 +6568,14 @@ body.menu-open #combat-feedback {visibility:hidden}
             const activeWeaponModel = playerWeapons[currentWeaponIndex]?.model;
             if (!activeWeaponModel) return;
             const isSniper = playerWeapons[currentWeaponIndex].configId === 'sniper';
-            const aiming = aimHeld && controls.isLocked && !gameOver && !isReloading && !isSwitchingWeapon && meleeTimer <= 0 && papState !== 'upgrading';
+            const aiming = aimHeld && controls.isLocked && !gameOver && !armor.plating && !isReloading && !isSwitchingWeapon && meleeTimer <= 0 && papState !== 'upgrading';
             aimBlend = THREE.MathUtils.damp(aimBlend,aiming ? 1 : 0,16,delta);
             flashlight.intensity = THREE.MathUtils.lerp(80, 0.45, aimBlend);
             controls.pointerSpeed = settings.sensitivity * THREE.MathUtils.lerp(1, isSniper ? 0.22 : 0.65, aimBlend);
             document.body.classList.toggle('aiming',aimBlend > 0.85 && aiming);
             const scoped = isSniper && aiming && aimBlend > 0.9;
             document.body.classList.toggle('scoped',scoped);
-            activeWeaponModel.visible = !scoped && meleeTimer<=0;
+            activeWeaponModel.visible = !scoped && meleeTimer<=0 && !armor.plating;
             if (activeWeaponModel.userData.optic) activeWeaponModel.userData.optic.visible = !isSniper && aimBlend > 0.05;
 
             if (!controls.isLocked) {
@@ -6543,6 +6709,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function updateUI() {
+            updateProgressionHud();
             const reloadTrack = document.getElementById('reload-track');
             reloadTrack.style.display = isReloading ? 'block' : 'none';
             if (isReloading) {
@@ -6674,6 +6841,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function endGame() {
+            armor.cancel(); if (armorModel) armorModel.visible=false;
             gameOver = true;
             gameEvents.emit('gameEnded', { wave, kills: runStats.kills, seconds: runStats.seconds });
             updateWaveHud();
@@ -6683,6 +6851,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function resetGame() {
+            armor.reset(); scrap.reset(); if (armorModel) armorModel.visible=false;
             meleeTimer = 0; knifeModel.visible = false; fireSaleTimer = 0;
             for (const box of saleBoxes) clearSaleBox(box);
             if (mysteryBoxWeaponMesh) { mysteryBox.remove(mysteryBoxWeaponMesh); disposeObject3D(mysteryBoxWeaponMesh); mysteryBoxWeaponMesh=null; }
@@ -6794,6 +6963,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             playerWeapons[0].ammoInMag = weaponConfigs.pistol.magSize;
             playerWeapons[0].reserveAmmo = weaponConfigs.pistol.magSize * 3;
             playerWeapons[0].packapunched = false;
+            playerWeapons[0].rarity = 0;
             if (playerWeapons[0].model) { camera.remove(playerWeapons[0].model); disposeObject3D(playerWeapons[0].model); }
             playerWeapons[0].model = weaponConfigs.pistol.createModel();
             camera.add(playerWeapons[0].model);
@@ -6802,6 +6972,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             playerWeapons[1].ammoInMag = weaponConfigs.shotgun.magSize;
             playerWeapons[1].reserveAmmo = weaponConfigs.shotgun.magSize * 4;
             playerWeapons[1].packapunched = false;
+            playerWeapons[1].rarity = 0;
             if (playerWeapons[1].model) { camera.remove(playerWeapons[1].model); disposeObject3D(playerWeapons[1].model); }
             playerWeapons[1].model = weaponConfigs.shotgun.createModel();
             camera.add(playerWeapons[1].model);
@@ -6855,7 +7026,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
         function onKeyDown(event) {
             if (!controls.isLocked && event.code !== 'Escape') return;
-            if (event.repeat && ['KeyV', 'KeyE', 'KeyN'].includes(event.code)) return;
+            if (event.repeat && ['KeyV', 'KeyE', 'KeyN', 'KeyF', 'KeyG'].includes(event.code)) return;
             if (controls.isLocked && ["ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight"].includes(event.code)) {
                 event.preventDefault();
             }
@@ -6871,6 +7042,8 @@ body.menu-open #combat-feedback {visibility:hidden}
                 case "Digit2": switchWeapon(1); break;
                 case "KeyE": interact(); break;
                 case "KeyV": meleeAttack(); break;
+                case "KeyF": startArmorPlate(); break;
+                case "KeyG": upgradeArmorAtStation(); break;
                 case "KeyN": if (!gameOver) waveDirector.skipIntermission(); break;
                 case "ControlLeft":
                 case "ControlRight":
@@ -7000,6 +7173,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             updatePowerups(delta);
             updateZombieProjectiles(delta);
             updateWeapon(delta);
+            updateArmorPlate(delta);
             updateMelee(delta);
             updateSaleBoxes(delta);
             updateTracers(delta);
@@ -7017,7 +7191,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function interact() {
-            if (gameOver || !controls.isLocked || meleeTimer > 0) return;
+            if (gameOver || !controls.isLocked || meleeTimer > 0 || armor.plating || isReloading || isSwitchingWeapon || papState==='upgrading') return;
             const supply = nearestSupply();
             if (supply) { interactSupply(supply); return; }
 
@@ -7049,6 +7223,7 @@ body.menu-open #combat-feedback {visibility:hidden}
                         }
 
                         pw.configId = mysteryBoxRolledId;
+                        pw.rarity = mysteryBoxRolledRarity;
                         const cfg = weaponConfigs[mysteryBoxRolledId];
                         pw.ammoInMag = cfg.magSize;
                         pw.reserveAmmo = cfg.magSize * 3;

@@ -1,20 +1,20 @@
-# Protocolo Sobreviva — v18
+# Protocolo Sobreviva — v19
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version18_22-09-2026_23-09-17.html](game_version18_22-09-2026_23-09-17.html)
+[game_version19_23-09-2026_10-29-08.html](game_version19_23-09-2026_10-29-08.html)
 
-Atualização: **22/09/2026 às 23:09:17**, America/Sao_Paulo (UTC−03:00).
-Versão: **v18 — Protocolo de Contenção, etapa 1/7**.
+Atualização: **23/09/2026 às 10:29:08**, America/Sao_Paulo (UTC−03:00).
+Versão: **v19 — Protocolo de Contenção, etapa 2/7**.
 Branch: `codex/protocolo-contencao`.
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
 Intervalo de dez segundos entre ondas; **N** antecipa a próxima. Pausar congela o intervalo.
 Até 24 inimigos simultâneos em Desempenho/automática baixa e 32 nos demais modos,
-preservando o total de inimigos de cada onda. Economia e atributos mantêm os valores
-da v17 nesta etapa; armadura e raridade pertencem à próxima entrega.
+preservando o total de inimigos de cada onda.
+Etapa 2: armadura, economia de pontos/sucata e raridades; veja as regras abaixo.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 
 v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
@@ -49,7 +49,7 @@ Mantenha o HTML, `game-systems.mjs` e os MP3 na mesma pasta. Sirva a raiz por HT
 python -m http.server 8000
 ```
 
-Abra [o jogo](http://localhost:8000/game_version18_22-09-2026_23-09-17.html).
+Abra [o jogo](http://localhost:8000/game_version19_23-09-2026_10-29-08.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -59,7 +59,8 @@ O Three.js 0.160.0 é carregado por CDN e requer internet.
 Trocar a qualidade recarrega a página. O seletor aparece antes de iniciar a partida.
 WASD: mover; mouse esquerdo: atirar; segurar botão direito: red dot ou luneta na sniper;
 Ctrl ou Shift: correr; R: recarregar; V: facada;
-E: interagir; 1/2: trocar arma; N: antecipar a próxima onda durante o intervalo; Esc: pausar.
+E: interagir/comprar; F: equipar placa; G: ampliar colete junto à estação COLETE;
+1/2: trocar arma; N: antecipar a próxima onda durante o intervalo; Esc: pausar.
 A interface se adapta a telas menores; o jogo continua exigindo teclado e mouse.
 
 Para inspeção visual, use `?preview&quality=low` ou `?preview&quality=high`.
@@ -68,6 +69,46 @@ Volume, sensibilidade e movimento reduzido podem ser ajustados no menu inicial
 e na pausa. As preferências ficam no armazenamento local do navegador; a partida
 não é salva. Movimento reduzido desativa balanço da arma, tremor de dano e
 variação de FOV ao correr, mantendo o zoom da mira.
+
+## Armadura, economia e raridades — etapa 2
+
+Duas estações próximas ao centro da cidade: **COLETE** (azul) e **ARSENAL** (dourado).
+O HUD informa proteção, placas guardadas, sucata e raridade da arma equipada.
+
+- Colete começa com capacidade para uma placa, vazio. Cada placa oferece 50 de proteção
+  e absorve 60% do dano enquanto houver proteção; o restante atinge a vida.
+- Em COLETE, E compra uma placa por 150 pontos, até cinco na reserva. F equipa uma
+  placa em 1,4 s; é possível caminhar e receber dano durante a animação. Tiro, mira,
+  recarga, facada, troca e compras ficam bloqueados. Pausa congela a animação.
+  A placa só é consumida ao terminar; repor proteção parcial também consome uma placa.
+- G junto à estação aumenta a capacidade: duas placas por 1.500 pontos e três por
+  3.000 adicionais. Ampliar o colete não concede proteção gratuitamente.
+- Eliminação rende 100 pontos; cabeça ou faca rende 125 no total, sem somar os bônus.
+  Pontos Duplos dobra essa recompensa. Nuke mantém 400/800 e não concede sucata.
+- Eliminação paga concede três sucatas automaticamente, até 90 por onda. Sucata não
+  é duplicada por Pontos Duplos e é usada apenas no ARSENAL nesta etapa.
+
+| Raridade | Dano | Custo para subir do nível anterior |
+|---|---:|---:|
+| Comum | ×1 | — |
+| Incomum | ×1,25 | 100 sucatas |
+| Rara | ×1,55 | 200 sucatas |
+| Épica | ×1,90 | 350 sucatas |
+| Lendária | ×2,30 | 550 sucatas |
+
+E no ARSENAL melhora somente a arma equipada, preservando Pack-a-Punch. Os fatores
+de raridade e PaP se multiplicam. Ray Gun tem categoria Especial: aceita PaP, sem
+raridade adicional. As duas Mystery Boxes sorteiam raridade conforme a onda:
+até incomum nas ondas 1–4, rara em 5–9, épica em 10–14 e lendária a partir da 15.
+Trocar uma arma na caixa substitui sua raridade e remove o PaP da arma anterior.
+
+Revisão inicial de combate: SMG com intervalo de 90 ms e carregador de 40; shotgun
+com 18 de dano corporal/36 crítico por pellet (8 pellets); Double Tap reduz o intervalo
+em 25%. Vida dos zumbis preservada até a onda 5, cresce 12% por onda até a 20 e 6%
+depois. O limite de velocidade na onda 15 permanece. Esses valores ainda exigem playtest.
+
+`node tests/economy-report.mjs` imprime uma projeção de pontos, sucata e tiros por alvo.
+Ela não simula deslocamento, erros de mira ou duração das ondas.
 
 ## Bônus e abastecimento
 
@@ -92,8 +133,8 @@ Facada tem alcance de 2,5 unidades, dano 150 e intervalo de 0,55 segundo;
 não atravessa obstáculos e não consome munição.
 O som de cada golpe usa o arquivo fornecido `facada.mp3`.
 
-A velocidade de cada tipo de zumbi aumenta somente até a onda 15; vida e quantidade
-continuam seguindo a progressão existente. Ferir as pernas reduz gradualmente
+A velocidade de cada tipo de zumbi aumenta somente até a onda 15; a quantidade
+continua em 4 + 3×onda e a vida segue a curva da etapa 2. Ferir as pernas reduz gradualmente
 a velocidade até 60%; destruí-las reduz para 45% da velocidade original
 (antes 25%). Os rastejantes ficam mais rápidos, mas ainda são 55% mais lentos
 que os zumbis intactos equivalentes. Vale para projéteis comuns e Ray Gun.
@@ -104,16 +145,20 @@ Os modelos são procedurais próprios; nenhum asset do jogo de referência foi i
 
 ## Verificação
 
-Com Node.js, execute `node --test tests/systems.test.mjs` para regras e ciclos de ondas.
+Com Node.js, execute `node --test tests/systems.test.mjs` para ondas, armadura e progressão.
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
 `PLAYWRIGHT_MODULE` permite indicar uma instalação existente do Playwright;
 `CHROME_PATH` permite usar um Chrome instalado. `QA_SCREENSHOTS` define uma pasta
-opcional para capturas. A instrumentação existe apenas na resposta HTTP do teste.
+opcional para capturas. A suíte inclui `tests/progression.cjs`, com compras, placas,
+dano real por bala/laser, raridade, PaP, ambas as caixas, pausa e reset.
+A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_22-09-2026_23-09-17.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_10-29-08.md)
+
+[Histórico v18](docs/MEMORIA_PERSISTENTE_22-09-2026_23-09-17.md)
 
 [Histórico v17](docs/MEMORIA_PERSISTENTE_22-09-2026_22-34-52.md)
 
