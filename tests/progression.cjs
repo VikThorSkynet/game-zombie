@@ -1,4 +1,4 @@
-module.exports = async function testProgression(page, assert, quality) {
+module.exports = async function testProgression(page, assert, quality, releaseTag) {
     const result = await page.evaluate(() => {
         const q=qa,T=q.THREE;
         const check={};
@@ -91,12 +91,12 @@ module.exports = async function testProgression(page, assert, quality) {
                 q.updateWeapon(1/60);q.updateUI();q.updateInteractables(0);q.controls.isLocked=false;
                 document.body.classList.remove('menu-open');document.getElementById('overlay').style.display='none';q.renderScene();
             },kind);
-            await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v19-${kind}-${quality}.png`)});
+            await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${releaseTag}-${kind}-${quality}.png`)});
         }
         await page.evaluate(()=>{
             qa.controls.isLocked=true;qa.startArmorPlate();qa.updateArmorPlate(.6);qa.updateUI();qa.updateInteractables(0);qa.controls.isLocked=false;qa.renderScene();
         });
-        await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`v19-plating-${quality}.png`)});
+        await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${releaseTag}-plating-${quality}.png`)});
         await page.evaluate(()=>{qa.resetGame();document.body.classList.add('menu-open');document.getElementById('overlay').style.display='flex';});
     }
 };

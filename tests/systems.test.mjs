@@ -1,7 +1,28 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed,
-    ArmorState, ScrapWallet, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from '../game-systems.mjs';
+    ArmorState, ScrapWallet, GeneratorNetwork, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from '../game-systems.mjs';
+
+test('generators retain progress, finite budgets and unique rewards across activation order', () => {
+    const g=new GeneratorNetwork();
+    assert.equal(g.start(-1),false);assert.equal(g.openDoor(),false);
+    for(const [order,id] of [2,0,1].entries()) {
+        assert(g.start(id));assert.equal(g.start((id+1)%3),false);
+        assert.equal(g.active.duration,[25,35,45][order]);
+        assert.equal(g.step(5,false,0),null);assert.equal(g.active.elapsed,0);
+        assert.equal(g.step(5,true,0,false),null);assert.equal(g.active.elapsed,0);
+        assert.equal(g.step(1,true,0),'spawn');g.acknowledgeSpawn(false);
+        assert.equal(g.active.spawned,0);
+        const budget=g.active.budget;
+        for(let n=0;n<budget;n++){assert.equal(g.step(3,true,n),'spawn');g.acknowledgeSpawn(true);}
+        assert.equal(g.step(100,true,1),null);
+        assert.equal(g.active.spawned,budget);
+        assert.equal(g.step(0,true,0),'completed');assert.equal(g.step(100,true,0),null);
+        assert.equal(g.start(id),false);
+    }
+    assert(g.openDoor());assert.equal(g.openDoor(),false);
+    g.reset();assert.equal(g.completed.size,0);assert.equal(g.open,false);assert.equal(g.active,null);
+});
 
 test('spawning has a finite budget, honors simultaneous cap and retries failures without consuming a zombie', () => {
     const director = new WaveDirector(2);

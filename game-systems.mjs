@@ -69,6 +69,39 @@ export class ScrapWallet {
     }
 }
 
+// One finite defense at a time. Leaving the area freezes both charge and reinforcements.
+export class GeneratorNetwork {
+    constructor() { this.reset(); }
+    reset() { this.completed = new Set(); this.active = null; this.open = false; }
+    start(id) {
+        if (!Number.isInteger(id) || id < 0 || id > 2 || this.active || this.completed.has(id)) return false;
+        const order = this.completed.size;
+        this.active = { id, duration: [25,35,45][order], elapsed: 0, budget: [6,8,10][order], spawned: 0, timer: 0 };
+        return true;
+    }
+    step(delta, inside, alive, active = true) {
+        const a = this.active;
+        if (!a || !active || !inside || !Number.isFinite(delta) || delta < 0) return null;
+        a.elapsed = Math.min(a.duration, a.elapsed + delta);
+        a.timer = Math.max(0, a.timer - delta);
+        if (a.spawned < a.budget && a.timer === 0) return 'spawn';
+        if (a.elapsed === a.duration && a.spawned === a.budget && alive === 0) {
+            this.completed.add(a.id); this.active = null;
+            return 'completed';
+        }
+        return null;
+    }
+    acknowledgeSpawn(created) {
+        if (!this.active || this.active.spawned >= this.active.budget) return;
+        if (created) this.active.spawned++;
+        this.active.timer = created ? 2.5 : 0.5;
+    }
+    openDoor() {
+        if (this.open || this.completed.size !== 3) return false;
+        this.open = true; return true;
+    }
+}
+
 export class ArmorState {
     constructor() { this.reset(); }
     reset() { this.tier = 1; this.protection = 0; this.reserve = 0; this.remaining = 0; }
