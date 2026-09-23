@@ -1,13 +1,13 @@
-# Protocolo Sobreviva — v19
+# Protocolo Sobreviva — v20
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version19_23-09-2026_10-29-08.html](game_version19_23-09-2026_10-29-08.html)
+[game_version20_23-09-2026_12-32-09.html](game_version20_23-09-2026_12-32-09.html)
 
-Atualização: **23/09/2026 às 10:29:08**, America/Sao_Paulo (UTC−03:00).
-Versão: **v19 — Protocolo de Contenção, etapa 2/7**.
+Atualização: **23/09/2026 às 12:32:09**, America/Sao_Paulo (UTC−03:00).
+Versão: **v20 — Protocolo de Contenção, etapa 3/7**.
 Branch: `codex/protocolo-contencao`.
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -15,6 +15,7 @@ Intervalo de dez segundos entre ondas; **N** antecipa a próxima. Pausar congela
 Até 24 inimigos simultâneos em Desempenho/automática baixa e 32 nos demais modos,
 preservando o total de inimigos de cada onda.
 Etapa 2: armadura, economia de pontos/sucata e raridades; veja as regras abaixo.
+Etapa 3: três geradores, defesas finitas e acesso norte energizado.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 
 v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
@@ -49,7 +50,7 @@ Mantenha o HTML, `game-systems.mjs` e os MP3 na mesma pasta. Sirva a raiz por HT
 python -m http.server 8000
 ```
 
-Abra [o jogo](http://localhost:8000/game_version19_23-09-2026_10-29-08.html).
+Abra [o jogo](http://localhost:8000/game_version20_23-09-2026_12-32-09.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -69,6 +70,28 @@ Volume, sensibilidade e movimento reduzido podem ser ajustados no menu inicial
 e na pausa. As preferências ficam no armazenamento local do navegador; a partida
 não é salva. Movimento reduzido desativa balanço da arma, tremor de dano e
 variação de FOV ao correr, mantendo o zoom da mira.
+
+## Geradores e acesso norte — etapa 3
+
+Encontre os três geradores sinalizados nas ruas da cidade. O HUD mostra quantos estão
+online e a distância do próximo. Use **E** junto ao gerador para iniciar gratuitamente
+uma defesa. A ordem é livre; apenas uma defesa fica ativa por vez.
+
+- Defenda dentro do círculo de 10 m por 25, 35 e 45 segundos, conforme a ordem.
+  Sair pausa carga e novos reforços; os inimigos já presentes continuam atacando.
+- Cada defesa recebe apenas 6, 8 ou 10 reforços normais. Elimine todos e termine
+  a carga para concluir. Reentrar no círculo não reinicia o orçamento.
+- Ondas comuns suspendem novos spawns e avanço durante a defesa; inimigos existentes
+  continuam ativos. O limite simultâneo da qualidade também vale para os reforços.
+- Cada conclusão concede 300 pontos uma única vez. Mortes dos reforços seguem
+  as regras comuns de recompensa e o teto de sucata da onda.
+- Os três geradores energizam a porta ao norte, depois do depósito de munição.
+  **E** abre gratuitamente o pátio. Colisão, bloqueio de tiros e caminhos dos zumbis
+  são atualizados juntos; reiniciar fecha a porta e zera os geradores.
+
+O pátio pertence à cidade e abre sem carregamento. O interior separado é a etapa 5.
+A meta de acesso entre ondas 5 e 8 ainda depende de playtest; não há bloqueio artificial
+por onda. Pausa e morte congelam a defesa, reinício limpa toda a progressão.
 
 ## Armadura, economia e raridades — etapa 2
 
@@ -152,11 +175,15 @@ O teste serve o HTML em uma porta local temporária e requer internet para o Thr
 `CHROME_PATH` permite usar um Chrome instalado. `QA_SCREENSHOTS` define uma pasta
 opcional para capturas. A suíte inclui `tests/progression.cjs`, com compras, placas,
 dano real por bala/laser, raridade, PaP, ambas as caixas, pausa e reset.
+`tests/containment.cjs` verifica geradores, orçamento finito, recompensa única,
+porta fechada/aberta, caminhos invalidados, limite simultâneo, pausa, morte e reset.
 A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_10-29-08.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_12-32-09.md)
+
+[Histórico v19](docs/MEMORIA_PERSISTENTE_23-09-2026_10-29-08.md)
 
 [Histórico v18](docs/MEMORIA_PERSISTENTE_22-09-2026_23-09-17.md)
 

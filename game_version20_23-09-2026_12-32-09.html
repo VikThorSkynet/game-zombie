@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v19 • 23/09/2026 10:29:08</title>
+    <title>Protocolo Sobreviva — v20 • 23/09/2026 12:32:09</title>
 
     <style>
         * {
@@ -874,6 +874,8 @@ body.menu-open #combat-feedback {visibility:hidden}
         </div>
         <div class="text-info" id="status">STATUS · PRONTO</div>
         <div id="scrap-status">SUCATA · 0</div>
+        <div id="containment-status" style="margin-top:10px;color:#a5e8dc;font-size:12px;line-height:1.5">ENERGIA · 0/3 GERADORES</div>
+        <progress id="generator-progress" max="1" value="0" hidden style="width:100%;accent-color:#7ee7c8" aria-label="Carga do gerador"></progress>
         <div id="perk-badges" aria-label="Perks ativos"></div>
     </div>
 
@@ -901,7 +903,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
     <div id="overlay">
         <div id="panel" role="region" aria-label="Menu do jogo">
-            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V16</div>
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V20</div>
             <h1>Prepare-se para a noite.</h1>
             <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
             <div class="loading-line"></div>
@@ -924,7 +926,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
         import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
         import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed,
-            ArmorState, ScrapWallet, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from './game-systems.mjs';
+            ArmorState, ScrapWallet, GeneratorNetwork, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from './game-systems.mjs';
 
         let scene, camera, renderer, composer, bloomPass, controls, clock;
         let muzzleFlashTexture;
@@ -1307,6 +1309,9 @@ body.menu-open #combat-feedback {visibility:hidden}
         const armor = new ArmorState();
         const scrap = new ScrapWallet();
         const upgradeStations = [];
+        const generatorNetwork = new GeneratorNetwork();
+        const generators = [];
+        let containmentDoor, doorCollider;
         let armorModel;
         const waveDirector = new WaveDirector(lowQuality ? BALANCE.waves.maxActiveLow : BALANCE.waves.maxActiveHigh);
 
@@ -1574,6 +1579,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             createArena();
             createSupplyDistricts();
             createUpgradeStations();
+            createContainment();
             createKnife();
             createArmorModel();
             buildNavigationGrid();
@@ -1729,11 +1735,11 @@ body.menu-open #combat-feedback {visibility:hidden}
             document.body.classList.add("menu-open");
             sceneNeedsRender = true;
             panel.innerHTML = `
-        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V16</div>
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V20</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
-        <p class="release">V16 · 22/09/2026 às 13:22:44 · America/Sao_Paulo</p>
+        <p class="release">V20 · 23/09/2026 às 12:32:09 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
             mountSettings();
@@ -2435,6 +2441,7 @@ body.menu-open #combat-feedback {visibility:hidden}
             }
 
             bulletBlockers.push(mesh);
+            return collider;
         }
 
         function getSpatialCellKey(cellX, cellZ) {
@@ -2569,6 +2576,13 @@ body.menu-open #combat-feedback {visibility:hidden}
             }
 
             navigationGrid = { min, max, cols, rows, cellSize, blocked };
+            for (const zombie of zombies) {
+                zombie.userData.navPath = []; zombie.userData.navPathIndex = 0;
+                zombie.userData.navRepathTimer = 0; zombie.userData.navForceRepath = true;
+            }
+            if (navigationDebugPoints) {
+                scene.remove(navigationDebugPoints); disposeObject3D(navigationDebugPoints); navigationDebugPoints = null;
+            }
             if (navDebugMode) createNavigationDebugView();
         }
 
@@ -4714,7 +4728,8 @@ body.menu-open #combat-feedback {visibility:hidden}
             if (action === 'spawn') {
                 const position = getSpawnPosition();
                 const safe = position && position.distanceTo(camera.position) >= BALANCE.enemies.minSpawnDistance
-                    && !isPositionBlocked(position.x, position.z, zombieRadius + 0.25);
+                    && !isPositionBlocked(position.x, position.z, zombieRadius + 0.25)
+                    && findNavigationPath(position, camera.position, zombieRadius).length > 0;
                 if (safe) createZombie(position, getZombieTypeConfig());
                 waveDirector.acknowledgeSpawn(Boolean(safe));
             } else if (action === 'completed') {
@@ -4812,7 +4827,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
         function nearestSupply() {
             let nearest=null, distance=3.3;
-            for(const item of [...ammoStations,...saleBoxes,...upgradeStations]) {
+            for(const item of [...ammoStations,...saleBoxes,...upgradeStations,...generators,containmentDoor].filter(Boolean)) {
                 if(!item.visible)continue;
                 const d=camera.position.distanceTo(item.position);
                 // Cabinets have their own solid collision, so check the approach point.
@@ -4827,6 +4842,9 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
         function interactSupply(item) {
             if(!controls.isLocked || gameOver || meleeTimer>0 || armor.plating || isReloading || isSwitchingWeapon || papState==='upgrading')return;
+            if (item.userData.kind === 'generator' || item.userData.kind === 'door') {
+                interactContainment(item); return;
+            }
             if (item.userData.kind === 'armor' || item.userData.kind === 'arsenal') {
                 buyUpgrade(item); return;
             }
@@ -4871,6 +4889,15 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function supplyPrompt(item) {
+            if (item.userData.kind==='generator') {
+                const id=item.userData.generatorId;
+                return generatorNetwork.completed.has(id) ? `GERADOR ${id+1} · ONLINE`
+                    : generatorNetwork.active ? 'DEFESA EM ANDAMENTO · Consulte o objetivo'
+                    : `[E] ATIVAR GERADOR ${id+1} · Defesa ${[25,35,45][generatorNetwork.completed.size]} s · Grátis`;
+            }
+            if (item.userData.kind==='door') return generatorNetwork.open ? 'PÁTIO DE ACESSO · LIBERADO'
+                : generatorNetwork.completed.size===3 ? '[E] ABRIR PORTA · Energia restaurada'
+                : `PORTA SEM ENERGIA · Geradores ${generatorNetwork.completed.size}/3`;
             if (armor.plating) return 'EQUIPANDO PLACA…';
             const kind=item.userData.kind;
             if (kind==='armor') return `[E] PLACA · ${BALANCE.armor.plateCost} Pts · [F] Equipar`
@@ -4954,6 +4981,120 @@ body.menu-open #combat-feedback {visibility:hidden}
             const w=playerWeapons[currentWeaponIndex],r=rarityOf(w),label=document.getElementById('rarity-status');
             label.textContent=`${r.name.toUpperCase()} · DANO ×${weaponMultiplier(w).toLocaleString('pt-BR',{maximumFractionDigits:2})}${w.packapunched?' · PaP':''}`;
             label.style.color=r.color;
+        }
+
+        function createContainment() {
+            const metal=new THREE.MeshBasicMaterial({color:0x30494d});
+            const trim=new THREE.MeshBasicMaterial({color:0x9caa99});
+            const occupied=[...ammoStations,...saleBoxes,...upgradeStations,mysteryBox,papMachine,...perkMachines.map(p=>p.mesh)];
+            for (const [id,candidates] of [
+                [[6,-54],[-6,-62],[6,-78],[-6,-94]],
+                [[54,6],[62,-6],[78,6],[94,-6]],
+                [[-6,78],[6,94],[-6,110],[6,118]]
+            ].entries()) {
+                const pos=candidates.map(([x,z])=>new THREE.Vector3(x,0,z)).find(p=>
+                    !isPositionBlocked(p.x,p.z,2)&&occupied.every(o=>o.position.distanceTo(p)>7));
+                if(!pos)throw new Error('Sem posição livre para gerador '+id);
+                const g=new THREE.Group(),p=propParts(g);
+                const body=p.box(2,1.3,1.25,0,.7,0,metal);
+                p.box(2.2,.15,1.4,0,.1,0,trim);
+                for(let n=0;n<6;n++)p.box(.09,.8,.08,-.6+n*.24,.8,.67,trim);
+                p.box(.15,1,.15,-.75,1.7,-.4,metal);
+                const lamp=p.box(.4,.2,.1,.65,1.15,.7,new THREE.MeshBasicMaterial({color:0xe6ac50}));
+                const label=floatingLabel(`GERADOR ${id+1} · [E]`,'#a5e8dc');label.position.set(0,2.65,0);g.add(label);
+                const ring=new THREE.Mesh(new THREE.RingGeometry(9.8,10,64),new THREE.MeshBasicMaterial({color:0x7ee7c8,transparent:true,opacity:.4,side:THREE.DoubleSide,depthWrite:false}));
+                ring.rotation.x=-Math.PI/2;ring.position.y=.045;ring.visible=false;g.add(ring);
+                g.position.copy(pos);g.userData={kind:'generator',generatorId:id,lamp,ring};
+                scene.add(g);g.updateMatrixWorld(true);registerWorldCollider(body);generators.push(g);occupied.push(g);
+            }
+            // Enclosed northern courtyard. No route around the locked portal.
+            const courtyard=new THREE.Group(),p=propParts(courtyard);
+            for(const [w,d,x,z] of [[.6,10,-8,142],[.6,10,8,142],[16,.6,0,147],[5,.6,-5.5,137],[5,.6,5.5,137]]) {
+                const wall=p.box(w,3.6,d,x,1.8,z,metal);scene.add(courtyard);courtyard.updateMatrixWorld(true);registerWorldCollider(wall);
+            }
+            containmentDoor=new THREE.Group();const d=propParts(containmentDoor);
+            const panel=d.box(6,3.5,.6,0,1.75,0,metal);
+            for(let x=-2.5;x<=2.5;x++)d.box(.14,3.3,.04,x,1.75,-.33,trim);
+            const sign=floatingLabel('ACESSO NORTE · 3 GERADORES','#ffd16b');sign.position.set(0,4.1,0);containmentDoor.add(sign);
+            containmentDoor.position.set(0,0,137);containmentDoor.userData={kind:'door',panel};
+            scene.add(containmentDoor);containmentDoor.updateMatrixWorld(true);doorCollider=registerWorldCollider(panel);
+            const next=floatingLabel('PÁTIO · INSTALAÇÃO RESTRITA','#a5e8dc');next.position.set(0,2.4,145);scene.add(next);
+            updateContainmentHud();
+        }
+
+        function setContainmentDoor(open) {
+            if(!containmentDoor)return;
+            // Remove the old collider from every spatial bucket, not just the flat list.
+            const index=staticColliders.indexOf(doorCollider);
+            if(index>=0)staticColliders.splice(index,1);
+            for(const [key,bucket] of staticColliderGrid) {
+                const i=bucket.indexOf(doorCollider);if(i>=0)bucket.splice(i,1);
+                if(!bucket.length)staticColliderGrid.delete(key);
+            }
+            const panel=containmentDoor.userData.panel;
+            const i=bulletBlockers.indexOf(panel);if(i>=0)bulletBlockers.splice(i,1);
+            // Sliding gate keeps the interaction marker at the original entrance.
+            containmentDoor.children.forEach(child=>{if(child!==containmentDoor.children.at(-1))child.visible=!open;});
+            doorCollider=open?null:registerWorldCollider(panel);
+            buildNavigationGrid();
+            renderer.shadowMap.needsUpdate=true;
+        }
+
+        function interactContainment(item) {
+            if(nearestSupply()!==item)return;
+            if(item.userData.kind==='door') {
+                if(generatorNetwork.openDoor()) {
+                    setContainmentDoor(true);showWaveMessage('Acesso norte liberado');
+                    gameEvents.emit('doorOpened',{door:'north'});
+                } else showWaveMessage(supplyPrompt(item));
+            } else if(generatorNetwork.start(item.userData.generatorId)) {
+                waveDirector.holds.add('generator');
+                gameEvents.emit('generatorStarted',{generator:item.userData.generatorId});
+                showWaveMessage('Defenda o círculo e elimine os reforços');
+            } else showWaveMessage(supplyPrompt(item));
+            updateContainmentHud();
+        }
+
+        function updateContainment(delta) {
+            const a=generatorNetwork.active;
+            if(!a)return;
+            const g=generators[a.id],inside=distanceSquaredXZ(camera.position.x,camera.position.z,g.position.x,g.position.z)<=100;
+            const alive=zombies.filter(z=>z.userData.generatorId===a.id).length;
+            const action=generatorNetwork.step(delta,inside,alive,controls.isLocked&&!gameOver);
+            if(action==='spawn') {
+                const pos=zombies.length<waveDirector.maxActive?getSpawnPosition():null;
+                const safe=pos&&pos.distanceTo(camera.position)>=BALANCE.enemies.minSpawnDistance
+                    &&!isPositionBlocked(pos.x,pos.z,zombieRadius+.25)&&findNavigationPath(pos,g.position.clone().add(new THREE.Vector3(0,0,2)),zombieRadius).length>0;
+                if(safe) {createZombie(pos,zombieTypeConfigs.normal);zombies.at(-1).userData.generatorId=a.id;}
+                generatorNetwork.acknowledgeSpawn(Boolean(safe));
+            } else if(action==='completed') {
+                score+=300;waveDirector.holds.delete('generator');
+                gameEvents.emit('generatorCompleted',{generator:a.id,reward:300});
+                showWaveMessage(generatorNetwork.completed.size===3?'Energia restaurada · Abra o acesso norte com [E]':'Gerador online · +300 pontos');updateUI();
+            }
+            updateContainmentHud();
+        }
+
+        function updateContainmentHud() {
+            const a=generatorNetwork.active,hud=document.getElementById('containment-status'),bar=document.getElementById('generator-progress');
+            let text=`ENERGIA · ${generatorNetwork.completed.size}/3 GERADORES`;
+            if(a) {
+                const g=generators[a.id],inside=distanceSquaredXZ(camera.position.x,camera.position.z,g.position.x,g.position.z)<=100;
+                text+=` · G${a.id+1} ${Math.floor(a.elapsed/a.duration*100)}% · ${inside?'DEFENDA':'RETORNE AO CÍRCULO'}`;
+                text+=` · Reforços ${a.budget-a.spawned+zombies.filter(z=>z.userData.generatorId===a.id).length}`;
+            } else if(generatorNetwork.open)text+=' · ACESSO NORTE ABERTO';
+            else if(generatorNetwork.completed.size===3)text+=' · [E] PORTA AO NORTE';
+            else {
+                const target=generators.filter(g=>!generatorNetwork.completed.has(g.userData.generatorId)).sort((x,y)=>x.position.distanceTo(camera.position)-y.position.distanceTo(camera.position))[0];
+                if(target)text+=` · G${target.userData.generatorId+1} a ${Math.round(target.position.distanceTo(camera.position))} m`;
+            }
+            if(hud.textContent!==text)hud.textContent=text;
+            bar.hidden=!a;bar.value=a?a.elapsed/a.duration:0;
+            for(const g of generators) {
+                const done=generatorNetwork.completed.has(g.userData.generatorId);
+                g.userData.ring.visible=a?.id===g.userData.generatorId;
+                g.userData.lamp.material.color.setHex(done?0x7ee7c8:a?.id===g.userData.generatorId?0xffffff:0xe6ac50);
+            }
         }
 
         function createUpgradeStations() {
@@ -6709,6 +6850,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         }
 
         function updateUI() {
+            updateContainmentHud();
             updateProgressionHud();
             const reloadTrack = document.getElementById('reload-track');
             reloadTrack.style.display = isReloading ? 'block' : 'none';
@@ -6951,6 +7093,9 @@ body.menu-open #combat-feedback {visibility:hidden}
             wave = 1;
 
             waveDirector.reset();
+            generatorNetwork.reset();
+            setContainmentDoor(false);
+            updateContainmentHud();
             gameEvents.emit('gameReset');
 
             playerWeapons.forEach(pw => {
@@ -7167,6 +7312,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
             updatePlayer(delta);
             updateZombies(delta);
+            updateContainment(delta);
             updateWave(delta);
             updateAmmoPickups(delta);
             updateMedKits(delta);
