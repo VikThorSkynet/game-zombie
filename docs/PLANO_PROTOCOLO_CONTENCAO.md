@@ -15,7 +15,7 @@ playtest; não considerar o conjunto inteiro entregue por existir infraestrutura
 | 4 | Cão, rodadas especiais e névoa variável | Concluída e testada na v21; valores iniciais para playtest |
 | 5 | Instalação separada, carregamento e preservação de estado | Concluída e testada na v23 |
 | 6 | Objetivos, desafios e diário | Concluída na v24; recompensa inicial para playtest |
-| 7 | Easter egg, chefe e extração | Pendente |
+| 7 | Easter egg, chefe e extração | Concluída e testada na v25; dificuldade inicial para playtest |
 
 ## Decisões de jogo aprovadas
 

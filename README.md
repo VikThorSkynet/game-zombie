@@ -1,13 +1,13 @@
-# Protocolo Sobreviva — v24
+# Protocolo Sobreviva — v25
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version24_23-09-2026_23-17-24.html](game_version24_23-09-2026_23-17-24.html)
+[game_version25_24-09-2026_08-20-03.html](game_version25_24-09-2026_08-20-03.html)
 
-Atualização: **23/09/2026 às 23:17:24**, America/Sao_Paulo (UTC−03:00).
-Versão: **v24 — objetivos, desafios e diário; etapa 6/7**.
+Atualização: **24/09/2026 às 08:20:03**, America/Sao_Paulo (UTC−03:00).
+Versão: **v25 — easter egg, chefe e extração; etapa 7/7**.
 Branch: `codex/protocolo-contencao`.
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -19,6 +19,7 @@ Etapa 3: três geradores, defesas finitas e acesso norte energizado.
 Etapa 4: cães com bote anunciado, rodadas especiais e névoa variável.
 Etapa 5: instalação com passagem entre áreas, carregamento e preservação da partida.
 Etapa 6: diário com objetivo principal, desafios opcionais e recordes locais.
+Etapa 7: investigação, guardião em três fases e extração opcional.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 
 v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
@@ -55,7 +56,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version24_23-09-2026_23-17-24.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version25_24-09-2026_08-20-03.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -75,6 +76,41 @@ Volume, sensibilidade e movimento reduzido podem ser ajustados no menu inicial
 e na pausa. As preferências ficam no armazenamento local do navegador; a partida
 não é salva. Movimento reduzido desativa balanço da arma, tremor de dano e
 variação de FOV ao correr, mantendo o zoom da mira.
+
+## Protocolo de contenção — etapa 7
+
+1. Complete os geradores e abra o portão. Colete com **E** os três REGISTROS,
+   cada um junto a um gerador. As pistas ficam no diário **J**.
+2. Na instalação, recolha BOBINA, FUSÍVEL e REGULADOR nos corredores centrais.
+3. Ative os três terminais ao fundo na ordem indicada pelos registros:
+   **TRIÂNGULO → CÍRCULO → QUADRADO**. Erros reiniciam apenas a sequência, sem custo.
+4. Prepare armas/colete e use E no NÚCLEO durante um intervalo sem inimigos ou
+   desafio ativo. Ativá-lo inicia o chefe e bloqueia a saída até o fim do confronto.
+5. Derrote o GUARDIÃO DO NÚCLEO e os reforços restantes. No núcleo, E escolhe
+   sobrevivência infinita e dispensa a extração. Para extrair, volte à cidade
+   entre ondas e use E no RÁDIO do pátio norte, também durante intervalo livre.
+
+O guardião é uma sentinela imóvel com 2.400 de vida, divididos em três fases de
+800. Um golpe não pula fases; o escudo inicial e de transição dura dois segundos.
+Ele marca a posição do jogador com um círculo antes do impacto. Saia do círculo
+ou use as paredes: ataques respeitam linha de visão. A cada fase o círculo cresce
+(3/4/5 m), o aviso encurta (1,55/1,30/1,05 s) e o dano aumenta (20/26/32, antes
+do colete). A fase 2 traz quatro zumbis, a fase 3 quatro cães; sem reposição infinita.
+Pausa congela ataques e escudo. Munição é reposta no início e nas duas transições;
+nenhuma arma específica de caixa é obrigatória. Nuke elimina reforços, mas não o
+chefe; Morte Instantânea mantém o dano normal contra ele. Pernas não o derrubam.
+A vitória concede **600 pontos fixos uma única vez**, sem multiplicação por bônus.
+
+Na extração, mantenha-se a menos de cinco metros do rádio por **15 segundos** e
+elimine os seis reforços (quatro zumbis e dois cães). Sair do círculo pausa a
+contagem; voltar retoma. Não aparecem reforços adicionais. As ondas comuns ficam
+suspensas durante confronto/limpeza e extração. Sobreviver conclui a partida com
+tela de vitória; morrer continua encerrando a partida normalmente. Reiniciar
+limpa toda a cadeia. Recordes permanecem locais, sem save da campanha.
+
+Vida dos reforços: 180 para zumbis e 120 para cães; velocidade e dano seguem as
+regras da onda. Valores iniciais: dificuldade e duração ainda precisam de playtest
+prolongado. Modelos procedurais, sem assets de Call of Duty ou novos sons sintetizados.
 
 ## Diário e desafios — etapa 6
 
@@ -99,7 +135,7 @@ Recordes de ondas concluídas, eliminações e desafios por partida são gravado
 localmente ao concluir ondas/desafios e ao morrer. Não concedem bônus permanentes.
 Armazenamento indisponível ou inválido não impede jogar. Recordes dependem do
 navegador/endereço; abrir outro HTML local pode usar outro armazenamento.
-Componentes, painel, chefe e extração ficam para a etapa 7.
+Componentes, painel, chefe e extração estão disponíveis na etapa 7.
 
 ## Instalação — etapa 5
 
@@ -257,11 +293,14 @@ porta fechada/aberta, caminhos invalidados, limite simultâneo, pausa, morte e r
 hitboxes, Munição Máxima, névoa, ausência de Atiradores e reinício.
 `tests/areas.cjs` verifica passagem, preservação, falhas e repetição entre áreas.
 `tests/journal.cjs` verifica diário, pausa, desafios, recompensa única e recordes.
+`tests/campaign.cjs` verifica cadeia, painel, fases, ataques, extração e reinício.
 A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_23-17-24.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_08-20-03.md)
+
+[Histórico v24](docs/MEMORIA_PERSISTENTE_23-09-2026_23-17-24.md)
 
 [Histórico v23](docs/MEMORIA_PERSISTENTE_23-09-2026_22-57-09.md)
 

@@ -1,0 +1,56 @@
+module.exports=async function(page,assert,quality,releaseTag){
+    const result=await page.evaluate(async()=>{
+        const q=qa,T=q.THREE,c={};q.resetGame();q.controls.isLocked=true;
+        const use=(role,id=0)=>{const n=q.campaignNodes.find(n=>n.userData.role===role&&n.userData.id===id);q.camera.position.copy(n.position).add(new T.Vector3(0,1.8,1.6));q.controls.isLocked=true;q.interact();return n;};
+        const clear=()=>{for(const z of [...q.zombies])q.killZombie(z,{awardScore:false,allowPowerup:false});};
+        const interval=()=>{q.waveDirector.phase='intermission';q.waveDirector.remaining=8;};
+        use('record');c.locked=q.campaign.records.size===0;
+        for(let n=0;n<3;n++)q.generatorNetwork.completed.add(n);q.generatorNetwork.openDoor();q.setContainmentDoor(true);
+        c.recordPaths=q.campaignNodes.filter(n=>n.userData.role==='record').every(n=>q.findNavigationPath(new T.Vector3(0,0,0),n.position,.65).length>0);
+        for(let n=0;n<3;n++)use('record',n);c.records=q.campaign.records.size===3&&q.campaign.stage==='parts';
+        interval();q.camera.position.set(0,1.8,143);q.controls.isLocked=true;await q.travelArea(q.areaPortals[0]);
+        c.preserved=q.campaign.records.size===3;
+        for(let n=0;n<3;n++)use('part',n);c.parts=q.campaign.parts.size===3;
+        use('symbol',0);c.wrong=q.campaign.code===0;for(const n of [2,0,1])use('symbol',n);
+        c.code=q.campaign.stage==='ready';
+        q.waveDirector.phase='combat';use('core');c.blocked=!q.campaignBoss;interval();use('core');
+        const boss=q.campaignBoss;c.started=!!boss&&q.waveDirector.holds.has('campaign')&&q.zombies.length===1;
+        q.damageEnemy(boss,99999,'bullet');c.shield=boss.userData.health===2400;
+        q.applyPowerup('nuke');c.nuke=q.zombies.includes(boss)&&q.campaign.health===2400;
+        c.travel=!!q.travelReason();
+        q.camera.position.set(0,1.8,-8);q.updateCampaign(2);c.warning=!!q.bossWarning;
+        q.controls.isLocked=false;q.updateCampaign(20);c.pause=!!q.bossWarning;q.controls.isLocked=true;
+        q.camera.position.x=7;const life=q.health;q.updateCampaign(2);c.dodge=q.health===life&&!q.bossWarning;
+        q.camera.position.set(0,1.8,-8);q.updateCampaign(3);q.updateCampaign(2);c.attack=q.health===life-20;
+        q.camera.position.set(17,1.8,-14);q.updateCampaign(3);c.wall=!q.bossWarning;q.camera.position.set(0,1.8,-8);
+        const before=q.campaign.health;q.applyPowerup('insta_kill');q.scene.updateMatrixWorld(true);
+        q.camera.lookAt(0,1.5,-16);q.camera.updateMatrixWorld(true);q.fireBullet(64,32,0,1,false,false);
+        c.bullet=q.campaign.health<before&&q.campaign.health>1600;
+        q.damageEnemy(boss,99999,'bullet');c.phase2=q.campaign.phase===2&&q.campaign.health===1600&&q.zombies.length===5;
+        q.damageEnemy(boss,99999,'bullet');c.noSkip=q.campaign.health===1600;
+        q.updateCampaign(2);q.damageEnemy(boss,99999,'bullet');c.phase3=q.campaign.phase===3&&q.campaign.health===800&&q.zombies.filter(z=>z.userData.isDog).length===4;
+        q.updateCampaign(2);q.score=0;q.damageEnemy(boss,99999,'bullet');q.killZombie(boss);
+        q.killZombie(boss);c.reward=q.score===600&&q.campaign.stage==='choice'&&!q.campaignBoss;
+        c.cleanupHold=q.waveDirector.holds.has('campaign');clear();q.updateCampaign(0);c.released=!q.waveDirector.holds.has('campaign');
+        interval();q.camera.position.set(0,1.8,26);q.controls.isLocked=true;await q.travelArea(q.areaPortals[0]);
+        use('extract');c.extraction=q.campaign.stage==='extracting'&&q.zombies.length===6&&q.waveDirector.holds.has('campaign');
+        c.extractionPaths=q.zombies.every(z=>q.findNavigationPath(z.position,q.camera.position,.65).length>0);
+        q.camera.position.set(0,1.8,125);q.updateCampaign(20);c.outside=q.campaign.extraction===0;
+        q.camera.position.set(4,1.8,141);q.controls.isLocked=false;q.updateCampaign(20);c.extractPause=q.campaign.extraction===0;
+        q.controls.isLocked=true;q.updateCampaign(15);c.finite=q.campaign.extraction===15&&!q.gameOver;
+        clear();q.updateCampaign(0);c.victory=q.gameOver&&q.campaign.stage==='extracted';
+        q.resetGame();c.reset=q.campaign.stage==='records'&&q.campaign.records.size===0&&!q.campaignBoss&&!q.bossWarning&&!q.waveDirector.holds.size;
+        q.campaign.stage='choice';interval();q.camera.position.set(0,1.8,143);for(let n=0;n<3;n++)q.generatorNetwork.completed.add(n);q.generatorNetwork.openDoor();q.setContainmentDoor(true);q.controls.isLocked=true;
+        await q.travelArea(q.areaPortals[0]);use('core');c.infinite=q.campaign.stage==='infinite'&&!q.waveDirector.holds.has('campaign');
+        q.campaign.stage='ready';use('core');q.applyDamage(9999);const shield=q.campaign.shield;q.updateCampaign(20);c.death=q.gameOver&&q.campaign.shield===shield;
+        q.resetGame();c.deathReset=!q.gameOver&&!q.campaignBoss&&!q.waveDirector.holds.size&&q.campaign.stage==='records';
+        q.resetGame();q.controls.isLocked=false;return c;
+    });
+    for(const [key,value]of Object.entries(result))assert(value,'campaign '+quality+': '+key);
+    console.log('Campaign '+quality+':',result);
+    if(process.env.QA_SCREENSHOTS){
+        await page.evaluate(async()=>{const q=qa;for(let n=0;n<3;n++)q.generatorNetwork.completed.add(n);q.generatorNetwork.openDoor();q.setContainmentDoor(true);q.waveDirector.phase='intermission';q.waveDirector.remaining=8;q.camera.position.set(0,1.8,143);q.controls.isLocked=true;await q.travelArea(q.areaPortals[0]);q.campaign.stage='ready';const core=q.campaignNodes.find(n=>n.userData.role==='core');q.camera.position.copy(core.position).add(new q.THREE.Vector3(0,1.8,1.6));q.controls.isLocked=true;q.interact();q.camera.position.set(0,1.8,-7);q.camera.lookAt(0,1.8,-16);q.updateCampaign(2);q.controls.isLocked=false;document.body.classList.remove('menu-open');document.getElementById('overlay').style.display='none';q.updateUI();q.renderScene();});
+        await page.screenshot({path:require('node:path').join(process.env.QA_SCREENSHOTS,releaseTag+'-boss-'+quality+'.png')});
+        await page.evaluate(()=>qa.resetGame());
+    }
+};
