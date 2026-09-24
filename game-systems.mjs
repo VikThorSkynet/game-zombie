@@ -53,6 +53,36 @@ export function areaTravelReason({phase,unlocked,objective,busy}) {
     return '';
 }
 
+// Optional, wave-scoped contracts. Only paid player eliminations count.
+export class FieldJournal {
+    constructor(){this.reset();}
+    reset(){this.entries=[];this.discoveries=new Set();this.contract=null;this.completed=0;this.bestWave=0;this.seen=new Set();}
+    discover(id,text){if(this.discoveries.has(id))return false;this.discoveries.add(id);this.entries.push(text);return true;}
+    offer(wave,kind='normal',canHeadshot=true){
+        if(this.contract?.wave===wave)return;
+        this.finish();this.seen.clear();
+        const type=kind==='normal'&&wave<=3?'melee':kind==='normal'&&wave%2===0&&canHeadshot?'head':'kills';
+        this.contract={wave,type,target:type==='melee'?3:type==='head'?3:5,progress:0,status:'offered',reward:300};
+    }
+    accept(eligible=true){if(!eligible||this.contract?.status!=='offered')return false;this.contract.status='active';return true;}
+    abandon(){if(this.contract?.status!=='active')return false;this.contract.status='abandoned';return true;}
+    kill(event){
+        const c=this.contract;
+        if(!c||c.status!=='active'||event.wave!==c.wave||!(event.reward>0)||this.seen.has(event.enemyId))return 0;
+        this.seen.add(event.enemyId);
+        if(c.type==='melee'&&event.cause!=='melee'||c.type==='head'&&!event.headshot)return 0;
+        c.progress=Math.min(c.target,c.progress+1);
+        if(c.progress<c.target)return 0;
+        c.status='completed';this.completed++;return c.reward;
+    }
+    finish(){if(this.contract&&['active','offered'].includes(this.contract.status))this.contract.status=this.contract.status==='active'?'failed':'expired';}
+}
+
+export function readRecords(value){
+    let data;try{data=JSON.parse(value||'{}');}catch{data={};}
+    return Object.fromEntries(['wave','kills','challenges'].map(key=>[key,Number.isSafeInteger(data?.[key])&&data[key]>=0?data[key]:0]));
+}
+
 export class DogAttack {
     constructor(){this.phase='pursue';this.remaining=0;this.hit=false;}
     recover(){this.phase='recover';this.remaining=.95;}

@@ -35,6 +35,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
         }
         c.bounded=q.areaRuntime.cache.size===2&&samples.slice(1).every(m=>m.geometries<=samples[0].geometries&&m.textures<=samples[0].textures);
         c.sameState=snapshot()===before;
+        c.journal=q.journal.discoveries.has('installation')&&q.journal.entries.length===1&&q.journal.contract.wave===3&&q.journal.contract.status==='offered';
         // Failure during first construction must restore the original world and interaction graph.
         q.resetGame();unlock();interval();portal=approach();const original=q.areaRuntime.prepare,old=q.scene,pos=q.camera.position.clone();
         q.areaRuntime.prepare=target=>{original(target);throw new Error('Simulated area construction failure');};
