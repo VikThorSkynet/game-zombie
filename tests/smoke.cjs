@@ -12,7 +12,7 @@ const html = fs.readFileSync(path.join(root, filename), 'utf8');
 assert(!html.includes('createOscillator'), 'only MP3 audio sources');
 assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
-const api = `window.qa = { THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
+const api = `window.qa = { get metricsGPU(){return metricsGPU}, metrics, metricsState, get metricsPrevious(){return metricsPrevious}, get metricsRender(){return metricsRender}, metricsContext, THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
  BALANCE, campaign, campaignNodes, interactCampaign, updateCampaign, get campaignBoss(){return campaignBoss}, get bossWarning(){return bossWarning}, get gameOver(){return gameOver}, waveDirector, gameEvents, journal, openJournal, closeJournal, acceptContract, get records(){return records}, startWave, updateWave, damageEnemy, killZombie, applyDamage,
  createDog, updateRoundAtmosphere, getZombieTypeConfig, enemyHealth, zombieHitMeshes,
  areaRuntime, areaPortals, travelArea, travelReason, setContainmentDoor, getSpawnPosition, perkMachines,
@@ -54,9 +54,10 @@ const server = http.createServer((req, res) => {
         page.on('requestfailed', r=>console.error('Network:',r.url(),r.failure()?.errorText));
         page.on('pageerror', e => { errors.push(String(e)); console.error(e); });
         for (const quality of ['low', 'high']) {
-            await page.goto(`${url}?quality=${quality}`);
+            await page.goto(`${url}?quality=${quality}${process.env.QA_P1_ONLY||process.env.QA_METRICS?'&metrics=1&route=automated-controlled':''}`);
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
+            if(process.env.QA_P1_ONLY){await require('./telemetry.cjs')(page,assert,quality);assert.equal(errors.length,0);continue;}
             if(process.env.QA_CAMPAIGN_ONLY){await require('./campaign.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             const balance = await page.evaluate(() => {
                 const q=qa,T=q.THREE,stations=q.ammoStations;

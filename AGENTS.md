@@ -16,3 +16,7 @@ diretamente do HTML: navegadores bloqueiam isso por CORS em file://. As regras
 têm fonte única em game-systems.mjs; após alterá-la ou renomear a versão, rode
 node scripts/build-game.mjs e confira com --check. Teste a abertura sem hooks com
 node tests/boot.cjs, além das regressões de gameplay. Não edite o bloco gerado.
+
+Medições locais têm fonte em telemetry.mjs, também incorporada pelo build.
+Não edite o bloco TELEMETRY gerado. P1_ROTEIRO_PLAYTEST.md e P1_RESULTADOS.md
+distinguem benchmarks automatizados de partidas humanas; preserve essa distinção.

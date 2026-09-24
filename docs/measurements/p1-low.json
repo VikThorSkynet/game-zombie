@@ -1,0 +1,3896 @@
+{
+  "kind": "headless-controlled-render-baseline",
+  "hardware": {
+    "cpu": "AMD Ryzen 7 5700U with Radeon Graphics         ",
+    "memoryGB": 15.353816986083984,
+    "os": "Windows_NT 10.0.26200"
+  },
+  "limitations": "Paused actors, fixed camera, headless Chrome; not end-to-end gameplay or player FPS. Menu is static and does not render continuously.",
+  "reports": [
+    {
+      "scenario": "menu",
+      "repetition": 1,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 600,
+              "medianMs": 0.1,
+              "p95Ms": 0.2,
+              "meanMs": 0.06649999988575776,
+              "maxMs": 1.1000000014901161,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 600,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.009833333318432173,
+              "maxMs": 0.19999999552965164,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "menu",
+      "repetition": 2,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 600,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.047833333387970925,
+              "maxMs": 0.7000000029802322,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 600,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.007833333363135657,
+              "maxMs": 0.20000000298023224,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "menu",
+      "repetition": 3,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 600,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.06166666656732559,
+              "maxMs": 2.100000001490116,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 600,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.008833333303531012,
+              "maxMs": 1.1000000014901161,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "quiet-city",
+      "repetition": 1,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.03094841917967439,
+              "maxMs": 0.30000000447034836,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:quiet-city": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.66733333333085,
+              "maxMs": 17.700000002980232,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 7.3,
+              "p95Ms": 8.5,
+              "meanMs": 7.1948419303792885,
+              "maxMs": 10,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 11.5,
+              "p95Ms": 11.6,
+              "meanMs": 11.511913333333327,
+              "maxMs": 11.57744,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 316,
+            "meanTriangles": 25496,
+            "maxDrawCalls": 316,
+            "maxTriangles": 25496,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 249,
+                "max": 249
+              },
+              "textures": {
+                "min": 71,
+                "max": 71
+              },
+              "programs": {
+                "min": 14,
+                "max": 14
+              },
+              "enemies": {
+                "min": 0,
+                "max": 0
+              }
+            },
+            "first": {
+              "calls": 316,
+              "triangles": 25496,
+              "geometries": 249,
+              "textures": 71,
+              "programs": 14,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 0
+            },
+            "last": {
+              "calls": 316,
+              "triangles": 25496,
+              "geometries": 249,
+              "textures": 71,
+              "programs": 14,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 0
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "quiet-city",
+      "repetition": 2,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.03460898510677842,
+              "maxMs": 0.7000000029802322,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:quiet-city": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.6671666666617,
+              "maxMs": 19.100000001490116,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 7,
+              "p95Ms": 8.1,
+              "meanMs": 6.957570715499004,
+              "maxMs": 10.300000004470348,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 11.5,
+              "p95Ms": 11.6,
+              "meanMs": 11.518434666666666,
+              "maxMs": 11.57424,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 316,
+            "meanTriangles": 25496,
+            "maxDrawCalls": 316,
+            "maxTriangles": 25496,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 249,
+                "max": 249
+              },
+              "textures": {
+                "min": 72,
+                "max": 72
+              },
+              "programs": {
+                "min": 14,
+                "max": 14
+              },
+              "enemies": {
+                "min": 0,
+                "max": 0
+              }
+            },
+            "first": {
+              "calls": 316,
+              "triangles": 25496,
+              "geometries": 249,
+              "textures": 72,
+              "programs": 14,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 0
+            },
+            "last": {
+              "calls": 316,
+              "triangles": 25496,
+              "geometries": 249,
+              "textures": 72,
+              "programs": 14,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 0
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "quiet-city",
+      "repetition": 3,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.032612312851650345,
+              "maxMs": 0.3999999985098839,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:quiet-city": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.667999999995033,
+              "maxMs": 17.80000000447035,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 7,
+              "p95Ms": 7.8,
+              "meanMs": 6.807154742185764,
+              "maxMs": 10.200000002980232,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 11.5,
+              "p95Ms": 11.6,
+              "meanMs": 11.520677999999997,
+              "maxMs": 11.582,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 316,
+            "meanTriangles": 25496,
+            "maxDrawCalls": 316,
+            "maxTriangles": 25496,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 249,
+                "max": 249
+              },
+              "textures": {
+                "min": 73,
+                "max": 73
+              },
+              "programs": {
+                "min": 14,
+                "max": 14
+              },
+              "enemies": {
+                "min": 0,
+                "max": 0
+              }
+            },
+            "first": {
+              "calls": 316,
+              "triangles": 25496,
+              "geometries": 249,
+              "textures": 73,
+              "programs": 14,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 0
+            },
+            "last": {
+              "calls": 316,
+              "triangles": 25496,
+              "geometries": 249,
+              "textures": 73,
+              "programs": 14,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 0
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "enemy-cap",
+      "repetition": 1,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.032778702168020354,
+              "maxMs": 0.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:enemy-cap": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.666999999992548,
+              "maxMs": 20,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 10.8,
+              "p95Ms": 12.3,
+              "meanMs": 10.905490848900573,
+              "maxMs": 19.399999998509884,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 13.9,
+              "p95Ms": 14.4,
+              "meanMs": 13.894225833333335,
+              "maxMs": 15.07241,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 940,
+            "meanTriangles": 78152,
+            "maxDrawCalls": 940,
+            "maxTriangles": 78152,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 873,
+                "max": 873
+              },
+              "textures": {
+                "min": 75,
+                "max": 75
+              },
+              "programs": {
+                "min": 16,
+                "max": 16
+              },
+              "enemies": {
+                "min": 24,
+                "max": 24
+              }
+            },
+            "first": {
+              "calls": 940,
+              "triangles": 78152,
+              "geometries": 873,
+              "textures": 75,
+              "programs": 16,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 24
+            },
+            "last": {
+              "calls": 940,
+              "triangles": 78152,
+              "geometries": 873,
+              "textures": 75,
+              "programs": 16,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 24
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "enemy-cap",
+      "repetition": 2,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.022296173054842702,
+              "maxMs": 0.3999999985098839,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:enemy-cap": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.6675,
+              "maxMs": 18.19999999552965,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 10.5,
+              "p95Ms": 12.1,
+              "meanMs": 10.630116472302776,
+              "maxMs": 14.400000005960464,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 13.6,
+              "p95Ms": 14.4,
+              "meanMs": 13.853557,
+              "maxMs": 15.0968,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 940,
+            "meanTriangles": 78152,
+            "maxDrawCalls": 940,
+            "maxTriangles": 78152,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 873,
+                "max": 873
+              },
+              "textures": {
+                "min": 76,
+                "max": 76
+              },
+              "programs": {
+                "min": 16,
+                "max": 16
+              },
+              "enemies": {
+                "min": 24,
+                "max": 24
+              }
+            },
+            "first": {
+              "calls": 940,
+              "triangles": 78152,
+              "geometries": 873,
+              "textures": 76,
+              "programs": 16,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 24
+            },
+            "last": {
+              "calls": 940,
+              "triangles": 78152,
+              "geometries": 873,
+              "textures": 76,
+              "programs": 16,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 24
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "enemy-cap",
+      "repetition": 3,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.02512479213976027,
+              "maxMs": 0.4000000059604645,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:enemy-cap": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.667166666674117,
+              "maxMs": 21.80000000447035,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 11.4,
+              "p95Ms": 15.6,
+              "meanMs": 11.991514142906407,
+              "maxMs": 21.30000000447035,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 14,
+              "p95Ms": 14.7,
+              "meanMs": 13.949843,
+              "maxMs": 15.1958,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 940,
+            "meanTriangles": 78152,
+            "maxDrawCalls": 940,
+            "maxTriangles": 78152,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 873,
+                "max": 873
+              },
+              "textures": {
+                "min": 77,
+                "max": 77
+              },
+              "programs": {
+                "min": 16,
+                "max": 16
+              },
+              "enemies": {
+                "min": 24,
+                "max": 24
+              }
+            },
+            "first": {
+              "calls": 940,
+              "triangles": 78152,
+              "geometries": 873,
+              "textures": 77,
+              "programs": 16,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 24
+            },
+            "last": {
+              "calls": 940,
+              "triangles": 78152,
+              "geometries": 873,
+              "textures": 77,
+              "programs": 16,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 24
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 9,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "dogs",
+      "repetition": 1,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.02362728780894827,
+              "maxMs": 0.29999999701976776,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:dogs": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.66733333333085,
+              "maxMs": 18.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 6.6,
+              "p95Ms": 9.2,
+              "meanMs": 6.964226289443089,
+              "maxMs": 12.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 12,
+              "p95Ms": 12.2,
+              "meanMs": 12.026312666666671,
+              "maxMs": 12.5708,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 424,
+            "meanTriangles": 31004,
+            "maxDrawCalls": 424,
+            "maxTriangles": 31004,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 357,
+                "max": 357
+              },
+              "textures": {
+                "min": 78,
+                "max": 78
+              },
+              "programs": {
+                "min": 23,
+                "max": 23
+              },
+              "enemies": {
+                "min": 4,
+                "max": 4
+              }
+            },
+            "first": {
+              "calls": 424,
+              "triangles": 31004,
+              "geometries": 357,
+              "textures": 78,
+              "programs": 23,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 4
+            },
+            "last": {
+              "calls": 424,
+              "triangles": 31004,
+              "geometries": 357,
+              "textures": 78,
+              "programs": 23,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 4
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 5,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "dogs",
+      "repetition": 2,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.033111480912333124,
+              "maxMs": 1.2999999970197678,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:dogs": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.2,
+              "meanMs": 16.6675,
+              "maxMs": 18.799999997019768,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 7.8,
+              "p95Ms": 9.9,
+              "meanMs": 7.8282861896912985,
+              "maxMs": 13.100000001490116,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 12,
+              "p95Ms": 12.1,
+              "meanMs": 12.022504,
+              "maxMs": 12.16824,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 424,
+            "meanTriangles": 31004,
+            "maxDrawCalls": 424,
+            "maxTriangles": 31004,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 357,
+                "max": 357
+              },
+              "textures": {
+                "min": 79,
+                "max": 79
+              },
+              "programs": {
+                "min": 23,
+                "max": 23
+              },
+              "enemies": {
+                "min": 4,
+                "max": 4
+              }
+            },
+            "first": {
+              "calls": 424,
+              "triangles": 31004,
+              "geometries": 357,
+              "textures": 79,
+              "programs": 23,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 4
+            },
+            "last": {
+              "calls": 424,
+              "triangles": 31004,
+              "geometries": 357,
+              "textures": 79,
+              "programs": 23,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 4
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 5,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "dogs",
+      "repetition": 3,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.03860232949306485,
+              "maxMs": 0.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:dogs": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.3,
+              "meanMs": 16.670333333338302,
+              "maxMs": 18.399999998509884,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 7.8,
+              "p95Ms": 9.2,
+              "meanMs": 7.561231280895517,
+              "maxMs": 13.399999998509884,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 12,
+              "p95Ms": 12.2,
+              "meanMs": 12.041279333333334,
+              "maxMs": 12.1854,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 424,
+            "meanTriangles": 31004,
+            "maxDrawCalls": 424,
+            "maxTriangles": 31004,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 357,
+                "max": 357
+              },
+              "textures": {
+                "min": 80,
+                "max": 80
+              },
+              "programs": {
+                "min": 23,
+                "max": 23
+              },
+              "enemies": {
+                "min": 4,
+                "max": 4
+              }
+            },
+            "first": {
+              "calls": 424,
+              "triangles": 31004,
+              "geometries": 357,
+              "textures": 80,
+              "programs": 23,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 4
+            },
+            "last": {
+              "calls": 424,
+              "triangles": 31004,
+              "geometries": 357,
+              "textures": 80,
+              "programs": 23,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 4
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 5,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "fog",
+      "repetition": 1,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.032113144679394814,
+              "maxMs": 0.5999999940395355,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:fog": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.2,
+              "meanMs": 16.6675,
+              "maxMs": 18.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 8.8,
+              "p95Ms": 10,
+              "meanMs": 8.920465890386339,
+              "maxMs": 11.299999997019768,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 13.9,
+              "p95Ms": 14.8,
+              "meanMs": 13.811743833333335,
+              "maxMs": 15.107,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 706,
+            "meanTriangles": 58406,
+            "maxDrawCalls": 706,
+            "maxTriangles": 58406,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 639,
+                "max": 639
+              },
+              "textures": {
+                "min": 81,
+                "max": 81
+              },
+              "programs": {
+                "min": 24,
+                "max": 24
+              },
+              "enemies": {
+                "min": 15,
+                "max": 15
+              }
+            },
+            "first": {
+              "calls": 706,
+              "triangles": 58406,
+              "geometries": 639,
+              "textures": 81,
+              "programs": 24,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 15
+            },
+            "last": {
+              "calls": 706,
+              "triangles": 58406,
+              "geometries": 639,
+              "textures": 81,
+              "programs": 24,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 15
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 8,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "fog",
+      "repetition": 2,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.025457570722912392,
+              "maxMs": 0.3999999985098839,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:fog": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17,
+              "meanMs": 16.666999999992548,
+              "maxMs": 18.30000000447035,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 8.7,
+              "p95Ms": 9.7,
+              "meanMs": 8.772712146395355,
+              "maxMs": 11.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 13.9,
+              "p95Ms": 14.3,
+              "meanMs": 13.774491999999999,
+              "maxMs": 14.71932,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 706,
+            "meanTriangles": 58406,
+            "maxDrawCalls": 706,
+            "maxTriangles": 58406,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 639,
+                "max": 639
+              },
+              "textures": {
+                "min": 82,
+                "max": 82
+              },
+              "programs": {
+                "min": 24,
+                "max": 24
+              },
+              "enemies": {
+                "min": 15,
+                "max": 15
+              }
+            },
+            "first": {
+              "calls": 706,
+              "triangles": 58406,
+              "geometries": 639,
+              "textures": 82,
+              "programs": 24,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 15
+            },
+            "last": {
+              "calls": 706,
+              "triangles": 58406,
+              "geometries": 639,
+              "textures": 82,
+              "programs": 24,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 15
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 8,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "fog",
+      "repetition": 3,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.022296173166415457,
+              "maxMs": 0.4000000059604645,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:fog": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.666833333335816,
+              "maxMs": 18.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 8.7,
+              "p95Ms": 10.9,
+              "meanMs": 8.960399334174822,
+              "maxMs": 14.099999994039536,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 14,
+              "p95Ms": 14.4,
+              "meanMs": 13.835135666666663,
+              "maxMs": 14.689,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 706,
+            "meanTriangles": 58406,
+            "maxDrawCalls": 706,
+            "maxTriangles": 58406,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 639,
+                "max": 639
+              },
+              "textures": {
+                "min": 83,
+                "max": 83
+              },
+              "programs": {
+                "min": 24,
+                "max": 24
+              },
+              "enemies": {
+                "min": 15,
+                "max": 15
+              }
+            },
+            "first": {
+              "calls": 706,
+              "triangles": 58406,
+              "geometries": 639,
+              "textures": 83,
+              "programs": 24,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 15
+            },
+            "last": {
+              "calls": 706,
+              "triangles": 58406,
+              "geometries": 639,
+              "textures": 83,
+              "programs": 24,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 15
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 8,
+          "area": "city",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 60,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "boss",
+      "repetition": 1,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.03494176367753357,
+              "maxMs": 0.5,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:boss": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.666666666666668,
+              "maxMs": 38.29999999701977,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 2.1,
+              "p95Ms": 2.5,
+              "meanMs": 2.1069883526784805,
+              "maxMs": 3,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 2.7,
+              "p95Ms": 2.7,
+              "meanMs": 2.712753333333334,
+              "maxMs": 2.73356,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 73,
+            "meanTriangles": 4288,
+            "maxDrawCalls": 73,
+            "maxTriangles": 4288,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 86,
+                "max": 86
+              },
+              "textures": {
+                "min": 29,
+                "max": 29
+              },
+              "programs": {
+                "min": 6,
+                "max": 6
+              },
+              "enemies": {
+                "min": 1,
+                "max": 1
+              }
+            },
+            "first": {
+              "calls": 73,
+              "triangles": 4288,
+              "geometries": 86,
+              "textures": 29,
+              "programs": 6,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 1
+            },
+            "last": {
+              "calls": 73,
+              "triangles": 4288,
+              "geometries": 86,
+              "textures": 29,
+              "programs": 6,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 1
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 1,
+          "area": "installation",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 80,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "boss",
+      "repetition": 2,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.033111480850348256,
+              "maxMs": 0.7999999970197678,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:boss": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17.1,
+              "meanMs": 16.666833333335816,
+              "maxMs": 18.200000002980232,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 2.1,
+              "p95Ms": 2.5,
+              "meanMs": 2.0788685521870205,
+              "maxMs": 3.100000001490116,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 2.7,
+              "p95Ms": 2.7,
+              "meanMs": 2.7128506666666663,
+              "maxMs": 2.72708,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 73,
+            "meanTriangles": 4288,
+            "maxDrawCalls": 73,
+            "maxTriangles": 4288,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 86,
+                "max": 86
+              },
+              "textures": {
+                "min": 29,
+                "max": 29
+              },
+              "programs": {
+                "min": 6,
+                "max": 6
+              },
+              "enemies": {
+                "min": 1,
+                "max": 1
+              }
+            },
+            "first": {
+              "calls": 73,
+              "triangles": 4288,
+              "geometries": 86,
+              "textures": 29,
+              "programs": 6,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 1
+            },
+            "last": {
+              "calls": 73,
+              "triangles": 4288,
+              "geometries": 86,
+              "textures": 29,
+              "programs": 6,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 1
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 1,
+          "area": "installation",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 80,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    },
+    {
+      "scenario": "boss",
+      "repetition": 3,
+      "sampleSeconds": 10,
+      "warmupSeconds": 5,
+      "report": {
+        "schemaVersion": 1,
+        "metadata": {
+          "release": "v26",
+          "base": "7d851f8",
+          "quality": "low",
+          "route": "automated-controlled",
+          "runLabel": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+          "logicalCores": 16,
+          "deviceMemoryGB": 16,
+          "createdAt": "2026-09-24T17:10:42.513Z",
+          "automated": true,
+          "protocol": "http:",
+          "performanceStartActiveSeconds": 0,
+          "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x0000164C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "viewport": {
+            "width": 1440,
+            "height": 960
+          },
+          "devicePixelRatio": 1,
+          "initialLoadMs": 6300.19999999553,
+          "initialLoadScope": "module setup and initial scene/render; excludes CDN download",
+          "gpuTimerSupported": true,
+          "gpuSampleEveryRenders": 10,
+          "gpuDiscardedSamples": 0
+        },
+        "activeSeconds": 0,
+        "simulationSeconds": 0,
+        "outcome": null,
+        "totals": {
+          "shots": 0,
+          "hitShots": 0,
+          "firearmKills": 0,
+          "kills": 0,
+          "headHits": 0,
+          "plates": 0,
+          "deaths": 0,
+          "accuracy": null,
+          "shotsPerFirearmKill": null
+        },
+        "weapons": {},
+        "economy": {
+          "points": {
+            "earned": 0,
+            "spent": 0
+          },
+          "scrap": {
+            "earned": 0,
+            "spent": 0
+          }
+        },
+        "purchases": {},
+        "waves": [],
+        "milestones": {},
+        "lastDamage": null,
+        "performance": {
+          "menu": {
+            "frame": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 0,
+              "p95Ms": 0.1,
+              "meanMs": 0.02712146422133073,
+              "maxMs": 0.20000000298023224,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 0,
+              "medianMs": null,
+              "p95Ms": null,
+              "meanMs": null,
+              "maxMs": null,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 0,
+            "meanDrawCalls": null,
+            "meanTriangles": null,
+            "maxDrawCalls": 0,
+            "maxTriangles": 0,
+            "ranges": {},
+            "first": null,
+            "last": null
+          },
+          "benchmark:boss": {
+            "frame": {
+              "samples": 600,
+              "medianMs": 16.7,
+              "p95Ms": 17,
+              "meanMs": 16.6675,
+              "maxMs": 18.799999997019768,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "cpuSubmission": {
+              "samples": 601,
+              "medianMs": 2.1,
+              "p95Ms": 2.4,
+              "meanMs": 2.1073211313484115,
+              "maxMs": 3,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "gpu": {
+              "samples": 60,
+              "medianMs": 2.7,
+              "p95Ms": 2.7,
+              "meanMs": 2.712042666666667,
+              "maxMs": 2.72108,
+              "over50ms": 0,
+              "overflow10s": 0
+            },
+            "renders": 601,
+            "meanDrawCalls": 73,
+            "meanTriangles": 4288,
+            "maxDrawCalls": 73,
+            "maxTriangles": 4288,
+            "ranges": {
+              "width": {
+                "min": 1920,
+                "max": 1920
+              },
+              "height": {
+                "min": 1080,
+                "max": 1080
+              },
+              "pixelRatio": {
+                "min": 1,
+                "max": 1
+              },
+              "geometries": {
+                "min": 86,
+                "max": 86
+              },
+              "textures": {
+                "min": 29,
+                "max": 29
+              },
+              "programs": {
+                "min": 6,
+                "max": 6
+              },
+              "enemies": {
+                "min": 1,
+                "max": 1
+              }
+            },
+            "first": {
+              "calls": 73,
+              "triangles": 4288,
+              "geometries": 86,
+              "textures": 29,
+              "programs": 6,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 1
+            },
+            "last": {
+              "calls": 73,
+              "triangles": 4288,
+              "geometries": 86,
+              "textures": 29,
+              "programs": 6,
+              "width": 1920,
+              "height": 1080,
+              "pixelRatio": 1,
+              "enemies": 1
+            }
+          }
+        },
+        "events": [],
+        "droppedEvents": 0,
+        "state": {
+          "wave": 1,
+          "area": "installation",
+          "points": 0,
+          "scrap": 0,
+          "health": 100,
+          "viewport": {
+            "width": 1920,
+            "height": 1080
+          },
+          "weapons": [
+            {
+              "id": "pistol",
+              "ammoInMag": 20,
+              "reserveAmmo": 80,
+              "rarity": 0,
+              "packapunched": false
+            },
+            {
+              "id": "shotgun",
+              "ammoInMag": 6,
+              "reserveAmmo": 24,
+              "rarity": 0,
+              "packapunched": false
+            }
+          ]
+        },
+        "limitations": [
+          "CPU is main-thread update/render submission, not GPU time.",
+          "GPU is sampled asynchronously when supported; pending/disjoint queries are excluded. Total process memory unavailable; resource counts are not bytes.",
+          "Frame percentiles use 0.1 ms bins capped at 10 seconds; overflow is reported.",
+          "Shot accuracy counts shots causing health damage, including pellets/penetration once.",
+          "Automation is not a human balance playtest."
+        ]
+      }
+    }
+  ]
+}
