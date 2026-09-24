@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v23 • 23/09/2026 22:57:09</title>
+    <title>Protocolo Sobreviva — v24 • 23/09/2026 23:17:24</title>
 
     <style>
         * {
@@ -805,6 +805,12 @@ body.aiming #crosshair {visibility:hidden}
 #reload-fill {height:100%;background:#ffcf78;transform-origin:left}
 body::after {content:'';position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 12vw #0005;z-index:2}
 #panel {background:linear-gradient(135deg,#10222af2,#071018f5);box-shadow:0 24px 100px #000b}
+#field-journal {line-height:1.6}
+#field-journal h1 {margin:8px 0 12px;line-height:1.2}
+#field-journal h2 {font-size:19px;margin:24px 0 10px;padding-top:16px;border-top:1px solid #25444d;color:#8aeac9}
+#field-journal p {margin:8px 0;color:#c0d3dc}
+#field-journal button,.journal-button {padding:12px 18px;border:1px solid #426e7a;border-radius:6px;background:#17333d;color:#e5fff6;cursor:pointer;font-weight:700;margin:12px 8px 12px 0}
+#field-journal button:disabled {opacity:.45;cursor:default}
 body.menu-open #combat-feedback {visibility:hidden}
 .perk-badge {display:inline-flex;align-items:center;gap:6px;color:#f3e8c9;font-size:11px}
 .perk-badge b {display:grid;place-items:center;width:27px;height:27px;border-radius:50%;border:2px solid #dbcda4;box-shadow:inset 0 0 0 2px #0007;background:var(--perk-color);font:bold 18px Georgia}
@@ -875,6 +881,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         <div class="text-info" id="status">STATUS · PRONTO</div>
         <div id="scrap-status">SUCATA · 0</div>
         <div id="area-status" style="margin-top:6px;color:#9bd8f0;font-size:12px">ÁREA · CIDADE</div>
+        <div id="journal-status" style="margin-top:6px;color:#f0d59b;font-size:12px;max-width:280px">[J] Diário de campo</div>
         <div id="round-kind" style="margin-top:8px;color:#ffd16b;font-size:12px"></div>
         <div id="dog-warning" hidden style="color:#ff906e;font-weight:bold;font-size:12px">CÃO PREPARANDO BOTE · ESQUIVE</div>
         <div id="containment-status" style="margin-top:10px;color:#a5e8dc;font-size:12px;line-height:1.5">ENERGIA · 0/3 GERADORES</div>
@@ -906,7 +913,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
     <div id="overlay">
         <div id="panel" role="region" aria-label="Menu do jogo">
-            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V23</div>
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V24</div>
             <h1>Prepare-se para a noite.</h1>
             <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
             <div class="loading-line"></div>
@@ -991,6 +998,36 @@ function areaTravelReason({phase,unlocked,objective,busy}) {
     if(busy)return 'Conclua a ação atual antes de viajar';
     if(phase!=='intermission')return 'Disponível entre ondas';
     return '';
+}
+
+// Optional, wave-scoped contracts. Only paid player eliminations count.
+class FieldJournal {
+    constructor(){this.reset();}
+    reset(){this.entries=[];this.discoveries=new Set();this.contract=null;this.completed=0;this.bestWave=0;this.seen=new Set();}
+    discover(id,text){if(this.discoveries.has(id))return false;this.discoveries.add(id);this.entries.push(text);return true;}
+    offer(wave,kind='normal',canHeadshot=true){
+        if(this.contract?.wave===wave)return;
+        this.finish();this.seen.clear();
+        const type=kind==='normal'&&wave<=3?'melee':kind==='normal'&&wave%2===0&&canHeadshot?'head':'kills';
+        this.contract={wave,type,target:type==='melee'?3:type==='head'?3:5,progress:0,status:'offered',reward:300};
+    }
+    accept(eligible=true){if(!eligible||this.contract?.status!=='offered')return false;this.contract.status='active';return true;}
+    abandon(){if(this.contract?.status!=='active')return false;this.contract.status='abandoned';return true;}
+    kill(event){
+        const c=this.contract;
+        if(!c||c.status!=='active'||event.wave!==c.wave||!(event.reward>0)||this.seen.has(event.enemyId))return 0;
+        this.seen.add(event.enemyId);
+        if(c.type==='melee'&&event.cause!=='melee'||c.type==='head'&&!event.headshot)return 0;
+        c.progress=Math.min(c.target,c.progress+1);
+        if(c.progress<c.target)return 0;
+        c.status='completed';this.completed++;return c.reward;
+    }
+    finish(){if(this.contract&&['active','offered'].includes(this.contract.status))this.contract.status=this.contract.status==='active'?'failed':'expired';}
+}
+
+function readRecords(value){
+    let data;try{data=JSON.parse(value||'{}');}catch{data={};}
+    return Object.fromEntries(['wave','kills','challenges'].map(key=>[key,Number.isSafeInteger(data?.[key])&&data[key]>=0?data[key]:0]));
 }
 
 class DogAttack {
@@ -1267,6 +1304,8 @@ class WaveDirector {
         const combatFeedback = document.getElementById('combat-feedback');
 
         function mountSettings() {
+            const journalButton=document.createElement('button');journalButton.className='journal-button';journalButton.textContent='DIÁRIO DE CAMPO · J';journalButton.onclick=openJournal;
+            document.getElementById('mainBtn').after(journalButton);
             const section = document.createElement('div');
             section.className = 'settings-grid';
             section.innerHTML = `<label>Sensibilidade <output id="sensitivity-value"></output><input id="sensitivity" aria-label="Sensibilidade do mouse" type="range" min="0.25" max="2" step="0.05"></label>
@@ -1603,6 +1642,11 @@ class WaveDirector {
         let wave = 1;
 
         const gameEvents = new GameEvents();
+        const journal = new FieldJournal();
+        const recordsKey='sobreviva.records.v1';
+        let records=readRecords(null);
+        try{records=readRecords(localStorage.getItem(recordsKey));}catch{}
+        let journalOpen=false, journalView;
         const armor = new ArmorState();
         const scrap = new ScrapWallet();
         const upgradeStations = [];
@@ -1792,6 +1836,7 @@ class WaveDirector {
 
         // Paint the loading screen before synchronous scene construction.
         await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+        bindJournal();
         init();
         renderScene();
         window.gameBootComplete=true;
@@ -1925,6 +1970,7 @@ class WaveDirector {
             updateUI();
 
             controls.addEventListener("lock", () => {
+                journalOpen=false;if(journalView)journalView.remove();journalView=null;
                 document.body.classList.remove("menu-open");
                 sceneNeedsRender = true;
                 overlay.style.display = "none";
@@ -2040,14 +2086,73 @@ class WaveDirector {
             document.body.classList.add("menu-open");
             sceneNeedsRender = true;
             panel.innerHTML = `
-        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V23</div>
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V24</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
-        <p class="release">V23 · 23/09/2026 às 22:57:09 · America/Sao_Paulo</p>
+        <p class="release">V24 · 23/09/2026 às 23:17:24 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
             mountSettings();
+        }
+
+        function journalObjective(){
+            if(generatorNetwork.completed.size<3)return `Restaure os geradores (${generatorNetwork.completed.size}/3)`;
+            if(!generatorNetwork.open)return 'Abra o acesso norte com E';
+            if(!journal.discoveries.has('installation'))return 'Explore a instalação pelo pátio norte';
+            return 'Instalação descoberta · sobreviva às próximas ondas';
+        }
+        function contractTitle(c){return c.type==='melee'?'Eliminações com faca':c.type==='head'?'Eliminações na cabeça':'Eliminações';}
+        function saveRecords(){
+            records.wave=Math.max(records.wave,journal.bestWave);
+            records.kills=Math.max(records.kills,runStats.kills);
+            records.challenges=Math.max(records.challenges,journal.completed);
+            try{localStorage.setItem(recordsKey,JSON.stringify(records));}catch{/* The run remains playable without storage. */}
+        }
+        function bindJournal(){
+            gameEvents.on('waveStarted',e=>journal.offer(e.wave,waveDirector.profile.kind,playerWeapons.some(w=>w.configId!=='ray_gun')));
+            gameEvents.on('enemyKilled',e=>{const reward=journal.kill(e);if(reward){score+=reward;saveRecords();showWaveMessage('Desafio concluído · +300 pontos');}});
+            gameEvents.on('waveCompleted',e=>{journal.finish();journal.bestWave=Math.max(journal.bestWave,e.wave);saveRecords();});
+            gameEvents.on('generatorCompleted',e=>journal.discover('generator-'+e.generator,`Gerador ${e.generator+1} online. A rede de contenção está sendo restaurada.`));
+            gameEvents.on('doorOpened',()=>journal.discover('gate','Acesso norte aberto. A instalação pode ser explorada entre ondas.'));
+            gameEvents.on('areaChanged',e=>{if(e.to==='installation')journal.discover('installation','Registro da instalação: os corredores estão evacuados, mas o sistema de contenção ainda responde. Abasteça-se e mantenha a posição.');});
+            gameEvents.on('gameEnded',()=>{journal.finish();saveRecords();});
+            gameEvents.on('gameReset',()=>{journal.reset();journalOpen=false;if(journalView)journalView.remove();journalView=null;});
+        }
+        function acceptContract(){return journal.accept(!gameOver&&!areaRuntime.loading&&!generatorNetwork.active&&waveDirector.phase==='combat');}
+        function closeJournal(){
+            journalOpen=false;if(journalView)journalView.remove();journalView=null;
+            document.querySelector('.journal-button')?.focus({preventScroll:true});
+            // Return to the paused menu; its button provides the pointer-lock gesture.
+        }
+        function openJournal(){
+            if(areaRuntime.loading)return;
+            if(controls.isLocked)controls.unlock();
+            controls.isLocked=false;resetAim();
+            journalOpen=true;if(journalView)journalView.remove();
+            journalView=document.createElement('section');journalView.id='field-journal';
+            journalView.setAttribute('role','dialog');journalView.setAttribute('aria-modal','true');journalView.setAttribute('aria-label','Diário de campo');
+            Object.assign(journalView.style,{position:'fixed',inset:'0',zIndex:'10000',background:'#071218',color:'#e2edf1',overflowY:'auto',padding:'clamp(18px,5vw,64px)',boxSizing:'border-box'});
+            const c=journal.contract,status={offered:'Disponível',active:'Em andamento',completed:'Concluído',failed:'Não concluído',expired:'Não aceito',abandoned:'Abandonado'};
+            journalView.innerHTML=`<div style="max-width:760px;margin:auto"><p style="color:#64efc0;letter-spacing:3px">PROTOCOLO DE CONTENÇÃO / DIÁRIO</p><h1 style="font-size:32px">Diário de campo</h1><p>Partida pausada · J ou Esc fecha o diário.</p><h2>Objetivo principal</h2><p>${journalObjective()}</p><h2>Desafio opcional</h2><p>${c?`Onda ${c.wave} · ${contractTitle(c)}: ${c.progress}/${c.target} · ${status[c.status]}`:'Aguardando a próxima onda.'}</p><p>+300 pontos fixos. Aceite antes de eliminar os alvos; termine nesta onda. Apenas eliminações diretas contam. Não há penalidade por falhar ou abandonar.</p><div id="contract-actions"></div><p>Uma atividade secundária por vez: termine ou abandone o desafio antes de iniciar uma defesa de gerador. Durante a defesa, não é possível aceitar desafios.</p><h2>Registros da partida</h2><div id="journal-entries"></div><h2>Recordes neste navegador</h2><p>Ondas concluídas: ${records.wave} · Eliminações em uma partida: ${records.kills} · Desafios em uma partida: ${records.challenges}</p><p>Recordes não concedem atributos. A partida e o diário não são salvos; os recordes dependem do armazenamento disponível neste navegador e endereço.</p><button id="close-journal">VOLTAR AO MENU</button></div>`;
+            document.body.append(journalView);
+            const entries=journalView.querySelector('#journal-entries');
+            for(const text of journal.entries.length?journal.entries:['Nenhuma descoberta ainda. Procure os três geradores sinalizados na cidade.']){const p=document.createElement('p');p.textContent=text;entries.append(p);}
+            const actions=journalView.querySelector('#contract-actions');
+            if(c?.status==='offered'){
+                const b=document.createElement('button');b.textContent='ACEITAR DESAFIO';b.disabled=gameOver||!!generatorNetwork.active||waveDirector.phase!=='combat';
+                b.onclick=()=>{acceptContract();openJournal();updateUI();};actions.append(b);
+            }else if(c?.status==='active'){
+                const b=document.createElement('button');b.textContent='ABANDONAR DESAFIO';b.onclick=()=>{journal.abandon();openJournal();updateUI();};actions.append(b);
+            }
+            journalView.querySelector('#close-journal').onclick=closeJournal;
+            journalView.tabIndex=-1;journalView.focus({preventScroll:true});
+            journalView.onkeydown=e=>{
+                if(e.key!=='Tab')return;
+                const buttons=[...journalView.querySelectorAll('button:not(:disabled)')],first=buttons[0],last=buttons.at(-1);
+                if(e.shiftKey&&(document.activeElement===first||document.activeElement===journalView)){e.preventDefault();last.focus();}
+                else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===journalView)){e.preventDefault();first.focus();}
+            };
         }
 
         function createSeededRandom(seed) {
@@ -5571,6 +5676,9 @@ class WaveDirector {
 
         function interactContainment(item) {
             if(nearestSupply()!==item)return;
+            if(item.userData.kind==='generator'&&journal.contract?.status==='active'){
+                showWaveMessage('Conclua ou abandone o desafio no diário [J] antes da defesa');return;
+            }
             if(item.userData.kind==='generator'&&waveDirector.phase==='combat'&&waveDirector.profile?.kind!=='normal') {
                 showWaveMessage('Conclua a rodada especial antes de ativar o gerador');return;
             }
@@ -7389,6 +7497,8 @@ class WaveDirector {
         }
 
         function updateUI() {
+            const c=journal.contract;
+            document.getElementById('journal-status').textContent=journalObjective()+' · [J] Diário'+(c?.status==='active'?` · ${contractTitle(c)} ${c.progress}/${c.target}`:c?.status==='offered'?' · Desafio disponível':'');
             document.getElementById('area-status').textContent=areaRuntime.active==='city'?'ÁREA · CIDADE':'ÁREA · INSTALAÇÃO';
             const kind=waveDirector.profile?.kind||'normal';
             document.getElementById('round-kind').textContent=kind==='dogs'?'CAÇADA · CÃES':kind==='fog'?'NÉVOA DENSA · VISIBILIDADE REDUZIDA':'RODADA NORMAL';
@@ -7715,6 +7825,8 @@ class WaveDirector {
 
         function onKeyDown(event) {
             if(areaRuntime.loading)return;
+            if(event.code==='KeyJ'&&!event.repeat){event.preventDefault();if(journalOpen)closeJournal();else openJournal();return;}
+            if(journalOpen){if(event.code==='Escape')closeJournal();return;}
             if (!controls.isLocked && event.code !== 'Escape') return;
             if (event.repeat && ['KeyV', 'KeyE', 'KeyN', 'KeyF', 'KeyG'].includes(event.code)) return;
             if (controls.isLocked && ["ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight"].includes(event.code)) {

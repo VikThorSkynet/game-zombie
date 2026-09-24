@@ -1,13 +1,13 @@
-# Protocolo Sobreviva — v23
+# Protocolo Sobreviva — v24
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version23_23-09-2026_22-57-09.html](game_version23_23-09-2026_22-57-09.html)
+[game_version24_23-09-2026_23-17-24.html](game_version24_23-09-2026_23-17-24.html)
 
-Atualização: **23/09/2026 às 22:57:09**, America/Sao_Paulo (UTC−03:00).
-Versão: **v23 — instalação separada; etapa 5/7**.
+Atualização: **23/09/2026 às 23:17:24**, America/Sao_Paulo (UTC−03:00).
+Versão: **v24 — objetivos, desafios e diário; etapa 6/7**.
 Branch: `codex/protocolo-contencao`.
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -18,6 +18,7 @@ Etapa 2: armadura, economia de pontos/sucata e raridades; veja as regras abaixo.
 Etapa 3: três geradores, defesas finitas e acesso norte energizado.
 Etapa 4: cães com bote anunciado, rodadas especiais e névoa variável.
 Etapa 5: instalação com passagem entre áreas, carregamento e preservação da partida.
+Etapa 6: diário com objetivo principal, desafios opcionais e recordes locais.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 
 v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
@@ -54,7 +55,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version23_23-09-2026_22-57-09.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version24_23-09-2026_23-17-24.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -74,6 +75,31 @@ Volume, sensibilidade e movimento reduzido podem ser ajustados no menu inicial
 e na pausa. As preferências ficam no armazenamento local do navegador; a partida
 não é salva. Movimento reduzido desativa balanço da arma, tremor de dano e
 variação de FOV ao correr, mantendo o zoom da mira.
+
+## Diário e desafios — etapa 6
+
+**J** abre o diário e pausa a partida. Também há um botão no menu. J, Esc ou
+VOLTAR AO MENU fecha o diário; CONTINUAR retoma o jogo. O HUD mostra a próxima
+meta: restaurar geradores, abrir o acesso norte e explorar a instalação.
+Cada gerador, o portão e a primeira visita interna acrescentam registros únicos.
+
+Há um desafio opcional por onda, aceito no diário: três eliminações com faca nas
+ondas normais 1–3, três eliminações na cabeça nas ondas normais pares seguintes
+se houver uma arma convencional, ou cinco eliminações nas demais. Caçadas e
+névoa pedem eliminações sem exigir uma arma específica. Apenas mortes diretas
+após aceitar contam; Nuke não conta. Termine antes do fim da onda para receber
+300 pontos fixos, sem duplicação por Pontos Duplos e sem sucata adicional.
+Aceitar tarde pode deixar poucos alvos: falhar ou abandonar não tira recursos
+nem bloqueia a história. Não se pode retomar um desafio abandonado na mesma onda.
+
+Somente uma atividade secundária por vez: desafio ativo impede iniciar defesa
+de gerador; uma defesa impede aceitar desafio. O diário permite abandonar.
+Progresso fica fora das cenas e resiste à troca de área; reiniciar limpa o diário.
+Recordes de ondas concluídas, eliminações e desafios por partida são gravados
+localmente ao concluir ondas/desafios e ao morrer. Não concedem bônus permanentes.
+Armazenamento indisponível ou inválido não impede jogar. Recordes dependem do
+navegador/endereço; abrir outro HTML local pode usar outro armazenamento.
+Componentes, painel, chefe e extração ficam para a etapa 7.
 
 ## Instalação — etapa 5
 
@@ -230,11 +256,14 @@ porta fechada/aberta, caminhos invalidados, limite simultâneo, pausa, morte e r
 `tests/special-rounds.cjs` verifica caçadas, bote, esquiva, colisões, armadura,
 hitboxes, Munição Máxima, névoa, ausência de Atiradores e reinício.
 `tests/areas.cjs` verifica passagem, preservação, falhas e repetição entre áreas.
+`tests/journal.cjs` verifica diário, pausa, desafios, recompensa única e recordes.
 A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_22-57-09.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_23-17-24.md)
+
+[Histórico v23](docs/MEMORIA_PERSISTENTE_23-09-2026_22-57-09.md)
 
 [Histórico v22](docs/MEMORIA_PERSISTENTE_23-09-2026_13-15-17.md)
 

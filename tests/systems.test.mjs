@@ -1,7 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed, areaTravelReason,
+import { BALANCE, WaveDirector, GameEvents, FieldJournal, readRecords, enemyHealth, enemyDamage, enemySpeed, areaTravelReason,
     ArmorState, ScrapWallet, GeneratorNetwork, DogAttack, waveProfile, stepFog, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from '../game-systems.mjs';
+
+test('journal contracts are finite, optional, equipment-aware and pay only once',()=>{
+    const j=new FieldJournal();j.offer(1);assert.equal(j.contract.type,'melee');assert.equal(j.accept(false),false);assert(j.accept());
+    const kill=(id,extra={})=>j.kill({enemyId:id,wave:1,cause:'melee',reward:125,...extra});
+    assert.equal(kill(0,{reward:0}),0);assert.equal(j.contract.progress,0);
+    assert.equal(kill(1),0);assert.equal(kill(1),0);assert.equal(kill(2,{cause:'bullet'}),0);
+    assert.equal(kill(3,{wave:2}),0);assert.equal(kill(4),0);assert.equal(kill(5),300);assert.equal(kill(6),0);
+    assert.equal(j.completed,1);j.offer(1);assert.equal(j.contract.status,'completed');
+    j.offer(4,'normal',false);assert.equal(j.contract.type,'kills');j.accept();j.finish();assert.equal(j.contract.status,'failed');
+    j.offer(6);assert.equal(j.contract.type,'head');j.accept();j.abandon();assert.equal(j.accept(),false);
+    j.offer(5,'dogs');assert.equal(j.contract.type,'kills');j.finish();assert.equal(j.contract.status,'expired');
+    assert(j.discover('gate','Gate'));assert(!j.discover('gate','Duplicate'));assert.equal(j.entries.length,1);
+    j.reset();assert.equal(j.completed,0);assert.equal(j.entries.length,0);assert.equal(j.contract,null);
+});
+test('records reject corrupt, negative, non-integer and unsafe stored values',()=>{
+    for(const value of ['{broken','null','[]','{"wave":-1,"kills":1.5,"challenges":"9"}'])assert.deepEqual(readRecords(value),{wave:0,kills:0,challenges:0});
+    assert.deepEqual(readRecords('{"wave":8,"kills":100,"challenges":2}'),{wave:8,kills:100,challenges:2});
+});
 
 test('area travel requires unlocked passage, intermission and no active action or objective',()=>{
     const valid={phase:'intermission',unlocked:true,objective:false,busy:false};
