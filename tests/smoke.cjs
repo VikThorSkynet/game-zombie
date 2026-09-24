@@ -5,6 +5,7 @@ const http = require('node:http');
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
+require('node:child_process').execFileSync(process.execPath,[path.join(root,'scripts/build-game.mjs'),'--check']);
 const filename = fs.readFileSync(path.join(root, 'README.md'), 'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
 const releaseTag = 'v' + filename.match(/^game_version(\d+)_/)[1];
 const html = fs.readFileSync(path.join(root, filename), 'utf8');
