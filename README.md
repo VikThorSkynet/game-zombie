@@ -23,6 +23,8 @@ Etapa 7: investigação, guardião em três fases e extração opcional.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 O próximo ciclo está descrito no [plano de polimento, balanceamento e gráficos](docs/PLANO_POLIMENTO_BALANCEAMENTO_GRAFICOS.md).
 As etapas P1–P8 estão planejadas, ainda sem implementação.
+O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
+em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
 v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
 com formas próprias, dourado e halo verde; facada com **V** e depósitos de munição
@@ -300,7 +302,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_08-49-46.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_08-58-45.md)
+
+[Planejamento inicial](docs/MEMORIA_PERSISTENTE_24-09-2026_08-49-46.md)
 
 [Implementação v25](docs/MEMORIA_PERSISTENTE_24-09-2026_08-20-03.md)
 
