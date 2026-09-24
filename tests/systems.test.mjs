@@ -1,7 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BALANCE, WaveDirector, GameEvents, FieldJournal, readRecords, enemyHealth, enemyDamage, enemySpeed, areaTravelReason,
+import { BALANCE, WaveDirector, GameEvents, ContainmentCampaign, FieldJournal, readRecords, enemyHealth, enemyDamage, enemySpeed, areaTravelReason,
     ArmorState, ScrapWallet, GeneratorNetwork, DogAttack, waveProfile, stepFog, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from '../game-systems.mjs';
+
+test('campaign requires ordered discoveries, recoverable code, three phases and defended extraction',()=>{
+    const c=new ContainmentCampaign();
+    assert(!c.collect('record',0,false));assert(!c.collect('part',0,true));assert(!c.start(true));
+    for(let i=0;i<3;i++){assert(c.collect('record',i,true));assert(!c.collect('record',i,true));}
+    for(let i=0;i<3;i++)assert(c.collect('part',i,true));
+    c.symbol(0);assert.equal(c.code,0);c.symbol(2);c.symbol(1);assert.equal(c.code,0);
+    [2,0,1].forEach(n=>c.symbol(n));assert.equal(c.stage,'ready');assert(!c.start(false));assert(c.start(true));assert(!c.start(true));
+    for(let phase=1;phase<=3;phase++){
+        assert.equal(c.hit(99999),0);c.step(2,false);assert.equal(c.shield,2);c.step(2,true);
+        assert.equal(c.hit(99999),800);assert.equal(c.health,2400-800*phase);
+    }
+    assert.equal(c.stage,'choice');assert.equal(c.hit(99999),0);assert(!c.choose('extracting',false));assert(c.choose('extracting',true));assert(!c.choose('infinite',true));
+    c.step(20,true,false,0);assert.equal(c.extraction,0);c.step(20,false,true,0);assert.equal(c.extraction,0);
+    c.step(20,true,true,1);assert.equal(c.extraction,15);assert.equal(c.stage,'extracting');assert(c.step(0,true,true,0));assert.equal(c.stage,'extracted');
+    c.reset();assert.equal(c.records.size,0);assert.equal(c.health,2400);c.stage='choice';assert(c.choose('infinite',true));assert(!c.choose('extracting',true));
+});
 
 test('journal contracts are finite, optional, equipment-aware and pay only once',()=>{
     const j=new FieldJournal();j.offer(1);assert.equal(j.contract.type,'melee');assert.equal(j.accept(false),false);assert(j.accept());

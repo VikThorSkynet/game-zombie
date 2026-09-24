@@ -13,7 +13,7 @@ assert(!html.includes('createOscillator'), 'only MP3 audio sources');
 assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
 const api = `window.qa = { THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
- BALANCE, waveDirector, gameEvents, journal, openJournal, closeJournal, acceptContract, get records(){return records}, startWave, updateWave, damageEnemy, killZombie, applyDamage,
+ BALANCE, campaign, campaignNodes, interactCampaign, updateCampaign, get campaignBoss(){return campaignBoss}, get bossWarning(){return bossWarning}, get gameOver(){return gameOver}, waveDirector, gameEvents, journal, openJournal, closeJournal, acceptContract, get records(){return records}, startWave, updateWave, damageEnemy, killZombie, applyDamage,
  createDog, updateRoundAtmosphere, getZombieTypeConfig, enemyHealth, zombieHitMeshes,
  areaRuntime, areaPortals, travelArea, travelReason, setContainmentDoor, getSpawnPosition, perkMachines,
  get perks(){return [hasJuggernog,hasSpeedCola,hasDoubleTap,hasMoveSpeed]},
@@ -57,6 +57,7 @@ const server = http.createServer((req, res) => {
             await page.goto(`${url}?quality=${quality}`);
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
+            if(process.env.QA_CAMPAIGN_ONLY){await require('./campaign.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             const balance = await page.evaluate(() => {
                 const q=qa,T=q.THREE,stations=q.ammoStations;
                 const distances=stations.flatMap((a,i)=>stations.slice(i+1).map(b=>a.position.distanceTo(b.position)));
@@ -234,6 +235,7 @@ const server = http.createServer((req, res) => {
             assert(Object.values(lifecycle).every(Boolean),JSON.stringify(lifecycle));
             console.log(JSON.stringify({quality,lifecycle}));
             await require('./progression.cjs')(page,assert,quality,releaseTag);
+            await require('./campaign.cjs')(page,assert,quality,releaseTag);
             await require('./journal.cjs')(page,assert,quality,releaseTag);
             await require('./containment.cjs')(page,assert,quality,releaseTag);
             await require('./special-rounds.cjs')(page,assert,quality,releaseTag);

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v24 • 23/09/2026 23:17:24</title>
+    <title>Protocolo Sobreviva — v25 • 24/09/2026 08:20:03</title>
 
     <style>
         * {
@@ -913,7 +913,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
     <div id="overlay">
         <div id="panel" role="region" aria-label="Menu do jogo">
-            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V24</div>
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V25</div>
             <h1>Prepare-se para a noite.</h1>
             <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
             <div class="loading-line"></div>
@@ -1001,6 +1001,34 @@ function areaTravelReason({phase,unlocked,objective,busy}) {
 }
 
 // Optional, wave-scoped contracts. Only paid player eliminations count.
+class ContainmentCampaign {
+    constructor(){this.reset();}
+    reset(){this.records=new Set();this.parts=new Set();this.code=0;this.stage='records';this.phase=1;this.health=2400;this.shield=0;this.extraction=0;}
+    get busy(){return this.stage==='boss'||this.stage==='extracting';}
+    collect(kind,id,powered){
+        if(!powered||!Number.isInteger(id)||id<0||id>2)return false;
+        const set=kind==='record'&&this.stage==='records'?this.records:kind==='part'&&this.stage==='parts'?this.parts:null;
+        if(!set||set.has(id))return false;set.add(id);
+        if(set.size===3)this.stage=kind==='record'?'parts':'symbols';return true;
+    }
+    symbol(id){if(this.stage!=='symbols')return false;this.code=id===[2,0,1][this.code]?this.code+1:0;if(this.code===3)this.stage='ready';return this.code>0;}
+    start(eligible){if(this.stage!=='ready'||!eligible)return false;this.stage='boss';this.shield=2;return true;}
+    hit(amount){
+        if(this.stage!=='boss'||this.shield>0||!Number.isFinite(amount)||amount<=0)return 0;
+        const dealt=Math.min(amount,this.health-(3-this.phase)*800);this.health-=dealt;
+        if(this.health===0)this.stage='choice';
+        else if(this.health===(3-this.phase)*800){this.phase++;this.shield=2;}
+        return dealt;
+    }
+    choose(mode,eligible){if(this.stage!=='choice'||!eligible||!['infinite','extracting'].includes(mode))return false;this.stage=mode;return true;}
+    step(delta,active,inside=false,enemies=0){
+        if(!active||!Number.isFinite(delta)||delta<0)return false;
+        this.shield=Math.max(0,this.shield-delta);
+        if(this.stage==='extracting'&&inside){this.extraction=Math.min(15,this.extraction+delta);if(this.extraction===15&&enemies===0){this.stage='extracted';return true;}}
+        return false;
+    }
+}
+
 class FieldJournal {
     constructor(){this.reset();}
     reset(){this.entries=[];this.discoveries=new Set();this.contract=null;this.completed=0;this.bestWave=0;this.seen=new Set();}
@@ -1643,6 +1671,8 @@ class WaveDirector {
 
         const gameEvents = new GameEvents();
         const journal = new FieldJournal();
+        const campaign=new ContainmentCampaign(),campaignNodes=[];
+        let campaignBoss=null,bossWarning=null,bossTimer=2,bossTarget=null,bossWarningTime=0;
         const recordsKey='sobreviva.records.v1';
         let records=readRecords(null);
         try{records=readRecords(localStorage.getItem(recordsKey));}catch{}
@@ -1928,6 +1958,7 @@ class WaveDirector {
             createSupplyDistricts();
             createUpgradeStations();
             createContainment();
+            createCampaignNodes('city');
             areaRuntime.prepare=target=>areaRuntime.cache.get(target)||buildInstallation();
             createKnife();
             createArmorModel();
@@ -2000,7 +2031,7 @@ class WaveDirector {
                 if(areaRuntime.loading)return;
                 if (gameOver) {
                     setOverlay(
-                        "Game Over",
+                        campaign.stage==='extracted'?"Extração concluída":"Game Over",
                         `
               <p>Pontuação final: <b>${score}</b></p>
               <p>Você chegou até a onda <b>${wave}</b></p>
@@ -2086,11 +2117,11 @@ class WaveDirector {
             document.body.classList.add("menu-open");
             sceneNeedsRender = true;
             panel.innerHTML = `
-        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V24</div>
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V25</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
-        <p class="release">V24 · 23/09/2026 às 23:17:24 · America/Sao_Paulo</p>
+        <p class="release">V25 · 24/09/2026 às 08:20:03 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
             mountSettings();
@@ -2099,8 +2130,7 @@ class WaveDirector {
         function journalObjective(){
             if(generatorNetwork.completed.size<3)return `Restaure os geradores (${generatorNetwork.completed.size}/3)`;
             if(!generatorNetwork.open)return 'Abra o acesso norte com E';
-            if(!journal.discoveries.has('installation'))return 'Explore a instalação pelo pátio norte';
-            return 'Instalação descoberta · sobreviva às próximas ondas';
+            return campaignObjective();
         }
         function contractTitle(c){return c.type==='melee'?'Eliminações com faca':c.type==='head'?'Eliminações na cabeça':'Eliminações';}
         function saveRecords(){
@@ -2119,7 +2149,7 @@ class WaveDirector {
             gameEvents.on('gameEnded',()=>{journal.finish();saveRecords();});
             gameEvents.on('gameReset',()=>{journal.reset();journalOpen=false;if(journalView)journalView.remove();journalView=null;});
         }
-        function acceptContract(){return journal.accept(!gameOver&&!areaRuntime.loading&&!generatorNetwork.active&&waveDirector.phase==='combat');}
+        function acceptContract(){return journal.accept(!gameOver&&!areaRuntime.loading&&!generatorNetwork.active&&!campaign.busy&&waveDirector.phase==='combat');}
         function closeJournal(){
             journalOpen=false;if(journalView)journalView.remove();journalView=null;
             document.querySelector('.journal-button')?.focus({preventScroll:true});
@@ -2153,6 +2183,121 @@ class WaveDirector {
                 if(e.shiftKey&&(document.activeElement===first||document.activeElement===journalView)){e.preventDefault();last.focus();}
                 else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===journalView)){e.preventDefault();first.focus();}
             };
+        }
+
+        function campaignObjective(){
+            const s=campaign.stage;
+            if(s==='records')return `Busque registros junto aos geradores (${campaign.records.size}/3)`;
+            if(s==='parts')return `Recolha componentes na instalação (${campaign.parts.size}/3)`;
+            if(s==='symbols')return `Painel da instalação · sequência no diário (${campaign.code}/3)`;
+            if(s==='ready')return 'Prepare-se e ative o núcleo entre ondas';
+            if(s==='boss')return `GUARDIÃO · Fase ${campaign.phase}/3 · ${Math.ceil(campaign.health)}/2400${campaign.shield>0?' · ESCUDO':bossWarning?' · SAIA DO CÍRCULO':''}`;
+            if(s==='choice')return 'Extraia pelo rádio no pátio norte ou escolha sobreviver no núcleo';
+            if(s==='extracting')return `EXTRAÇÃO · permaneça a 5 m do rádio · ${Math.floor(campaign.extraction)}/15 s · ${zombies.length} ameaças`;
+            return s==='extracted'?'Extração concluída':'Sobrevivência infinita · contenção encerrada';
+        }
+        function createCampaignNodes(area){
+            const add=(role,id,x,z,label)=>{
+                const node=new THREE.Group(),p=propParts(node),mat=new THREE.MeshStandardMaterial({color:0x315a68,emissive:0x12333b});
+                p.box(.7,1.1,.6,0,.55,0,mat);p.box(.5,.3,.04,0,1.05,.32,new THREE.MeshBasicMaterial({color:role==='core'?0xffb96b:0x72edcb}));
+                const sign=floatingLabel(label,'#a5e8dc');sign.position.y=2;node.add(sign);node.position.set(x,0,z);
+                node.userData={kind:'campaign',role,id,label};scene.add(node);campaignNodes.push(node);return node;
+            };
+            if(area==='city'){
+                generators.forEach((g,id)=>{const pos=[[4,0],[-4,0],[0,4],[0,-4]].map(([x,z])=>g.position.clone().add(new THREE.Vector3(x,0,z))).find(p=>!isPositionBlocked(p.x,p.z,1));if(!pos)throw Error('Registro sem posição livre');add('record',id,pos.x,pos.z,'REGISTRO '+(id+1)+' · [E]');});
+                const radio=add('extract',0,4,141,'RÁDIO · EXTRAÇÃO [E]');
+                const ring=new THREE.Mesh(new THREE.RingGeometry(4.9,5,64),new THREE.MeshBasicMaterial({color:0x67eebd,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(0,.04,0);radio.add(ring);
+            }else{
+                [[-6,14],[6,0],[-6,-14]].forEach(([x,z],id)=>add('part',id,x,z,['BOBINA','FUSÍVEL','REGULADOR'][id]+' · [E]'));
+                [-5,0,5].forEach((x,id)=>add('symbol',id,x,-24,['CÍRCULO','QUADRADO','TRIÂNGULO'][id]+' · [E]'));
+                add('core',0,7,-17,'NÚCLEO · [E]');
+            }
+        }
+        function campaignReady(){return !gameOver&&!generatorNetwork.active&&journal.contract?.status!=='active'&&waveDirector.phase==='intermission'&&zombies.length===0;}
+        function campaignPrompt(node){
+            const {role,label}=node.userData;
+            if(!generatorNetwork.open)return 'Restaure os geradores e abra o acesso norte';
+            if(role==='core'&&campaign.stage==='ready')return campaignReady()?'[E] ATIVAR NÚCLEO · chefe · saída bloqueada até vencer':'NÚCLEO · aguarde intervalo livre, conclua ou abandone o desafio';
+            if(role==='core'&&campaign.stage==='choice')return '[E] SOBREVIVÊNCIA INFINITA · abre mão da extração';
+            if(role==='extract'&&campaign.stage==='choice')return campaignReady()?'[E] EXTRAIR · defenda o rádio por 15 s e elimine os reforços':'EXTRAÇÃO · aguarde intervalo livre';
+            return '[E] '+label.replace(' · [E]','')+' · '+campaignObjective();
+        }
+        function interactCampaign(node){
+            if(!campaignNodes.includes(node)||nearestSupply()!==node||!canUseProgression())return;
+            const {role,id}=node.userData;
+            if(role==='record'||role==='part'){
+                if(campaign.collect(role,id,generatorNetwork.open)){
+                    if(role==='record')journal.discover('cipher-'+id,['Registro 1: primeiro símbolo — TRIÂNGULO. Os componentes estão na instalação.','Registro 2: segundo símbolo — CÍRCULO. Um pulso anuncia cada ataque do guardião.','Registro 3: terceiro símbolo — QUADRADO. O rádio do pátio permite uma extração após neutralizar o núcleo.'][id]);
+                    else journal.discover('part-'+id,['Bobina recolhida.','Fusível recolhido.','Regulador recolhido.'][id]);
+                    showWaveMessage('Descoberta registrada · [J] Diário');
+                }else showWaveMessage(campaignObjective());
+            }else if(role==='symbol'){
+                if(campaign.stage==='symbols'){campaign.symbol(id);showWaveMessage(campaign.stage==='ready'?'Núcleo desbloqueado':campaign.code?'Símbolo correto · '+campaign.code+'/3':'Sequência incorreta · tente novamente');}
+                else showWaveMessage(campaignObjective());
+            }else if(role==='core'&&campaign.stage==='ready'){
+                if(campaign.start(campaignReady()))startCampaignBoss();else showWaveMessage(campaignPrompt(node));
+            }else if(role==='core'&&campaign.choose('infinite',true)){
+                journal.discover('infinite','Extração dispensada. Sobrevivência infinita escolhida.');showWaveMessage('Sobrevivência infinita');
+            }else if(role==='extract'&&campaign.choose('extracting',campaignReady())){
+                waveDirector.holds.add('campaign');playerWeapons.forEach(refillWeapon);
+                for(let n=0;n<6;n++)createCampaignEnemy(new THREE.Vector3((n%3-1)*2,0,128-Math.floor(n/3)*3),n>=4);
+                showWaveMessage('Extração iniciada · fique junto ao rádio e elimine seis reforços');
+            }else showWaveMessage(campaignPrompt(node));
+            updateUI();
+        }
+        function createCampaignEnemy(pos,dog){
+            createZombie(pos,dog?Object.values(zombieTypeConfigs).find(t=>t.isDog):zombieTypeConfigs.normal);
+            const z=zombies.at(-1);z.userData.health=z.userData.maxHealth=dog?120:180;z.userData.campaignReinforcement=true;updateZombieHealthBar(z);
+        }
+        function spawnCampaignReinforcements(dogs){for(const [x,z]of [[-6,8],[6,8],[-6,-8],[6,-8]])createCampaignEnemy(new THREE.Vector3(x,0,z),dogs);}
+        function clearBossWarning(){if(bossWarning){bossWarning.removeFromParent();disposeObject3D(bossWarning);}bossWarning=null;bossTarget=null;bossWarningTime=0;}
+        function startCampaignBoss(){
+            waveDirector.holds.add('campaign');playerWeapons.forEach(refillWeapon);bossTimer=2;
+            createZombie(new THREE.Vector3(0,0,-16),zombieTypeConfigs.normal);campaignBoss=zombies.at(-1);
+            const d=campaignBoss.userData;d.isBoss=true;d.health=d.maxHealth=2400;d.typeName='Guardião';
+            const p=propParts(campaignBoss),metal=new THREE.MeshBasicMaterial({color:0x334e60});
+            const plates=[p.box(1.1,.7,.65,0,1.65,0,metal),p.box(.4,.4,.12,0,1.65,.4,new THREE.MeshBasicMaterial({color:0xffbd63}))];
+            for(const x of [-.72,.72])plates.push(p.box(.45,.45,.7,x,1.95,0,metal));
+            for(const mesh of plates){mesh.name='body';mesh.userData.parentZombie=campaignBoss;d.hitMeshes.push(mesh);zombieHitMeshes.push(mesh);}
+            const crown=new THREE.Mesh(new THREE.TorusGeometry(.65,.06,8,32),new THREE.MeshBasicMaterial({color:0xffb85e}));crown.rotation.x=Math.PI/2;crown.position.y=3;campaignBoss.add(crown);
+            const label=floatingLabel('GUARDIÃO DO NÚCLEO','#ffc17b');label.position.y=3.6;campaignBoss.add(label);
+            journal.discover('core','Núcleo ativado. Guardião: três fases, ataques marcados no chão e escudo de dois segundos entre fases. Nuke e Morte Instantânea não o eliminam. Munição reposta no início e a cada fase.');
+            showWaveMessage('Guardião ativado · evite os círculos de impacto');
+        }
+        function bossHasLineOfSight(){
+            if(!campaignBoss)return false;
+            const origin=campaignBoss.position.clone().add(new THREE.Vector3(0,1.8,0)),direction=camera.position.clone().sub(origin),distance=direction.length();
+            if(distance<.001)return true;
+            const ray=new THREE.Raycaster(origin,direction.normalize(),0,distance);
+            return ray.intersectObjects(bulletBlockers,false).length===0;
+        }
+        function updateCampaign(delta){
+            if(!controls.isLocked||gameOver||areaRuntime.loading)return;
+            if(['choice','infinite'].includes(campaign.stage)&&zombies.length===0)waveDirector.holds.delete('campaign');
+            const radio=campaignNodes.find(n=>n.userData.role==='extract');
+            if(campaign.step(delta,true,!!radio&&Math.hypot(camera.position.x-radio.position.x,camera.position.z-radio.position.z)<5,zombies.length)){
+                waveDirector.holds.delete('campaign');journal.discover('extracted','Equipe extraída. Protocolo de contenção concluído.');
+                gameOver=true;armor.cancel();gameEvents.emit('gameEnded',{wave,kills:runStats.kills,seconds:runStats.seconds});controls.unlock();return;
+            }
+            if(!campaignBoss||campaign.stage!=='boss')return;
+            const boss=campaignBoss;faceZombieHorizontally(boss,camera.position.x,camera.position.z);
+            boss.userData.healthBarGroup.position.copy(boss.position).add(new THREE.Vector3(0,3.2,0));boss.userData.healthBarGroup.lookAt(camera.position);
+            if(bossWarning){
+                bossWarningTime-=delta;
+                if(bossWarningTime<=0){
+                    const distance=Math.hypot(camera.position.x-bossTarget.x,camera.position.z-bossTarget.z);
+                    if(distance<2+campaign.phase&&bossHasLineOfSight())applyDamage(14+campaign.phase*6);
+                    clearBossWarning();bossTimer=2.5-campaign.phase*.35;
+                }
+            }else{
+                bossTimer-=delta;
+                if(bossTimer<=0&&!bossHasLineOfSight()){bossTimer=.4;return;}
+                if(bossTimer<=0){
+                    bossTarget=camera.position.clone();bossWarningTime=1.8-campaign.phase*.25;
+                    bossWarning=new THREE.Mesh(new THREE.RingGeometry(2+campaign.phase-.15,2+campaign.phase,48),new THREE.MeshBasicMaterial({color:0xff7449,side:THREE.DoubleSide,transparent:true,opacity:.9}));
+                    bossWarning.rotation.x=-Math.PI/2;bossWarning.position.set(bossTarget.x,.08,bossTarget.z);scene.add(bossWarning);
+                }
+            }
         }
 
         function createSeededRandom(seed) {
@@ -4444,6 +4589,7 @@ class WaveDirector {
         }
 
         function applyLegDamage(zombie, damage) {
+            if(zombie.userData.isBoss)return;
             const data = zombie.userData;
             if (data.legsDestroyed) return;
             data.legHealth = Math.max(0, data.legHealth - damage);
@@ -5334,7 +5480,7 @@ class WaveDirector {
         }
         function nearestSupply() {
             let nearest=null, distance=3.3;
-            for(const item of [...ammoStations,...saleBoxes,...upgradeStations,...generators,...areaPortals,containmentDoor].filter(Boolean)) {
+            for(const item of [...ammoStations,...saleBoxes,...upgradeStations,...generators,...areaPortals,...campaignNodes,containmentDoor].filter(Boolean)) {
                 if(!item.visible)continue;
                 const d=camera.position.distanceTo(item.position);
                 // Cabinets have their own solid collision, so check the approach point.
@@ -5351,6 +5497,7 @@ class WaveDirector {
             if(areaRuntime.loading)return;
             if(!controls.isLocked || gameOver || meleeTimer>0 || armor.plating || isReloading || isSwitchingWeapon || papState==='upgrading')return;
             if(item.userData.kind==='portal'){void travelArea(item);return;}
+            if(item.userData.kind==='campaign'){interactCampaign(item);return;}
             if (item.userData.kind === 'generator' || item.userData.kind === 'door') {
                 interactContainment(item); return;
             }
@@ -5398,6 +5545,7 @@ class WaveDirector {
         }
 
         function supplyPrompt(item) {
+            if(item.userData.kind==='campaign')return campaignPrompt(item);
             if(item.userData.kind==='portal')return travelReason()||`[E] ${areaRuntime.active==='city'?'ENTRAR NA INSTALAÇÃO':'VOLTAR À CIDADE'}`;
             if (item.userData.kind==='generator') {
                 const id=item.userData.generatorId;
@@ -5496,7 +5644,7 @@ class WaveDirector {
 
         function areaLists() {
             return [staticColliders,bulletBlockers,worldLODs,environmentLights,ammoStations,saleBoxes,upgradeStations,
-                generators,perkMachines,areaPortals,ammoPickups,medKits,powerups,tracers,impactParticles,explosionEffects,shellCasings,zombieProjectiles];
+                generators,perkMachines,areaPortals,campaignNodes,ammoPickups,medKits,powerups,tracers,impactParticles,explosionEffects,shellCasings,zombieProjectiles];
         }
         function captureArea() {
             return {scene,lists:areaLists().map(list=>list.slice()),grid:new Map([...staticColliderGrid].map(([key,list])=>[key,list.slice()])),
@@ -5567,9 +5715,11 @@ class WaveDirector {
             const ammo=new THREE.Group(),a=propParts(ammo);const body=a.box(1.5,.8,.9,0,.4,0,wall);
             const label=floatingLabel('MUNIÇÃO · [E]','#ffda92');label.position.y=1.6;ammo.add(label);
             ammo.position.set(6,0,23);ammo.userData.kind='ammo';scene.add(ammo);ammo.updateMatrixWorld(true);registerWorldCollider(body);ammoStations.push(ammo);
+            createCampaignNodes('installation');
             return captureArea();
         }
         function travelReason() {
+            if(campaign.busy)return 'Conclua o confronto ou a extração antes de viajar';
             return areaTravelReason({phase:waveDirector.phase,unlocked:generatorNetwork.open,objective:!!generatorNetwork.active,
                 busy:areaRuntime.loading||zombies.length>0||armor.plating||isReloading||isSwitchingWeapon||meleeTimer>0||papState!=='idle'||mysteryBoxState!=='idle'||saleBoxes.some(b=>b.userData.state!=='idle')});
         }
@@ -5842,7 +5992,7 @@ class WaveDirector {
                 moveObjectWithCollisions(target,forward.x*BALANCE.melee.knockback,forward.z*BALANCE.melee.knockback,target.userData.radius||0.65);
                 if(!settings.reducedMotion)screenShakeAmount=Math.max(screenShakeAmount,0.28);
                 combatFeedback.textContent=instaKillTimer>0?'FACADA · MORTE INSTANTÂNEA':`FACADA · −${BALANCE.melee.damage}`;combatFeedbackTimer=0.8;
-                damageEnemy(target, instaKillTimer>0?999999:BALANCE.melee.damage, 'melee');
+                damageEnemy(target, instaKillTimer>0&&!target.userData.isBoss?999999:BALANCE.melee.damage, 'melee');
                 const point=target.position.clone();point.y+=1.3;createZombieHitEffect(point);showHitmarker(target.userData.health<=0);updateZombieHealthBar(target);if(target.userData.health<=0)killZombie(target,{cause:'melee'});}
         }
         function updateMelee(delta) {
@@ -5895,7 +6045,7 @@ class WaveDirector {
                 isReloading=false;reloadTimer=0;
             }else if(type==='nuke'){
                 playAudioAsset('nuke',{volume:0.62});
-                const victims=[...zombies];runStats.kills+=victims.length;
+                const victims=zombies.filter(z=>!z.userData.isBoss);runStats.kills+=victims.length;
                 victims.forEach(z=>killZombie(z,{awardScore:false,allowPowerup:false,cause:'nuke'}));
                 score+=BALANCE.economy.nuke*(doublePointsTimer>0?2:1);
             }else if(type==='insta_kill')instaKillTimer=BALANCE.drops.duration;
@@ -6533,7 +6683,7 @@ class WaveDirector {
 
                     let damage = isHead ? headDamage : bodyDamage;
                     damage *= weaponMultiplier(playerWeapons[currentWeaponIndex]);
-                    if (instaKillTimer > 0) damage = 999999;
+                    if (instaKillTimer > 0 && !zombie.userData.isBoss) damage = 999999;
 
                     damageEnemy(zombie, damage, 'bullet', isHead);
                     createZombieHitEffect(hit.point, isHead);
@@ -6601,7 +6751,7 @@ class WaveDirector {
 
                     let damage = isHead ? headDamage : bodyDamage;
                     damage *= weaponMultiplier(playerWeapons[currentWeaponIndex]);
-                    if (instaKillTimer > 0) damage = 999999;
+                    if (instaKillTimer > 0 && !zombie.userData.isBoss) damage = 999999;
 
                     damageEnemy(zombie, damage, 'laser', isHead);
                     createZombieHitEffect(hit.point, isHead, 0x16ffd0);
@@ -6758,6 +6908,11 @@ class WaveDirector {
 
         function damageEnemy(zombie, amount, cause, headshot = false) {
             if (!zombies.includes(zombie) || zombie.userData.health <= 0 || !Number.isFinite(amount) || amount <= 0) return;
+            if(zombie.userData.isBoss){
+                const previous=campaign.phase;campaign.hit(amount);zombie.userData.health=campaign.health;
+                if(campaign.phase!==previous){clearBossWarning();bossTimer=2;playerWeapons.forEach(refillWeapon);spawnCampaignReinforcements(campaign.phase===3);showWaveMessage('Fase '+campaign.phase+' · Munição reposta · Escudo por 2 s');}
+                updateZombieHealthBar(zombie);return;
+            }
             const dealt = Math.min(zombie.userData.health, amount);
             zombie.userData.health -= amount;
             gameEvents.emit('enemyDamaged', { wave, enemyId: zombie.id, enemyType: zombie.userData.typeName,
@@ -6765,6 +6920,12 @@ class WaveDirector {
         }
 
         function killZombie(zombie, { awardScore = true, allowPowerup = true, cause = 'unknown', headshot = false } = {}) {
+            if(zombie.userData.isBoss){
+                if(!zombies.includes(zombie)||campaign.stage!=='choice'||zombie.userData.health>0)return;
+                awardScore=false;allowPowerup=false;score+=600;runStats.kills++;campaignBoss=null;clearBossWarning();
+                journal.discover('boss','Guardião derrotado. +600 pontos. Elimine os reforços restantes. Use o rádio no pátio norte entre ondas para extrair, ou o núcleo para continuar indefinidamente.');
+                showWaveMessage('Guardião derrotado · +600 · Extração disponível no pátio norte');
+            }
             const idx = zombies.indexOf(zombie);
             if (idx === -1) return; // A kill, its drops and its event are paid exactly once.
             zombies.splice(idx, 1);
@@ -7113,6 +7274,7 @@ class WaveDirector {
 
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const zombie = zombies[i];
+                if(zombie.userData.isBoss)continue;
                 if(zombie.userData.isDog){updateDog(zombie,playerPos,delta);continue;}
                 zombie.userData.attackCooldown -= delta;
                 zombie.userData.swing += delta * (7.2 + zombie.userData.speed * 1.4);
@@ -7497,6 +7659,10 @@ class WaveDirector {
         }
 
         function updateUI() {
+            for(const node of campaignNodes){
+                const {role,id}=node.userData;
+                node.visible=role==='record'?!campaign.records.has(id):role==='part'?!campaign.parts.has(id):true;
+            }
             const c=journal.contract;
             document.getElementById('journal-status').textContent=journalObjective()+' · [J] Diário'+(c?.status==='active'?` · ${contractTitle(c)} ${c.progress}/${c.target}`:c?.status==='offered'?' · Desafio disponível':'');
             document.getElementById('area-status').textContent=areaRuntime.active==='city'?'ÁREA · CIDADE':'ÁREA · INSTALAÇÃO';
@@ -7645,6 +7811,7 @@ class WaveDirector {
         }
 
         function resetGame() {
+            clearBossWarning();campaignBoss=null;campaign.reset();
             resetAreas();
             armor.reset(); scrap.reset(); if (armorModel) armorModel.visible=false;
             meleeTimer = 0; knifeModel.visible = false; fireSaleTimer = 0;
@@ -7971,6 +8138,7 @@ class WaveDirector {
             updatePlayer(delta);
             updateZombies(delta);
             updateContainment(delta);
+            updateCampaign(delta);
             updateWave(delta);
             updateAmmoPickups(delta);
             updateMedKits(delta);

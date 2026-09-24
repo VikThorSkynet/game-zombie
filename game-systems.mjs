@@ -54,6 +54,34 @@ export function areaTravelReason({phase,unlocked,objective,busy}) {
 }
 
 // Optional, wave-scoped contracts. Only paid player eliminations count.
+export class ContainmentCampaign {
+    constructor(){this.reset();}
+    reset(){this.records=new Set();this.parts=new Set();this.code=0;this.stage='records';this.phase=1;this.health=2400;this.shield=0;this.extraction=0;}
+    get busy(){return this.stage==='boss'||this.stage==='extracting';}
+    collect(kind,id,powered){
+        if(!powered||!Number.isInteger(id)||id<0||id>2)return false;
+        const set=kind==='record'&&this.stage==='records'?this.records:kind==='part'&&this.stage==='parts'?this.parts:null;
+        if(!set||set.has(id))return false;set.add(id);
+        if(set.size===3)this.stage=kind==='record'?'parts':'symbols';return true;
+    }
+    symbol(id){if(this.stage!=='symbols')return false;this.code=id===[2,0,1][this.code]?this.code+1:0;if(this.code===3)this.stage='ready';return this.code>0;}
+    start(eligible){if(this.stage!=='ready'||!eligible)return false;this.stage='boss';this.shield=2;return true;}
+    hit(amount){
+        if(this.stage!=='boss'||this.shield>0||!Number.isFinite(amount)||amount<=0)return 0;
+        const dealt=Math.min(amount,this.health-(3-this.phase)*800);this.health-=dealt;
+        if(this.health===0)this.stage='choice';
+        else if(this.health===(3-this.phase)*800){this.phase++;this.shield=2;}
+        return dealt;
+    }
+    choose(mode,eligible){if(this.stage!=='choice'||!eligible||!['infinite','extracting'].includes(mode))return false;this.stage=mode;return true;}
+    step(delta,active,inside=false,enemies=0){
+        if(!active||!Number.isFinite(delta)||delta<0)return false;
+        this.shield=Math.max(0,this.shield-delta);
+        if(this.stage==='extracting'&&inside){this.extraction=Math.min(15,this.extraction+delta);if(this.extraction===15&&enemies===0){this.stage='extracted';return true;}}
+        return false;
+    }
+}
+
 export class FieldJournal {
     constructor(){this.reset();}
     reset(){this.entries=[];this.discoveries=new Set();this.contract=null;this.completed=0;this.bestWave=0;this.seen=new Set();}
