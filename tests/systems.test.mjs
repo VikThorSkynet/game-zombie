@@ -1,7 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed,
+import { BALANCE, WaveDirector, GameEvents, enemyHealth, enemyDamage, enemySpeed, areaTravelReason,
     ArmorState, ScrapWallet, GeneratorNetwork, DogAttack, waveProfile, stepFog, RARITIES, rarityOf, rarityUpgrade, rollRarity, weaponMultiplier, killReward } from '../game-systems.mjs';
+
+test('area travel requires unlocked passage, intermission and no active action or objective',()=>{
+    const valid={phase:'intermission',unlocked:true,objective:false,busy:false};
+    assert.equal(areaTravelReason(valid),'');
+    for(const change of [{phase:'combat'},{unlocked:false},{objective:true},{busy:true}])assert.notEqual(areaTravelReason({...valid,...change}),'');
+});
 
 test('special schedule has no adjacent events and caps finite dog populations',()=>{
     let lastDog=0,lastSpecial=0;

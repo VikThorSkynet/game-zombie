@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Protocolo Sobreviva — v22 • 23/09/2026 13:15:17</title>
+    <title>Protocolo Sobreviva — v23 • 23/09/2026 22:57:09</title>
 
     <style>
         * {
@@ -874,6 +874,7 @@ body.menu-open #combat-feedback {visibility:hidden}
         </div>
         <div class="text-info" id="status">STATUS · PRONTO</div>
         <div id="scrap-status">SUCATA · 0</div>
+        <div id="area-status" style="margin-top:6px;color:#9bd8f0;font-size:12px">ÁREA · CIDADE</div>
         <div id="round-kind" style="margin-top:8px;color:#ffd16b;font-size:12px"></div>
         <div id="dog-warning" hidden style="color:#ff906e;font-weight:bold;font-size:12px">CÃO PREPARANDO BOTE · ESQUIVE</div>
         <div id="containment-status" style="margin-top:10px;color:#a5e8dc;font-size:12px;line-height:1.5">ENERGIA · 0/3 GERADORES</div>
@@ -905,7 +906,7 @@ body.menu-open #combat-feedback {visibility:hidden}
 
     <div id="overlay">
         <div id="panel" role="region" aria-label="Menu do jogo">
-            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V22</div>
+            <div class="menu-kicker">PROTOCOLO SOBREVIVA / V23</div>
             <h1>Prepare-se para a noite.</h1>
             <p id="boot-status" role="status">Carregando motor e preparando a cidade…</p>
             <div class="loading-line"></div>
@@ -982,6 +983,14 @@ function stepFog(density,target,delta,active=true) {
     if(!active||!Number.isFinite(delta)||delta<0)return density;
     if(Math.abs(target-density)<=delta*.008)return target;
     return density+Math.sign(target-density)*Math.min(Math.abs(target-density),delta*.008);
+}
+
+function areaTravelReason({phase,unlocked,objective,busy}) {
+    if(!unlocked)return 'Restaure os três geradores e abra o acesso norte';
+    if(objective)return 'Conclua a defesa do gerador antes de viajar';
+    if(busy)return 'Conclua a ação atual antes de viajar';
+    if(phase!=='intermission')return 'Disponível entre ondas';
+    return '';
 }
 
 class DogAttack {
@@ -1600,6 +1609,8 @@ class WaveDirector {
         const generatorNetwork = new GeneratorNetwork();
         const generators = [];
         let containmentDoor, doorCollider;
+        const areaRuntime={active:'city',loading:false,epoch:0,cache:new Map(),prepare:null};
+        const areaPortals=[];
         let armorModel;
         const waveDirector = new WaveDirector(lowQuality ? BALANCE.waves.maxActiveLow : BALANCE.waves.maxActiveHigh);
         let dogRewardGranted=false;
@@ -1872,6 +1883,7 @@ class WaveDirector {
             createSupplyDistricts();
             createUpgradeStations();
             createContainment();
+            areaRuntime.prepare=target=>areaRuntime.cache.get(target)||buildInstallation();
             createKnife();
             createArmorModel();
             buildNavigationGrid();
@@ -1939,6 +1951,7 @@ class WaveDirector {
                 hitmarker.style.opacity = "0";
                 damageText.style.opacity = "0";
 
+                if(areaRuntime.loading)return;
                 if (gameOver) {
                     setOverlay(
                         "Game Over",
@@ -2027,11 +2040,11 @@ class WaveDirector {
             document.body.classList.add("menu-open");
             sceneNeedsRender = true;
             panel.innerHTML = `
-        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V22</div>
+        <div class="menu-kicker">PROTOCOLO SOBREVIVA / V23</div>
         <h1>${title}</h1>
         ${html}
         <button id="mainBtn">${buttonText}</button>
-        <p class="release">V22 · 23/09/2026 às 13:15:17 · America/Sao_Paulo</p>
+        <p class="release">V23 · 23/09/2026 às 22:57:09 · America/Sao_Paulo</p>
       `;
             document.getElementById("mainBtn").onclick = callback;
             mountSettings();
@@ -3098,6 +3111,13 @@ class WaveDirector {
         }
 
         function getRandomFreePosition(minPlayerDistance = 0, radius = 1, limit = spawnAreaLimit, maxAttempts = 50) {
+            if(areaRuntime.active==='installation') {
+                for(let i=0;i<maxAttempts;i++) {
+                    const p=new THREE.Vector3(THREE.MathUtils.randFloat(-20,20),0,THREE.MathUtils.randFloat(-28,28));
+                    if(p.distanceTo(camera.position)>=minPlayerDistance&&!isPositionBlocked(p.x,p.z,radius))return p;
+                }
+                return new THREE.Vector3(0,0,20);
+            }
             const playerX = camera.position.x;
             const playerZ = camera.position.z;
             const minDistSq = minPlayerDistance * minPlayerDistance;
@@ -5015,6 +5035,11 @@ class WaveDirector {
         }
 
         function getSpawnPosition() {
+            if(areaRuntime.active==='installation') {
+                const spots=[[-19,-26],[19,-26],[-19,26],[19,26],[0,-26],[0,26]];
+                const candidates=spots.map(([x,z])=>new THREE.Vector3(x,0,z)).filter(p=>p.distanceTo(camera.position)>=BALANCE.enemies.minSpawnDistance&&!isPositionBlocked(p.x,p.z,zombieRadius+.25));
+                return candidates[Math.floor(Math.random()*candidates.length)]||null;
+            }
             const playerX = camera.position.x;
             const playerZ = camera.position.z;
 
@@ -5204,7 +5229,7 @@ class WaveDirector {
         }
         function nearestSupply() {
             let nearest=null, distance=3.3;
-            for(const item of [...ammoStations,...saleBoxes,...upgradeStations,...generators,containmentDoor].filter(Boolean)) {
+            for(const item of [...ammoStations,...saleBoxes,...upgradeStations,...generators,...areaPortals,containmentDoor].filter(Boolean)) {
                 if(!item.visible)continue;
                 const d=camera.position.distanceTo(item.position);
                 // Cabinets have their own solid collision, so check the approach point.
@@ -5218,7 +5243,9 @@ class WaveDirector {
             box.userData.weapon=null;box.userData.state='idle';box.userData.timer=0;box.visible=fireSaleTimer>0;
         }
         function interactSupply(item) {
+            if(areaRuntime.loading)return;
             if(!controls.isLocked || gameOver || meleeTimer>0 || armor.plating || isReloading || isSwitchingWeapon || papState==='upgrading')return;
+            if(item.userData.kind==='portal'){void travelArea(item);return;}
             if (item.userData.kind === 'generator' || item.userData.kind === 'door') {
                 interactContainment(item); return;
             }
@@ -5266,6 +5293,7 @@ class WaveDirector {
         }
 
         function supplyPrompt(item) {
+            if(item.userData.kind==='portal')return travelReason()||`[E] ${areaRuntime.active==='city'?'ENTRAR NA INSTALAÇÃO':'VOLTAR À CIDADE'}`;
             if (item.userData.kind==='generator') {
                 const id=item.userData.generatorId;
                 if(!generatorNetwork.completed.has(id)&&waveDirector.phase==='combat'&&waveDirector.profile?.kind!=='normal')return 'GERADOR · Conclua a rodada especial para ativar';
@@ -5361,6 +5389,129 @@ class WaveDirector {
             label.style.color=r.color;
         }
 
+        function areaLists() {
+            return [staticColliders,bulletBlockers,worldLODs,environmentLights,ammoStations,saleBoxes,upgradeStations,
+                generators,perkMachines,areaPortals,ammoPickups,medKits,powerups,tracers,impactParticles,explosionEffects,shellCasings,zombieProjectiles];
+        }
+        function captureArea() {
+            return {scene,lists:areaLists().map(list=>list.slice()),grid:new Map([...staticColliderGrid].map(([key,list])=>[key,list.slice()])),
+                mysteryBox,papMachine,containmentDoor,doorCollider,navigationDebugPoints};
+        }
+        function applyArea(record) {
+            scene=record.scene;
+            areaLists().forEach((list,i)=>list.splice(0,list.length,...record.lists[i]));
+            staticColliderGrid.clear();for(const [key,list] of record.grid)staticColliderGrid.set(key,list.slice());
+            ({mysteryBox,papMachine,containmentDoor,doorCollider,navigationDebugPoints}=record);
+            scene.add(camera);if(composer)composer.passes[0].scene=scene;
+            buildNavigationGrid();renderer.shadowMap.needsUpdate=true;renderer.renderLists.dispose();
+        }
+        function releaseAreaGraphics(record) {
+            const geometries=new Set(),materials=new Set(),textures=new Set();
+            const shared=new Set([muzzleFlashTexture,...bonusLabelTextures.values(),createAmmoPickup.labelTexture]);
+            for(const root of record.scene.children) {
+                if(root===camera)continue;
+                root.traverse(o=>{
+                    if(o.geometry)geometries.add(o.geometry);
+                    for(const m of (Array.isArray(o.material)?o.material:o.material?[o.material]:[])) {
+                        materials.add(m);for(const value of Object.values(m))if(value?.isTexture&&!shared.has(value))textures.add(value);
+                    }
+                    if(o.shadow?.map){o.shadow.map.dispose();o.shadow.map=null;}
+                });
+            }
+            geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());
+            textures.forEach(t=>{t.dispose();t.needsUpdate=true;});
+            // CPU scene descriptions stay in a bounded two-area cache; GPU allocations are released.
+        }
+        function createAreaPortal(position,target,labelText) {
+            const portal=new THREE.Group(),p=propParts(portal);
+            const metal=new THREE.MeshBasicMaterial({color:0x34474c}),edge=new THREE.MeshBasicMaterial({color:0x85d8d4});
+            p.box(3,3.5,.15,0,1.75,0,metal);
+            for(const x of [-1.6,1.6])p.box(.12,3.7,.2,x,1.85,0,edge);
+            p.box(3.3,.12,.2,0,3.7,0,edge);
+            const label=floatingLabel(labelText,'#a5e8dc');label.position.set(0,4.15,0);portal.add(label);
+            portal.position.copy(position);portal.userData={kind:'portal',target};scene.add(portal);areaPortals.push(portal);
+        }
+        function buildInstallation() {
+            scene=new THREE.Scene();scene.background=new THREE.Color(0x101a20);scene.fog=new THREE.FogExp2(0x101c25,.006);
+            areaLists().forEach(list=>list.length=0);staticColliderGrid.clear();
+            mysteryBox=null;papMachine=null;containmentDoor=null;doorCollider=null;navigationDebugPoints=null;
+            const room=new THREE.Group();scene.add(room);const p=propParts(room);
+            const wall=new THREE.MeshStandardMaterial({color:0x455d63,roughness:.85});
+            const floor=new THREE.MeshStandardMaterial({color:0x253339,roughness:.9});
+            const trim=new THREE.MeshBasicMaterial({color:0x579c9c});
+            const solid=(w,h,d,x,y,z,m=wall)=>{const mesh=p.box(w,h,d,x,y,z,m);room.updateMatrixWorld(true);registerWorldCollider(mesh);return mesh;};
+            const ground=p.box(44,.2,60,0,-.12,0,floor);bulletBlockers.push(ground);
+            solid(.6,6,60,-22,3,0);solid(.6,6,60,22,3,0);solid(44,6,.6,0,3,-30);solid(44,6,.6,0,3,30);
+            const roof=p.box(44,.2,60,0,6.1,0,floor);bulletBlockers.push(roof);
+            for(const x of [-12,12]) {
+                solid(.5,4,18,x,2,-14);solid(.5,4,18,x,2,14);
+                for(const z of [-21,0,21]) {
+                    solid(3,1.1,1.5,x>0?17:-17,.55,z,floor);
+                    p.box(2.5,.05,1.2,x>0?17:-17,1.13,z,trim);
+                    const screen=p.box(2,.7,.08,x>0?17:-17,1.65,z-.5,new THREE.MeshBasicMaterial({color:0x377b84}));screen.rotation.x=-.15;
+                }
+            }
+            for(const z of [-24,-12,0,12,24]) {
+                p.box(5,.06,.35,0,5.8,z,new THREE.MeshBasicMaterial({color:0xd0f1ed}));
+                for(const x of [-10,10])p.box(.12,.02,8,x,.015,z,trim);
+            }
+            scene.add(new THREE.HemisphereLight(0xc5e5ef,0x344347,2));
+            const light=new THREE.DirectionalLight(0xb9e4f0,1.1);light.position.set(5,5,3);scene.add(light);
+            const title=floatingLabel('INSTALAÇÃO · CONTENÇÃO','#a5e8dc');title.scale.set(6,1.1,1);title.position.set(0,4,-28);scene.add(title);
+            createAreaPortal(new THREE.Vector3(0,0,28),'city','SAÍDA · CIDADE [E]');
+            const ammo=new THREE.Group(),a=propParts(ammo);const body=a.box(1.5,.8,.9,0,.4,0,wall);
+            const label=floatingLabel('MUNIÇÃO · [E]','#ffda92');label.position.y=1.6;ammo.add(label);
+            ammo.position.set(6,0,23);ammo.userData.kind='ammo';scene.add(ammo);ammo.updateMatrixWorld(true);registerWorldCollider(body);ammoStations.push(ammo);
+            return captureArea();
+        }
+        function travelReason() {
+            return areaTravelReason({phase:waveDirector.phase,unlocked:generatorNetwork.open,objective:!!generatorNetwork.active,
+                busy:areaRuntime.loading||zombies.length>0||armor.plating||isReloading||isSwitchingWeapon||meleeTimer>0||papState!=='idle'||mysteryBoxState!=='idle'||saleBoxes.some(b=>b.userData.state!=='idle')});
+        }
+        async function travelArea(portal) {
+            if(!controls.isLocked||gameOver||areaRuntime.loading||!areaPortals.includes(portal)||nearestSupply()!==portal)return false;
+            const reason=travelReason();if(reason){showWaveMessage(reason);return false;}
+            const target=portal.userData.target,previous=areaRuntime.active,record=captureArea(),position=camera.position.clone(),rotation=camera.rotation.clone();
+            areaRuntime.cache.set(previous,record);areaRuntime.loading=true;const epoch=++areaRuntime.epoch;
+            waveDirector.holds.add('area-loading');resetAim();controls.unlock();controls.isLocked=false;
+            overlay.style.display='flex';document.body.classList.add('menu-open');
+            panel.innerHTML='<h1>Carregando área…</h1><p>Aguarde a abertura da passagem.</p><div class="loading-line"></div>';
+            let success=false;
+            try {
+                await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+                if(epoch!==areaRuntime.epoch)return false;
+                const next=areaRuntime.prepare(target);
+                applyArea(next);areaRuntime.active=target;
+                camera.position.set(0,playerEyeHeight,target==='city'?142:25);camera.rotation.set(0,target==='city'?Math.PI:0,0);
+                velocity.set(0,0,0);scene.fog.density=.006;renderScene();
+                releaseAreaGraphics(record);areaRuntime.cache.set(target,next);
+                gameEvents.emit('areaChanged',{from:previous,to:target});success=true;
+            } catch(error) {
+                console.warn('Area transition failed; restoring previous area',error);
+                if(scene!==record.scene)releaseAreaGraphics(captureArea());
+                areaRuntime.cache.delete(target);applyArea(record);areaRuntime.active=previous;
+                camera.position.copy(position);camera.rotation.copy(rotation);renderScene();
+                gameEvents.emit('areaLoadFailed',{from:previous,to:target});
+            } finally {
+                if(epoch===areaRuntime.epoch) {
+                    areaRuntime.loading=false;waveDirector.holds.delete('area-loading');clock.getDelta();
+                    setOverlay(success?(target==='city'?'Cidade':'Instalação'):'Passagem indisponível',
+                        success?'<p>Equipamento e progresso preservados. Continue quando estiver pronto.</p>':'<p>A área anterior foi recuperada. Você pode continuar e tentar a passagem novamente.</p>',
+                        'CONTINUAR',()=>controls.lock());updateUI();sceneNeedsRender=true;
+                }
+            }
+            return success;
+        }
+        function resetAreas() {
+            areaRuntime.epoch++;areaRuntime.loading=false;waveDirector.holds.delete('area-loading');
+            if(areaRuntime.active!=='city') {
+                const interior=captureArea(),city=areaRuntime.cache.get('city');
+                applyArea(city);areaRuntime.cache.set('installation',interior);areaRuntime.active='city';
+            }
+            for(const [name,record] of areaRuntime.cache)if(name!=='city')releaseAreaGraphics(record);
+            areaRuntime.cache.clear();
+        }
+
         function createContainment() {
             const metal=new THREE.MeshBasicMaterial({color:0x30494d});
             const trim=new THREE.MeshBasicMaterial({color:0x9caa99});
@@ -5396,7 +5547,7 @@ class WaveDirector {
             const sign=floatingLabel('ACESSO NORTE · 3 GERADORES','#ffd16b');sign.position.set(0,4.1,0);containmentDoor.add(sign);
             containmentDoor.position.set(0,0,137);containmentDoor.userData={kind:'door',panel};
             scene.add(containmentDoor);containmentDoor.updateMatrixWorld(true);doorCollider=registerWorldCollider(panel);
-            const next=floatingLabel('PÁTIO · INSTALAÇÃO RESTRITA','#a5e8dc');next.position.set(0,2.4,145);scene.add(next);
+            createAreaPortal(new THREE.Vector3(0,0,145),'installation','INSTALAÇÃO · [E]');
             updateContainmentHud();
         }
 
@@ -7238,6 +7389,7 @@ class WaveDirector {
         }
 
         function updateUI() {
+            document.getElementById('area-status').textContent=areaRuntime.active==='city'?'ÁREA · CIDADE':'ÁREA · INSTALAÇÃO';
             const kind=waveDirector.profile?.kind||'normal';
             document.getElementById('round-kind').textContent=kind==='dogs'?'CAÇADA · CÃES':kind==='fog'?'NÉVOA DENSA · VISIBILIDADE REDUZIDA':'RODADA NORMAL';
             updateContainmentHud();
@@ -7383,6 +7535,7 @@ class WaveDirector {
         }
 
         function resetGame() {
+            resetAreas();
             armor.reset(); scrap.reset(); if (armorModel) armorModel.visible=false;
             meleeTimer = 0; knifeModel.visible = false; fireSaleTimer = 0;
             for (const box of saleBoxes) clearSaleBox(box);
@@ -7561,6 +7714,7 @@ class WaveDirector {
         }
 
         function onKeyDown(event) {
+            if(areaRuntime.loading)return;
             if (!controls.isLocked && event.code !== 'Escape') return;
             if (event.repeat && ['KeyV', 'KeyE', 'KeyN', 'KeyF', 'KeyG'].includes(event.code)) return;
             if (controls.isLocked && ["ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight"].includes(event.code)) {
@@ -7678,6 +7832,7 @@ class WaveDirector {
         }
 
         function animate() {
+            if(areaRuntime.loading){requestAnimationFrame(animate);clock.getDelta();return;}
             requestAnimationFrame(animate);
             if (document.hidden) {
                 clock.getDelta();

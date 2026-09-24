@@ -45,6 +45,14 @@ export function stepFog(density,target,delta,active=true) {
     return density+Math.sign(target-density)*Math.min(Math.abs(target-density),delta*.008);
 }
 
+export function areaTravelReason({phase,unlocked,objective,busy}) {
+    if(!unlocked)return 'Restaure os três geradores e abra o acesso norte';
+    if(objective)return 'Conclua a defesa do gerador antes de viajar';
+    if(busy)return 'Conclua a ação atual antes de viajar';
+    if(phase!=='intermission')return 'Disponível entre ondas';
+    return '';
+}
+
 export class DogAttack {
     constructor(){this.phase='pursue';this.remaining=0;this.hit=false;}
     recover(){this.phase='recover';this.remaining=.95;}
