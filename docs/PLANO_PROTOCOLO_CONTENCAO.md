@@ -13,7 +13,7 @@ playtest; não considerar o conjunto inteiro entregue por existir infraestrutura
 | 2 | Armadura, revisão econômica e raridades | Concluída e testada na v19; balanceamento inicial |
 | 3 | Três geradores, primeira porta e navegação dinâmica | Concluída e testada na v20; tempo de acesso depende de playtest |
 | 4 | Cão, rodadas especiais e névoa variável | Concluída e testada na v21; valores iniciais para playtest |
-| 5 | Instalação separada, carregamento e preservação de estado | Pendente |
+| 5 | Instalação separada, carregamento e preservação de estado | Concluída e testada na v23 |
 | 6 | Objetivos, desafios e diário | Pendente |
 | 7 | Easter egg, chefe e extração | Pendente |
 

@@ -1,13 +1,13 @@
-# Protocolo Sobreviva — v22
+# Protocolo Sobreviva — v23
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version22_23-09-2026_13-15-17.html](game_version22_23-09-2026_13-15-17.html)
+[game_version23_23-09-2026_22-57-09.html](game_version23_23-09-2026_22-57-09.html)
 
-Atualização: **23/09/2026 às 13:15:17**, America/Sao_Paulo (UTC−03:00).
-Versão: **v22 — correção de abertura por dois cliques; etapa 4/7 preservada**.
+Atualização: **23/09/2026 às 22:57:09**, America/Sao_Paulo (UTC−03:00).
+Versão: **v23 — instalação separada; etapa 5/7**.
 Branch: `codex/protocolo-contencao`.
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -17,6 +17,7 @@ preservando o total de inimigos de cada onda.
 Etapa 2: armadura, economia de pontos/sucata e raridades; veja as regras abaixo.
 Etapa 3: três geradores, defesas finitas e acesso norte energizado.
 Etapa 4: cães com bote anunciado, rodadas especiais e névoa variável.
+Etapa 5: instalação com passagem entre áreas, carregamento e preservação da partida.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 
 v17 mantém a lanterna na posição original com intensidade reduzida ao mirar; cinco bônus
@@ -53,7 +54,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version22_23-09-2026_13-15-17.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version23_23-09-2026_22-57-09.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -73,6 +74,25 @@ Volume, sensibilidade e movimento reduzido podem ser ajustados no menu inicial
 e na pausa. As preferências ficam no armazenamento local do navegador; a partida
 não é salva. Movimento reduzido desativa balanço da arma, tremor de dano e
 variação de FOV ao correr, mantendo o zoom da mira.
+
+## Instalação — etapa 5
+
+Após completar os geradores e abrir o portão, entre no pátio norte e aproxime-se
+da passagem **INSTALAÇÃO · [E]**. Use E durante o intervalo entre ondas. Aguarde
+o carregamento e clique CONTINUAR. A saída da instalação usa a mesma regra.
+Defesas, compras de caixa ainda pendentes, PaP e outras ações precisam terminar
+antes de viajar. A contagem do intervalo fica congelada durante a troca e a pausa.
+
+O interior tem um salão de contenção, corredores laterais, bancadas e depósito
+de munição. As ondas continuam ali, com pontos de surgimento próprios e caminhos
+desobstruídos. Vida, colete, armas, munição, raridades, perks, pontos, sucata,
+onda e geradores são preservados. Itens no chão da área inativa ficam congelados.
+Falha de carregamento recupera a área anterior. Reiniciar volta à cidade.
+
+Somente a área ativa é renderizada. Geometrias, materiais e texturas exclusivos
+da área inativa são liberados da GPU; descrições das duas cenas ficam em um cache
+limitado na memória principal para preservar seu estado. Isso não é um save em disco.
+O interior é procedural e incorporado ao HTML, preservando abertura por dois cliques.
 
 ## Rodadas especiais — etapa 4
 
@@ -114,7 +134,7 @@ uma defesa. A ordem é livre; apenas uma defesa fica ativa por vez.
   **E** abre gratuitamente o pátio. Colisão, bloqueio de tiros e caminhos dos zumbis
   são atualizados juntos; reiniciar fecha a porta e zera os geradores.
 
-O pátio pertence à cidade e abre sem carregamento. O interior separado é a etapa 5.
+O pátio pertence à cidade e abre sem carregamento. A passagem no fundo carrega a instalação.
 A meta de acesso entre ondas 5 e 8 ainda depende de playtest; não há bloqueio artificial
 por onda. Pausa e morte congelam a defesa, reinício limpa toda a progressão.
 
@@ -209,11 +229,14 @@ dano real por bala/laser, raridade, PaP, ambas as caixas, pausa e reset.
 porta fechada/aberta, caminhos invalidados, limite simultâneo, pausa, morte e reset.
 `tests/special-rounds.cjs` verifica caçadas, bote, esquiva, colisões, armadura,
 hitboxes, Munição Máxima, névoa, ausência de Atiradores e reinício.
+`tests/areas.cjs` verifica passagem, preservação, falhas e repetição entre áreas.
 A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_13-15-17.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_23-09-2026_22-57-09.md)
+
+[Histórico v22](docs/MEMORIA_PERSISTENTE_23-09-2026_13-15-17.md)
 
 [Histórico v21](docs/MEMORIA_PERSISTENTE_23-09-2026_12-47-58.md)
 
