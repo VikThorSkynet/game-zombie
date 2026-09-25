@@ -4,9 +4,11 @@ Data: **24/09/2026, 08:49:46 — America/Sao_Paulo**.
 Revisão: **24/09/2026, 08:58:45 — America/Sao_Paulo**.
 Base: v25, commit e290f81, branch codex/protocolo-contencao.
 Status: P1 implementada na v26. v27, branch `codex/playtest-progressao-visuais`,
-aplica o feedback humano abaixo; P2–P8 ainda não estão integralmente concluídas.
+aplica o feedback humano abaixo; P3–P8 permanecem pendentes.
 P2.1 implementada na v28, branch `codex/p2-polimento-jogabilidade`.
-Próxima entrega: **P2.2 — tela inicial**, antes de iniciar P3.
+P2.2 implementada na v29, branch `codex/p2-tela-inicial`: tela inicial com câmera
+independente, fundo estático, opções agrupadas, instruções, créditos e teclado.
+Próxima entrega: **P3 — armas e economia**.
 Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
 Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
 
@@ -26,7 +28,7 @@ excessiva da Ray Gun. O pedido autoriza antecipar os ajustes correspondentes:
 
 Evidências, limites e próximos playtests: [validação v27](PLAYTEST_V27.md).
 A v25 e a referência P1/v26 ficam preservadas. Esta entrega não conclui a direção
-AAA nem a remodelagem integral. Nova tela inicial permanece prevista em P2.2.
+AAA nem a remodelagem integral. A nova tela inicial foi entregue na P2.2/v29.
 
 ## Objetivo e limites
 

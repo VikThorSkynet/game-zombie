@@ -12,7 +12,7 @@ const html = fs.readFileSync(path.join(root, filename), 'utf8');
 assert(!html.includes('createOscillator'), 'only MP3 audio sources');
 assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
-const api = `window.qa = { get metricsGPU(){return metricsGPU}, metrics, metricsState, get metricsPrevious(){return metricsPrevious}, get metricsRender(){return metricsRender}, metricsContext, THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
+const api = `window.qa = { playAudioElementAsset, activeAudioElements, applySettings, get metricsGPU(){return metricsGPU}, metrics, metricsState, get metricsPrevious(){return metricsPrevious}, get metricsRender(){return metricsRender}, metricsContext, THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
  updateNotices, showWaveMessage, updateObjectiveHud, recoverStuckZombie, updateWeaponSwitch, get isSwitchingWeapon(){return isSwitchingWeapon}, get weaponSwitchTimer(){return weaponSwitchTimer}, campaignPrompt, supplyPrompt, createPaPWeaponModel, updatePaPWeaponEffects, updateTracers, get tracers(){return tracers}, surfaceMaps, updateInteractionIntermission, BALANCE, campaign, campaignNodes, interactCampaign, updateCampaign, get campaignBoss(){return campaignBoss}, get bossWarning(){return bossWarning}, get gameOver(){return gameOver}, waveDirector, gameEvents, journal, openJournal, closeJournal, acceptContract, get records(){return records}, startWave, updateWave, damageEnemy, killZombie, applyDamage,
  createDog, updateRoundAtmosphere, getZombieTypeConfig, enemyHealth, zombieHitMeshes,
  areaRuntime, areaPortals, travelArea, travelReason, setContainmentDoor, getSpawnPosition, perkMachines,
@@ -57,6 +57,7 @@ const server = http.createServer((req, res) => {
             await page.goto(`${url}?quality=${quality}${process.env.QA_P1_ONLY||process.env.QA_METRICS?'&metrics=1&route=automated-controlled':''}`);
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
+            if(process.env.QA_MENU_ONLY){await require('./menu.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P2_ONLY){await require('./polish.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_PLAYTEST_ONLY){await require('./playtest-feedback.cjs')(page,assert,quality,releaseTag);await require('./containment.cjs')(page,assert,quality,releaseTag);await require('./special-rounds.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P1_ONLY){await require('./telemetry.cjs')(page,assert,quality);assert.equal(errors.length,0);continue;}
@@ -74,6 +75,7 @@ const server = http.createServer((req, res) => {
             });
             assert(balance.count===3&&balance.distance>155&&balance.reachable&&balance.capped&&balance.injured&&balance.crawling&&balance.staysCrawling,JSON.stringify(balance));
             console.log(JSON.stringify({quality,balance}));
+            await page.getByRole('button',{name:'OPÇÕES',exact:true}).click();
             await page.locator('#sensitivity').fill('1.5');
             await page.locator('#volume').fill('0.3');
             await page.locator('#reduced-motion').check();
@@ -96,7 +98,7 @@ const server = http.createServer((req, res) => {
                 return {bounded, reused, inactive: q.impactPool.length, active: q.impactParticles.length};
             });
             assert(pool.bounded && pool.reused && pool.active === 0);
-            await page.getByRole('button', {name: 'INICIAR OPERAÇÃO'}).click();
+            await page.getByRole('button', {name: 'JOGAR',exact:true}).click();
             assert(await page.evaluate(async()=>{const clip=await qa.loadAudioAsset('melee');return clip?.duration>0;}),'melee MP3 decodes');
             await page.mouse.down({button: 'right'});
             await page.waitForFunction(() => document.body.classList.contains('aiming') && qa.camera.fov < 56 && qa.flashlight.intensity < 0.6, null, {timeout:15000});
@@ -136,7 +138,9 @@ const server = http.createServer((req, res) => {
             await page.keyboard.press('Escape');
             await page.waitForFunction(() => !qa.controls.isLocked);
             assert.equal(await page.evaluate(() => qa.flashlight.intensity), 80);
+            await page.getByRole('button',{name:'OPÇÕES',exact:true}).click();
             assert(await page.locator('#sensitivity').isVisible(), 'settings available on pause');
+            await page.keyboard.press('Escape');
             // Attack across a building must be blocked, but the same shooter in clear space fires.
             const attacks = await page.evaluate(() => {
                 const q = qa, z = q.zombies[0], b = q.layout.buildings[0];
