@@ -5,6 +5,8 @@ Revisão: **24/09/2026, 08:58:45 — America/Sao_Paulo**.
 Base: v25, commit e290f81, branch codex/protocolo-contencao.
 Status: P1 implementada na v26. v27, branch `codex/playtest-progressao-visuais`,
 aplica o feedback humano abaixo; P2–P8 ainda não estão integralmente concluídas.
+P2.1 implementada na v28, branch `codex/p2-polimento-jogabilidade`.
+Próxima entrega: **P2.2 — tela inicial**, antes de iniciar P3.
 Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
 Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
 
@@ -108,6 +110,14 @@ Testes automatizados de regras complementam partidas reais; não substituem
 avaliação humana de dificuldade e sensação. Registrar dúvidas para playtest.
 
 ### P2 — Correções, tela inicial e experiência de uso
+
+P2.1 entregue na v28: corrige as armas iniciais sobrepostas após reiniciar,
+retira temporizadores de troca/avisos que sobreviviam à pausa ou à partida,
+preserva ocultação da arma durante PaP, mostra atividade atual e última ameaça,
+explica bloqueios de interação, reduz distância das placas de registros e exige
+confirmação explícita antes da sobrevivência infinita. Recuperação de inimigo
+preso valida caminho até o jogador. Casos e testes na
+[memória da entrega](MEMORIA_PERSISTENTE_24-09-2026_22-24-29.md).
 
 Entregas:
 - Revisar pausa, reinício, retorno de área e mensagens atrasadas de outra partida.

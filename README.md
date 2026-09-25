@@ -1,14 +1,14 @@
-# Protocolo Sobreviva — v27
+# Protocolo Sobreviva — v28
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version27_24-09-2026_21-26-17.html](game_version27_24-09-2026_21-26-17.html)
+[game_version28_24-09-2026_22-24-29.html](game_version28_24-09-2026_22-24-29.html)
 
-Atualização: **24/09/2026 às 21:26:17**, America/Sao_Paulo (UTC−03:00).
-Versão: **v27 — ajustes do playtest e primeira revisão de superfícies**.
-Branch: `codex/playtest-progressao-visuais`.
+Atualização: **24/09/2026 às 22:24:29**, America/Sao_Paulo (UTC−03:00).
+Versão: **v28 — P2.1: reinício, pausa e clareza durante a partida**.
+Branch: `codex/p2-polimento-jogabilidade`.
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -28,6 +28,9 @@ v27 aplica o feedback de partidas humanas: geradores, clareza dos registros/entr
 cães, luz da Ray Gun e uma primeira revisão de materiais. Essas correções antecipam
 partes de P2/P4/P6/P7; as etapas completas, incluindo a nova tela inicial, seguem no plano.
 Veja o [registro do playtest e validação](docs/PLAYTEST_V27.md).
+P2.1 implementada na v28: reinício com uma única arma visível, troca de arma e
+avisos congelados na pausa, indicação da última ameaça, prompts de ação bloqueada
+e confirmação antes de dispensar a extração. A próxima entrega é **P2.2 — tela inicial**.
 O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
 em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
@@ -73,7 +76,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version27_24-09-2026_21-26-17.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version28_24-09-2026_22-24-29.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -324,7 +327,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_21-39-16.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_22-24-29.md)
+
+[Feedback do playtest v27](docs/MEMORIA_PERSISTENTE_24-09-2026_21-39-16.md)
 
 [Medições P1](docs/MEMORIA_PERSISTENTE_24-09-2026_14-03-08.md)
 
