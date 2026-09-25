@@ -1,0 +1,248 @@
+{
+  "base": "cbfa9a1",
+  "source": "v29 released weaponConfigs and game-systems.mjs",
+  "weapons": {
+    "pistol": {
+      "id": "pistol",
+      "name": "Pistola",
+      "icon": "🔫",
+      "fireRate": 200,
+      "magSize": 20,
+      "damageHead": 75,
+      "damageBody": 42,
+      "reloadDuration": 1.15,
+      "spread": 0,
+      "pellets": 1,
+      "color": "#66bbff",
+      "ammoCost": 250,
+      "papAmmoCost": 1000,
+      "falloffStart": 200,
+      "falloffEnd": 201,
+      "minDamage": 1,
+      "adsSpread": 0.35
+    },
+    "shotgun": {
+      "id": "shotgun",
+      "name": "Shotgun",
+      "icon": "💥",
+      "fireRate": 600,
+      "magSize": 6,
+      "damageHead": 36,
+      "damageBody": 18,
+      "reloadDuration": 2,
+      "spread": 0.015,
+      "pellets": 8,
+      "color": "#ff8844",
+      "ammoCost": 250,
+      "papAmmoCost": 1000,
+      "falloffStart": 200,
+      "falloffEnd": 201,
+      "minDamage": 1,
+      "adsSpread": 0.35
+    },
+    "smg": {
+      "id": "smg",
+      "name": "SMG",
+      "icon": "⚡",
+      "fireRate": 90,
+      "magSize": 40,
+      "damageHead": 56,
+      "damageBody": 32,
+      "reloadDuration": 1.4,
+      "spread": 0.02,
+      "pellets": 1,
+      "color": "#ffdd44",
+      "ammoCost": 250,
+      "papAmmoCost": 1000,
+      "falloffStart": 200,
+      "falloffEnd": 201,
+      "minDamage": 1,
+      "adsSpread": 0.35
+    },
+    "sniper": {
+      "id": "sniper",
+      "name": "Sniper",
+      "icon": "🎯",
+      "fireRate": 1200,
+      "magSize": 5,
+      "damageHead": 800,
+      "damageBody": 300,
+      "reloadDuration": 2.5,
+      "spread": 0,
+      "pellets": 1,
+      "penetration": 3,
+      "color": "#ff4444",
+      "ammoCost": 250,
+      "papAmmoCost": 1000,
+      "falloffStart": 200,
+      "falloffEnd": 201,
+      "minDamage": 1,
+      "adsSpread": 0.35
+    },
+    "assault_rifle": {
+      "id": "assault_rifle",
+      "name": "Fuzil",
+      "icon": "🔫",
+      "fireRate": 150,
+      "magSize": 30,
+      "damageHead": 150,
+      "damageBody": 75,
+      "reloadDuration": 1.8,
+      "spread": 0.015,
+      "pellets": 1,
+      "color": "#55cc55",
+      "ammoCost": 250,
+      "papAmmoCost": 1000,
+      "falloffStart": 200,
+      "falloffEnd": 201,
+      "minDamage": 1,
+      "adsSpread": 0.35
+    },
+    "ray_gun": {
+      "id": "ray_gun",
+      "name": "Ray Gun",
+      "icon": "🪐",
+      "fireRate": 350,
+      "magSize": 20,
+      "damageHead": 1500,
+      "damageBody": 800,
+      "reloadDuration": 2.5,
+      "spread": 0,
+      "pellets": 1,
+      "color": "#00ffcc",
+      "ammoCost": 1500,
+      "papAmmoCost": 3000,
+      "falloffStart": 200,
+      "falloffEnd": 201,
+      "minDamage": 1,
+      "adsSpread": 0.35
+    }
+  },
+  "balance": {
+    "waves": {
+      "baseCount": 4,
+      "countPerRound": 3,
+      "baseSpawnInterval": 0.95,
+      "intervalReduction": 0.05,
+      "minSpawnInterval": 0.25,
+      "retryInterval": 0.25,
+      "intermission": 10,
+      "maxActiveLow": 24,
+      "maxActiveHigh": 32
+    },
+    "enemies": {
+      "baseHealth": 100,
+      "healthPerRound": 12,
+      "healthGrowth": 1.12,
+      "lateHealthGrowth": 1.06,
+      "baseDamage": 8,
+      "damagePerRound": 0.7,
+      "baseSpeed": 1.8,
+      "speedPerRound": 0.18,
+      "speedCapRound": 15,
+      "speedVariation": 0.4,
+      "minSpawnDistance": 20
+    },
+    "dogs": {
+      "healthMultiplier": 0.95,
+      "speedBonus": 2.45,
+      "minSpeed": 2.6,
+      "damageMultiplier": 1.45,
+      "windup": 0.65,
+      "recovery": 0.8,
+      "lungeSpeed": 13.5
+    },
+    "containment": {
+      "durations": [
+        30,
+        40,
+        50
+      ],
+      "budgets": [
+        8,
+        10,
+        12
+      ]
+    },
+    "economy": {
+      "mystery": 950,
+      "sale": 10,
+      "packAPunch": 5000,
+      "ammo": 250,
+      "upgradedAmmo": 1000,
+      "rayAmmo": 1500,
+      "upgradedRayAmmo": 3000,
+      "nuke": 400,
+      "kill": 100,
+      "skilledKill": 125,
+      "scrapPerKill": 3,
+      "scrapPerRound": 90
+    },
+    "armor": {
+      "plateHealth": 50,
+      "absorption": 0.6,
+      "plateCost": 150,
+      "reserveLimit": 5,
+      "applyDuration": 1.4,
+      "tier2Cost": 1500,
+      "tier3Cost": 3000
+    },
+    "weapons": {
+      "smgInterval": 90,
+      "smgMagazine": 40,
+      "smgBody": 32,
+      "smgHead": 56,
+      "shotgunBodyPerPellet": 18,
+      "shotgunHeadPerPellet": 36,
+      "doubleTapInterval": 0.75
+    },
+    "upgrades": {
+      "damage": 2.5,
+      "magazine": 1.5
+    },
+    "melee": {
+      "damage": 150,
+      "duration": 0.55,
+      "range": 2.5,
+      "coneDot": 0.72,
+      "stagger": 0.22,
+      "knockback": 0.3
+    },
+    "drops": {
+      "chance": 0.09,
+      "duration": 30
+    }
+  },
+  "rarities": [
+    {
+      "name": "Comum",
+      "color": "#b9c8d1",
+      "multiplier": 1,
+      "cost": 0
+    },
+    {
+      "name": "Incomum",
+      "color": "#74dd94",
+      "multiplier": 1.25,
+      "cost": 100
+    },
+    {
+      "name": "Rara",
+      "color": "#65baff",
+      "multiplier": 1.55,
+      "cost": 200
+    },
+    {
+      "name": "Épica",
+      "color": "#c396ff",
+      "multiplier": 1.9,
+      "cost": 350
+    },
+    {
+      "name": "Lendária",
+      "color": "#ffd16b",
+      "multiplier": 2.3,
+      "cost": 550
+    }
+  ]
+}

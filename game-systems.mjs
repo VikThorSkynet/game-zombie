@@ -10,17 +10,38 @@ export const BALANCE = Object.freeze({
     dogs: Object.freeze({healthMultiplier:.95,speedBonus:2.45,minSpeed:2.6,damageMultiplier:1.45,windup:.65,recovery:.8,lungeSpeed:13.5}),
     containment: Object.freeze({durations:Object.freeze([30,40,50]),budgets:Object.freeze([8,10,12])}),
     economy: Object.freeze({ mystery: 950, sale: 10, packAPunch: 5000,
-        ammo: 250, upgradedAmmo: 1000, rayAmmo: 1500, upgradedRayAmmo: 3000,
         nuke: 400, kill: 100, skilledKill: 125, scrapPerKill: 3, scrapPerRound: 90 }),
     armor: Object.freeze({ plateHealth: 50, absorption: 0.6, plateCost: 150,
         reserveLimit: 5, applyDuration: 1.4, tier2Cost: 1500, tier3Cost: 3000 }),
-    weapons: Object.freeze({ smgInterval: 90, smgMagazine: 40, smgBody: 32, smgHead: 56,
-        shotgunBodyPerPellet: 18, shotgunHeadPerPellet: 36, doubleTapInterval: 0.75 }),
+    weapons: Object.freeze({ smgInterval: 80, smgMagazine: 40, smgBody: 40, smgHead: 70,
+        shotgunBodyPerPellet: 22, shotgunHeadPerPellet: 36, doubleTapInterval: 0.75 }),
     upgrades: Object.freeze({ damage: 2.5, magazine: 1.5 }),
     melee: Object.freeze({ damage: 150, duration: 0.55, range: 2.5,
         coneDot: 0.72, stagger: 0.22, knockback: 0.3 }),
     drops: Object.freeze({ chance: 0.09, duration: 30 })
 });
+
+// Combat and purchase values shared by the playable HTML and the P3 analysis.
+// Distances are world metres; spread is a ray-direction offset, not degrees.
+export const WEAPON_STATS = Object.freeze(Object.fromEntries(Object.entries({
+    pistol: {role:'Economia inicial',fireRate:200,magSize:20,damageHead:75,damageBody:42,reloadDuration:1.15,spread:0,pellets:1,ammoCost:150,papAmmoCost:600},
+    shotgun: {role:'Impacto a curta distância',fireRate:600,magSize:6,damageHead:BALANCE.weapons.shotgunHeadPerPellet,damageBody:BALANCE.weapons.shotgunBodyPerPellet,reloadDuration:2,spread:.055,pellets:8,adsSpread:.7,falloffStart:8,falloffEnd:28,minDamage:.25,ammoCost:250,papAmmoCost:1000},
+    smg: {role:'Cadência e mobilidade próxima',fireRate:BALANCE.weapons.smgInterval,magSize:BALANCE.weapons.smgMagazine,damageHead:BALANCE.weapons.smgHead,damageBody:BALANCE.weapons.smgBody,reloadDuration:1.4,spread:.02,pellets:1,falloffStart:16,falloffEnd:42,minDamage:.6,ammoCost:350,papAmmoCost:1200},
+    sniper: {role:'Precisão e até três alvos alinhados',fireRate:1200,magSize:5,damageHead:800,damageBody:300,reloadDuration:2.5,spread:0,pellets:1,penetration:3,ammoCost:400,papAmmoCost:1400},
+    assault_rifle: {role:'Versatilidade a média distância',fireRate:150,magSize:30,damageHead:130,damageBody:65,reloadDuration:1.8,spread:.015,pellets:1,falloffStart:35,falloffEnd:90,minDamage:.75,ammoCost:300,papAmmoCost:1100},
+    ray_gun: {role:'Energia contra dois alvos alinhados',fireRate:450,magSize:12,damageHead:330,damageBody:220,reloadDuration:3,spread:0,pellets:1,penetration:2,ammoCost:1500,papAmmoCost:3000}
+}).map(([id,stats])=>[id,Object.freeze({id,adsSpread:.35,penetration:1,falloffStart:200,falloffEnd:201,minDamage:1,...stats})])));
+
+export function weaponRangeMultiplier(id,distance=0) {
+    const w=WEAPON_STATS[id];
+    if(!w)return 1;
+    const t=Math.max(0,Math.min(1,(distance-w.falloffStart)/(w.falloffEnd-w.falloffStart)));
+    return 1-(1-w.minDamage)*t;
+}
+export function weaponAmmoPrice(weapon) {
+    const w=WEAPON_STATS[weapon.configId];
+    return weapon.packapunched?w.papAmmoCost:w.ammoCost;
+}
 
 export const RARITIES = Object.freeze([
     Object.freeze({ name: 'Comum', color: '#b9c8d1', multiplier: 1, cost: 0 }),
