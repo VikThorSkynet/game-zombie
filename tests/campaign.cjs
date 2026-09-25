@@ -41,7 +41,7 @@ module.exports=async function(page,assert,quality,releaseTag){
         clear();q.updateCampaign(0);c.victory=q.gameOver&&q.campaign.stage==='extracted';
         q.resetGame();c.reset=q.campaign.stage==='records'&&q.campaign.records.size===0&&!q.campaignBoss&&!q.bossWarning&&!q.waveDirector.holds.size;
         q.campaign.stage='choice';interval();q.camera.position.set(0,1.8,143);for(let n=0;n<3;n++)q.generatorNetwork.completed.add(n);q.generatorNetwork.openDoor();q.setContainmentDoor(true);q.controls.isLocked=true;
-        await q.travelArea(q.areaPortals[0]);use('core');c.infinite=q.campaign.stage==='infinite'&&!q.waveDirector.holds.has('campaign');
+        await q.travelArea(q.areaPortals[0]);use('core');c.confirmation=q.campaign.stage==='choice'&&!!document.querySelector('#infinite-choice[open]');document.getElementById('confirm-infinite').click();c.infinite=q.campaign.stage==='infinite'&&!q.waveDirector.holds.has('campaign');
         q.campaign.stage='ready';use('core');q.applyDamage(9999);const shield=q.campaign.shield;q.updateCampaign(20);c.death=q.gameOver&&q.campaign.shield===shield;
         q.resetGame();c.deathReset=!q.gameOver&&!q.campaignBoss&&!q.waveDirector.holds.size&&q.campaign.stage==='records';
         q.resetGame();q.controls.isLocked=false;return c;
