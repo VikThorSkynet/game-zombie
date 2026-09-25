@@ -17,12 +17,12 @@ const server=http.createServer((req,res)=>{
     try {
         await new Promise(r=>server.listen(0,'127.0.0.1',r));
         browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
-        for(const [protocol,quality] of [['file','auto'],['file','low'],['file','high'],['http','auto']]) {
+        for(const [protocol,quality,metricsMode=false] of [['file','auto'],['file','low'],['file','high'],['http','auto'],['file','low',true],['http','high',true]]) {
             const page=await browser.newPage();const failures=[];
             page.on('pageerror',e=>failures.push(String(e)));
             page.on('console',m=>{if(m.type()==='error')failures.push(m.text());});
             const url=protocol==='file'?pathToFileURL(path.join(root,filename)).href:`http://127.0.0.1:${server.address().port}/${filename}`;
-            await page.goto(url+'?quality='+quality);
+            await page.goto(url+'?quality='+quality+(metricsMode?'&metrics=1&route=boot-export':''));
             try {await page.getByRole('button',{name:'INICIAR OPERAÇÃO'}).waitFor({timeout:20000});}
             catch(e){console.error({protocol,failures,status:await page.locator('#panel').innerText()});throw e;}
             await page.getByRole('button',{name:'INICIAR OPERAÇÃO'}).click();
@@ -30,12 +30,22 @@ const server=http.createServer((req,res)=>{
             assert.equal(await page.locator('canvas').count(),1);
             await page.keyboard.press('KeyV');
             assert(await page.evaluate(()=>window.gameBootComplete===true&&!window.qa));
+            if(metricsMode){
+                await page.waitForTimeout(350);
+                await page.evaluate(()=>document.exitPointerLock());
+                const exportButton=page.getByRole('button',{name:'EXPORTAR MEDIÇÕES',exact:true});
+                const readExport=async()=>{const pending=page.waitForEvent('download');await exportButton.click();const download=await pending;return JSON.parse(fs.readFileSync(await download.path(),'utf8'));};
+                const first=await readExport();assert(first.activeSeconds>0);assert.equal(first.metadata.route,'boot-export');assert.equal(first.schemaVersion,1);
+                await page.waitForTimeout(200);const paused=await readExport();assert.equal(paused.activeSeconds,first.activeSeconds,'pause excluded');
+                await page.getByRole('button',{name:'ZERAR AMOSTRA DE DESEMPENHO'}).click();
+                const cleared=await readExport();assert.equal(cleared.metadata.performanceStartActiveSeconds,first.activeSeconds);assert.equal(cleared.totals.shots,first.totals.shots);
+            }
             if(protocol==='file')assert(await page.evaluate(async()=>{
                 const clip=new Audio(new URL('facada.mp3',location.href));clip.volume=0;
                 await clip.play();const ready=clip.duration>0;clip.pause();return ready;
             }),'local MP3 plays through native audio');
             assert.equal(failures.filter(s=>!s.includes('404')).length,0,JSON.stringify(failures));
-            console.log(JSON.stringify({protocol,quality,menu:true,started:true}));await page.close();
+            console.log(JSON.stringify({protocol,quality,metricsMode,menu:true,started:true}));await page.close();
         }
         const offline=await browser.newPage();
         await offline.route('https://cdn.jsdelivr.net/**',route=>route.abort());

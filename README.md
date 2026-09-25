@@ -1,14 +1,15 @@
-# Protocolo Sobreviva — v25
+# Protocolo Sobreviva — v26
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version25_24-09-2026_08-20-03.html](game_version25_24-09-2026_08-20-03.html)
+[game_version26_24-09-2026_13-47-37.html](game_version26_24-09-2026_13-47-37.html)
 
-Atualização: **24/09/2026 às 08:20:03**, America/Sao_Paulo (UTC−03:00).
-Versão: **v25 — easter egg, chefe e extração; etapa 7/7**.
-Branch: `codex/protocolo-contencao`.
+Atualização: **24/09/2026 às 13:47:37**, America/Sao_Paulo (UTC−03:00).
+Versão: **v26 — P1: medições locais e roteiro de playtest**.
+Branch: `codex/p1-medicoes`.
+Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
 Intervalo de dez segundos entre ondas; **N** antecipa a próxima. Pausar congela o intervalo.
@@ -22,7 +23,8 @@ Etapa 6: diário com objetivo principal, desafios opcionais e recordes locais.
 Etapa 7: investigação, guardião em três fases e extração opcional.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 O próximo ciclo está descrito no [plano de polimento, balanceamento e gráficos](docs/PLANO_POLIMENTO_BALANCEAMENTO_GRAFICOS.md).
-As etapas P1–P8 estão planejadas, ainda sem implementação.
+P1 implementada: coleta local, exportação JSON, roteiro e referência automatizada.
+P2–P8 permanecem planejadas; balanceamento humano ainda precisa das partidas do roteiro.
 O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
 em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
@@ -52,6 +54,14 @@ modelos simplificados à distância, detalhe restaurado de perto ou pela luneta.
 
 ## Executar
 
+**Medições P1:** no menu, clique **Ativar medições locais** antes de começar.
+Na pausa/fim, **EXPORTAR MEDIÇÕES** baixa o relatório; **ZERAR AMOSTRA DE DESEMPENHO**
+permite medir após aquecimento, preservando os totais da partida. Após reiniciar,
+é possível exportar a partida anterior enquanto a página permanecer aberta.
+Também funciona com `?metrics=1&quality=low&route=economia&run=1`.
+Sem envio de telemetria. Consulte o [roteiro P1](docs/P1_ROTEIRO_PLAYTEST.md) e os
+[resultados e limites da referência](docs/P1_RESULTADOS.md).
+
 Abra o HTML atual com **dois cliques**. Mantenha os MP3 na mesma pasta.
 As regras já estão incorporadas ao HTML; `game-systems.mjs` é a fonte de desenvolvimento.
 Também é possível servir a raiz por HTTP:
@@ -60,7 +70,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version25_24-09-2026_08-20-03.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version26_24-09-2026_13-47-37.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -279,12 +289,12 @@ Os modelos são procedurais próprios; nenhum asset do jogo de referência foi i
 
 ## Verificação
 
-Após editar `game-systems.mjs`, execute `node scripts/build-game.mjs` para atualizar
-as regras incorporadas. `node scripts/build-game.mjs --check` verifica sincronização.
+Após editar `game-systems.mjs` ou `telemetry.mjs`, execute `node scripts/build-game.mjs`
+para atualizar os blocos incorporados. `node scripts/build-game.mjs --check` verifica sincronização.
 Não edite o bloco gerado diretamente. `node tests/boot.cjs` verifica abertura do HTML
 original por `file://` e HTTP, sem instrumentação, e falha de carregamento do motor.
 
-Com Node.js, execute `node --test tests/systems.test.mjs` para ondas, armadura e progressão.
+Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mjs` para regras e métricas.
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
 `PLAYWRIGHT_MODULE` permite indicar uma instalação existente do Playwright;
@@ -302,7 +312,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_08-58-45.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_14-03-08.md)
+
+[Planejamento AAA e tela inicial](docs/MEMORIA_PERSISTENTE_24-09-2026_08-58-45.md)
 
 [Planejamento inicial](docs/MEMORIA_PERSISTENTE_24-09-2026_08-49-46.md)
 

@@ -3,7 +3,9 @@
 Data: **24/09/2026, 08:49:46 — America/Sao_Paulo**.
 Revisão: **24/09/2026, 08:58:45 — America/Sao_Paulo**.
 Base: v25, commit e290f81, branch codex/protocolo-contencao.
-Status: planejamento solicitado; nenhuma etapa P1–P8 implementada.
+Status: P1 implementada na v26, branch `codex/p1-medicoes`. P2–P8 planejadas.
+Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
+Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
 
 ## Objetivo e limites
 
@@ -64,6 +66,12 @@ Não adquirir pacotes nem migrar motor automaticamente para perseguir o rótulo 
 ## Ordem de execução
 
 ### P1 — Medições e roteiro de playtest
+
+Implementação entregue: coleta opcional local, exportação JSON, janela de desempenho
+reiniciável, testes de métricas e de integração, cenário reproduzível com três
+repetições por qualidade e computador de referência identificado. A v25 foi preservada.
+Esta entrega não certifica economia/dificuldade: tempos reais de campanha, precisão
+e sensação por jogadores ainda exigem as partidas humanas descritas no roteiro.
 
 Entregas:
 - Capturar tempo por onda, mortes/causa, precisão, tiros por eliminação,
