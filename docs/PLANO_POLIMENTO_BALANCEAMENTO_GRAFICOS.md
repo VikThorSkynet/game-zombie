@@ -3,9 +3,28 @@
 Data: **24/09/2026, 08:49:46 — America/Sao_Paulo**.
 Revisão: **24/09/2026, 08:58:45 — America/Sao_Paulo**.
 Base: v25, commit e290f81, branch codex/protocolo-contencao.
-Status: P1 implementada na v26, branch `codex/p1-medicoes`. P2–P8 planejadas.
+Status: P1 implementada na v26. v27, branch `codex/playtest-progressao-visuais`,
+aplica o feedback humano abaixo; P2–P8 ainda não estão integralmente concluídas.
 Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
 Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
+
+## Feedback humano aplicado na v27 — 24/09/2026
+
+O usuário relatou três geradores na onda 1 com rastejante, dúvida/bloqueio no rádio
+e na porta após coletar registros, cães fáceis, falta de texturas/modelagem e luz
+excessiva da Ray Gun. O pedido autoriza antecipar os ajustes correspondentes:
+
+- P2.1: confirmação persistente de coleta, rádio com contagem e instrução da
+  instalação, motivo específico de bloqueio e intervalo mantido perto da entrada.
+- P4: defesa só após limpar a onda, um gerador por onda, 30/40/50 s e 8/10/12
+  reforços mistos; cães mais resistentes, rápidos e perigosos, mantendo aviso/esquiva.
+- P6/P7: primeira biblioteca de superfícies de metal, ferrugem, concreto, tecido,
+  borracha e pelo; detalhe industrial e revisão da anatomia/face/patas dos cães.
+- Brilho da Ray Gun reduzido no modelo, PaP, pulso, feixe, flash e luz de impacto.
+
+Evidências, limites e próximos playtests: [validação v27](PLAYTEST_V27.md).
+A v25 e a referência P1/v26 ficam preservadas. Esta entrega não conclui a direção
+AAA nem a remodelagem integral. Nova tela inicial permanece prevista em P2.2.
 
 ## Objetivo e limites
 

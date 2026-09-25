@@ -7,6 +7,8 @@ export const BALANCE = Object.freeze({
         lateHealthGrowth: 1.06, baseDamage: 8,
         damagePerRound: 0.7, baseSpeed: 1.8, speedPerRound: 0.18,
         speedCapRound: 15, speedVariation: 0.4, minSpawnDistance: 20 }),
+    dogs: Object.freeze({healthMultiplier:.95,speedBonus:2.45,minSpeed:2.6,damageMultiplier:1.45,windup:.65,recovery:.8,lungeSpeed:13.5}),
+    containment: Object.freeze({durations:Object.freeze([30,40,50]),budgets:Object.freeze([8,10,12])}),
     economy: Object.freeze({ mystery: 950, sale: 10, packAPunch: 5000,
         ammo: 250, upgradedAmmo: 1000, rayAmmo: 1500, upgradedRayAmmo: 3000,
         nuke: 400, kill: 100, skilledKill: 125, scrapPerKill: 3, scrapPerRound: 90 }),
@@ -113,11 +115,11 @@ export function readRecords(value){
 
 export class DogAttack {
     constructor(){this.phase='pursue';this.remaining=0;this.hit=false;}
-    recover(){this.phase='recover';this.remaining=.95;}
+    recover(){this.phase='recover';this.remaining=BALANCE.dogs.recovery;}
     step(delta,distance,clear,active=true){
         if(!active||!Number.isFinite(delta)||delta<0)return;
         if(this.phase==='pursue'){
-            if(distance<=5&&clear){this.phase='windup';this.remaining=.7;this.hit=false;}
+            if(distance<=5&&clear){this.phase='windup';this.remaining=BALANCE.dogs.windup;this.hit=false;}
             return;
         }
         this.remaining=Math.max(0,this.remaining-delta);
@@ -173,11 +175,11 @@ export class ScrapWallet {
 // One finite defense at a time. Leaving the area freezes both charge and reinforcements.
 export class GeneratorNetwork {
     constructor() { this.reset(); }
-    reset() { this.completed = new Set(); this.active = null; this.open = false; }
-    start(id) {
-        if (!Number.isInteger(id) || id < 0 || id > 2 || this.active || this.completed.has(id)) return false;
+    reset() { this.completed = new Set(); this.active = null; this.open = false; this.lastCompletedWave = 0; }
+    start(id, wave = 1) {
+        if (!Number.isInteger(wave) || wave <= this.lastCompletedWave || !Number.isInteger(id) || id < 0 || id > 2 || this.active || this.completed.has(id)) return false;
         const order = this.completed.size;
-        this.active = { id, duration: [25,35,45][order], elapsed: 0, budget: [6,8,10][order], spawned: 0, timer: 0 };
+        this.active = { id, wave, threatWave:Math.max(wave,3+order*2), duration: BALANCE.containment.durations[order], elapsed: 0, budget: BALANCE.containment.budgets[order], spawned: 0, timer: 0 };
         return true;
     }
     step(delta, inside, alive, active = true) {
@@ -187,7 +189,7 @@ export class GeneratorNetwork {
         a.timer = Math.max(0, a.timer - delta);
         if (a.spawned < a.budget && a.timer === 0) return 'spawn';
         if (a.elapsed === a.duration && a.spawned === a.budget && alive === 0) {
-            this.completed.add(a.id); this.active = null;
+            this.completed.add(a.id); this.lastCompletedWave = a.wave; this.active = null;
             return 'completed';
         }
         return null;

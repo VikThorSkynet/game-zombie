@@ -70,8 +70,8 @@ test('special schedule has no adjacent events and caps finite dog populations',(
 test('dog telegraphs, attacks once, recovers and freezes when paused',()=>{
     const a=new DogAttack();a.step(1,3,false);assert.equal(a.phase,'pursue');
     a.step(0,3,true);assert.equal(a.phase,'windup');assert.equal(a.consumeHit(),false);
-    a.step(1,3,true,false);assert.equal(a.remaining,.7);
-    a.step(.69,3,true);assert.equal(a.phase,'windup');
+    a.step(1,3,true,false);assert.equal(a.remaining,BALANCE.dogs.windup);
+    a.step(.64,3,true);assert.equal(a.phase,'windup');
     a.step(.02,3,true);assert.equal(a.phase,'lunge');
     assert(a.consumeHit());assert.equal(a.consumeHit(),false);
     a.step(.36,3,true);assert.equal(a.phase,'recover');assert.equal(a.consumeHit(),false);
@@ -83,8 +83,8 @@ test('generators retain progress, finite budgets and unique rewards across activ
     const g=new GeneratorNetwork();
     assert.equal(g.start(-1),false);assert.equal(g.openDoor(),false);
     for(const [order,id] of [2,0,1].entries()) {
-        assert(g.start(id));assert.equal(g.start((id+1)%3),false);
-        assert.equal(g.active.duration,[25,35,45][order]);
+        assert(g.start(id,order+1));assert.equal(g.start((id+1)%3),false);
+        assert.equal(g.active.duration,[30,40,50][order]);
         assert.equal(g.step(5,false,0),null);assert.equal(g.active.elapsed,0);
         assert.equal(g.step(5,true,0,false),null);assert.equal(g.active.elapsed,0);
         assert.equal(g.step(1,true,0),'spawn');g.acknowledgeSpawn(false);
@@ -94,7 +94,8 @@ test('generators retain progress, finite budgets and unique rewards across activ
         assert.equal(g.step(100,true,1),null);
         assert.equal(g.active.spawned,budget);
         assert.equal(g.step(0,true,0),'completed');assert.equal(g.step(100,true,0),null);
-        assert.equal(g.start(id),false);
+        assert.equal(g.start(id,order+1),false);
+        assert.equal(g.lastCompletedWave,order+1);assert.equal(g.start((id+1)%3,order+1),false);
     }
     assert(g.openDoor());assert.equal(g.openDoor(),false);
     g.reset();assert.equal(g.completed.size,0);assert.equal(g.open,false);assert.equal(g.active,null);
