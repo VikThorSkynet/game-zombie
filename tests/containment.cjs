@@ -10,9 +10,10 @@ module.exports=async function(page,assert,quality,releaseTag) {
         let completed=0,opened=0;const off=q.gameEvents.on('generatorCompleted',()=>completed++),offDoor=q.gameEvents.on('doorOpened',()=>opened++);
         q.startWave(4);let spent=0;
         for(const [order,id] of [2,0,1].entries()) {
+            q.startWave(4+order);q.waveDirector.phase='intermission';q.waveDirector.remaining=10;
             const g=q.generators[id];near(g);document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE'}));
             if(!q.generatorNetwork.active)throw new Error('Generator activation failed '+id);
-            c['order'+order]=q.generatorNetwork.active.duration===[25,35,45][order];
+            c['order'+order]=q.generatorNetwork.active.duration===[30,40,50][order];
             const spawned=q.waveDirector.spawned;q.updateWave(5);c.hold=q.waveDirector.spawned===spawned&&q.waveDirector.holds.has('generator');
             near(q.generators[(id+1)%3]);q.interact();c.exclusive=q.generatorNetwork.active.id===id;
             q.camera.position.set(0,1.8,0);const elapsed=q.generatorNetwork.active.elapsed;q.updateContainment(5);
@@ -33,7 +34,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
             const points=q.score;q.interact();q.updateContainment(100);
             c.unique=q.score===points&&!q.generatorNetwork.active;
         }
-        c.reward=q.score===900&&completed===3&&spent===24&&!q.waveDirector.holds.has('generator');
+        c.reward=q.score===900&&completed===3&&spent===30&&!q.waveDirector.holds.has('generator');
         q.createZombie(before);const z=q.zombies.at(-1);z.userData.navPath=[before.clone()];z.userData.navRepathTimer=10;
         near(q.containmentDoor);q.camera.position.z=135;document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE'}));q.interact();
         c.open=q.generatorNetwork.open&&opened===1&&!q.isPositionBlocked(0,137,.65)&&q.hasClearNavigationLine(before,after,.65)&&q.findNavigationPath(before,after,.65).length>0;
@@ -42,7 +43,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
         for(let n=0;n<20&&q.waveDirector.spawned===0;n++)q.updateWave(1);c.resume=q.waveDirector.spawned>0;
         for(let n=0;n<3;n++)q.resetGame();
         c.reset=!q.generatorNetwork.open&&!q.generatorNetwork.active&&q.generatorNetwork.completed.size===0&&q.isPositionBlocked(0,137,.65)&&q.staticColliders.length===colliderCount&&q.bulletBlockers.length===blockerCount;
-        near(q.generators[0]);q.controls.isLocked=true;q.interact();q.applyDamage(9999);
+        near(q.generators[0]);q.controls.isLocked=true;q.waveDirector.phase='intermission';q.interact();q.applyDamage(9999);
         const elapsed=q.generatorNetwork.active.elapsed;q.updateContainment(100);c.death=q.generatorNetwork.active.elapsed===elapsed;
         off();offDoor();q.resetGame();q.controls.isLocked=false;
         return c;
@@ -56,7 +57,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
                 const q=qa,T=q.THREE;q.resetGame();q.controls.isLocked=true;
                 const g=view==='generator'?q.generators[0]:q.containmentDoor;
                 q.camera.position.copy(g.position).add(new T.Vector3(0,1.8,view==='generator'?2:-2));
-                if(view==='generator'){q.interact();q.generatorNetwork.active.elapsed=12;}
+                if(view==='generator'){q.waveDirector.phase='intermission';q.interact();q.generatorNetwork.active.elapsed=12;}
                 q.camera.position.copy(g.position).add(new T.Vector3(4,2.8,view==='generator'?7:-9));
                 q.camera.lookAt(g.position.clone().add(new T.Vector3(0,1,0)));
                 document.body.classList.remove('menu-open');document.getElementById('overlay').style.display='none';q.updateUI();q.updateInteractables(0);q.updateWeapon(1/60);q.renderScene();q.controls.isLocked=false;

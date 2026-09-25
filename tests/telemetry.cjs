@@ -23,7 +23,7 @@ module.exports=async(page,assert,quality)=>{
     assert.equal(result.reset.totals.shots,0);assert.equal(result.reset.activeSeconds,0);
     if(process.env.P1_SKIP_BENCH){
         await page.evaluate(()=>{window.p1Ends=[];window.p1Off=qa.gameEvents.on('gameEnded',()=>window.p1Ends.push(qa.metrics.report()));});
-        await require('./campaign.cjs')(page,assert,quality,'v26');
+        await require('./campaign.cjs')(page,assert,quality,qaReleaseTag());
         const ends=await page.evaluate(()=>{window.p1Off();return window.p1Ends;});
         const extraction=ends.find(r=>r.outcome==='extracted');assert(extraction);
         for(const name of ['installation','coreReady','bossStarted','bossDefeated','extractionStarted','extracted'])assert(extraction.milestones[name],name);
@@ -77,11 +77,15 @@ module.exports=async(page,assert,quality)=>{
             }
             reports.push({scenario,repetition,sampleSeconds:seconds,warmupSeconds:warmup,report});
             console.log(JSON.stringify({quality,scenario,repetition,frame:report.performance['benchmark:'+scenario]?.frame}));
+            if(process.env.QA_SCREENSHOTS&&repetition===3)await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${qaReleaseTag()}-benchmark-${scenario}-${quality}.png`)});
         }
     }
     const output=path.join(__dirname,'../docs/measurements');fs.mkdirSync(output,{recursive:true});
-    const file=path.join(output,'p1-'+quality+'.json');
+    const prefix=process.env.P1_OUTPUT_PREFIX||'p1';
+    if(!/^[a-z0-9-]+$/.test(prefix))throw Error('Invalid measurement output prefix');
+    const file=path.join(output,prefix+'-'+quality+'.json');
     const previous=process.env.P1_SCENARIOS&&fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')).reports.filter(r=>!scenarios.includes(r.scenario)):[];
     fs.writeFileSync(file,JSON.stringify({kind:'headless-controlled-render-baseline',hardware:{cpu:os.cpus()[0]?.model,memoryGB:os.totalmem()/2**30,os:os.type()+' '+os.release()},limitations:'Paused actors, fixed camera, headless Chrome; not end-to-end gameplay or player FPS. Menu is static and does not render continuously.',reports:[...previous,...reports]},null,2));
     console.log('P1 integration passed: '+quality);
 };
+function qaReleaseTag(){return 'v'+fs.readFileSync(path.join(__dirname,'../README.md'),'utf8').match(/game_version(\d+)_/)[1];}

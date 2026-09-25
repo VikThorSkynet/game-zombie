@@ -4,7 +4,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
         reset();q.startWave(5);
         c.profile=q.waveDirector.profile.kind==='dogs'&&q.waveDirector.total===6&&q.waveDirector.maxActive===4;
         for(let i=0;i<20;i++)q.updateWave(1);
-        c.cap=q.zombies.length===4&&q.waveDirector.spawned===4&&q.zombies.every(z=>z.userData.isDog&&z.userData.maxHealth===q.enemyHealth(5,.65));
+        c.cap=q.zombies.length===4&&q.waveDirector.spawned===4&&q.zombies.every(z=>z.userData.isDog&&z.userData.maxHealth===q.enemyHealth(5,q.BALANCE.dogs.healthMultiplier));
         c.model=q.zombies.every(z=>z.userData.legs.length===4&&z.userData.hitMeshes.every(m=>m.userData.parentZombie===z));
         const g=q.generators[0];q.camera.position.copy(g.position).add(new T.Vector3(0,1.8,2));q.interact();c.noOverlap=!q.generatorNetwork.active;
         let rewards=0;const off=q.gameEvents.on('dogRoundReward',()=>rewards++);

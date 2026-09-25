@@ -1,14 +1,14 @@
-# Protocolo Sobreviva — v26
+# Protocolo Sobreviva — v27
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version26_24-09-2026_13-47-37.html](game_version26_24-09-2026_13-47-37.html)
+[game_version27_24-09-2026_21-26-17.html](game_version27_24-09-2026_21-26-17.html)
 
-Atualização: **24/09/2026 às 13:47:37**, America/Sao_Paulo (UTC−03:00).
-Versão: **v26 — P1: medições locais e roteiro de playtest**.
-Branch: `codex/p1-medicoes`.
+Atualização: **24/09/2026 às 21:26:17**, America/Sao_Paulo (UTC−03:00).
+Versão: **v27 — ajustes do playtest e primeira revisão de superfícies**.
+Branch: `codex/playtest-progressao-visuais`.
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -24,7 +24,10 @@ Etapa 7: investigação, guardião em três fases e extração opcional.
 O [plano de execução](docs/PLANO_PROTOCOLO_CONTENCAO.md) registra a sequência e o progresso.
 O próximo ciclo está descrito no [plano de polimento, balanceamento e gráficos](docs/PLANO_POLIMENTO_BALANCEAMENTO_GRAFICOS.md).
 P1 implementada: coleta local, exportação JSON, roteiro e referência automatizada.
-P2–P8 permanecem planejadas; balanceamento humano ainda precisa das partidas do roteiro.
+v27 aplica o feedback de partidas humanas: geradores, clareza dos registros/entrada,
+cães, luz da Ray Gun e uma primeira revisão de materiais. Essas correções antecipam
+partes de P2/P4/P6/P7; as etapas completas, incluindo a nova tela inicial, seguem no plano.
+Veja o [registro do playtest e validação](docs/PLAYTEST_V27.md).
 O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
 em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
@@ -70,7 +73,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version26_24-09-2026_13-47-37.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version27_24-09-2026_21-26-17.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -95,6 +98,9 @@ variação de FOV ao correr, mantendo o zoom da mira.
 
 1. Complete os geradores e abra o portão. Colete com **E** os três REGISTROS,
    cada um junto a um gerador. As pistas ficam no diário **J**.
+   Os terminais mantêm a marca **COLETADO**; o rádio confirma a contagem **3/3**.
+   Para entrar na instalação, elimine os inimigos restantes e use **E** na porta
+   durante o intervalo. Ao se aproximar, o intervalo aguarda sua interação.
 2. Na instalação, recolha BOBINA, FUSÍVEL e REGULADOR nos corredores centrais.
 3. Ative os três terminais ao fundo na ordem indicada pelos registros:
    **TRIÂNGULO → CÍRCULO → QUADRADO**. Erros reiniciam apenas a sequência, sem custo.
@@ -175,9 +181,11 @@ O interior é procedural e incorporado ao HTML, preservando abertura por dois cl
 - **Caçada:** primeira na onda 5; próximas nas ondas 10, 16, 21, 27, 32…
   Intervalos alternam cinco e seis ondas. Apenas cães: seis na primeira caçada,
   mais dois a cada caçada até 24 no total, com quatro a oito simultâneos.
-- Cão quadrúpede com vida de 65% do zumbi normal. Anuncia o bote por 0,7 s com
+- Cão quadrúpede com vida de 95% do zumbi normal e multiplicador de dano 1,45.
+  Anuncia o bote por 0,65 s com
   postura, anel e aviso no HUD; avança na direção fixada por 0,35 s e recupera por
-  0,95 s. Esquive lateralmente. Cada bote causa dano apenas uma vez e respeita
+  0,8 s. Velocidade adicional de 2,45; bote a 13,5 unidades/s. Esquive lateralmente.
+  Cada bote causa dano apenas uma vez e respeita
   paredes e armadura. Ferir pernas reduz velocidade sem usar a animação humana.
 - O último cão da caçada deixa uma **Munição Máxima**, inclusive se morrer por
   Nuke. Colete antes dos 25 s de duração do bônus. Cães não sorteiam outros bônus.
@@ -196,14 +204,17 @@ Regras iniciais de balanceamento; o ritmo completo ainda depende de playtest.
 
 Encontre os três geradores sinalizados nas ruas da cidade. O HUD mostra quantos estão
 online e a distância do próximo. Use **E** junto ao gerador para iniciar gratuitamente
-uma defesa. A ordem é livre; apenas uma defesa fica ativa por vez.
+uma defesa, após eliminar a onda inteira, inclusive rastejantes. A ordem é livre;
+apenas uma defesa fica ativa por vez e somente um gerador pode ser concluído por onda.
+O intervalo aguarda enquanto você estiver a menos de 8 m de um gerador disponível.
 
-- Defenda dentro do círculo de 10 m por 25, 35 e 45 segundos, conforme a ordem.
+- Defenda dentro do círculo de 10 m por 30, 40 e 50 segundos, conforme a ordem.
   Sair pausa carga e novos reforços; os inimigos já presentes continuam atacando.
-- Cada defesa recebe apenas 6, 8 ou 10 reforços normais. Elimine todos e termine
+- Cada defesa recebe 8, 10 ou 12 reforços: normais, corredores e cães. A força usa
+  a maior entre a onda atual e 3/5/7, conforme a ordem da defesa. Elimine todos e termine
   a carga para concluir. Reentrar no círculo não reinicia o orçamento.
-- Ondas comuns suspendem novos spawns e avanço durante a defesa; inimigos existentes
-  continuam ativos. O limite simultâneo da qualidade também vale para os reforços.
+- O intervalo fica suspenso durante a defesa. O limite simultâneo da qualidade
+  também vale para os reforços. Termine outra onda antes de ativar o próximo gerador.
 - Cada conclusão concede 300 pontos uma única vez. Mortes dos reforços seguem
   as regras comuns de recompensa e o teto de sucata da onda.
 - Os três geradores energizam a porta ao norte, depois do depósito de munição.
@@ -211,8 +222,9 @@ uma defesa. A ordem é livre; apenas uma defesa fica ativa por vez.
   são atualizados juntos; reiniciar fecha a porta e zera os geradores.
 
 O pátio pertence à cidade e abre sem carregamento. A passagem no fundo carrega a instalação.
-A meta de acesso entre ondas 5 e 8 ainda depende de playtest; não há bloqueio artificial
-por onda. Pausa e morte congelam a defesa, reinício limpa toda a progressão.
+A meta de acesso entre ondas 5 e 8 ainda depende de playtest. O novo limite de um
+gerador por onda impede concluir os três na primeira onda; não há exigência de
+chegar à onda 5. Pausa e morte congelam a defesa, reinício limpa toda a progressão.
 
 ## Armadura, economia e raridades — etapa 2
 
@@ -312,7 +324,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_14-03-08.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_21-39-16.md)
+
+[Medições P1](docs/MEMORIA_PERSISTENTE_24-09-2026_14-03-08.md)
 
 [Planejamento AAA e tela inicial](docs/MEMORIA_PERSISTENTE_24-09-2026_08-58-45.md)
 
