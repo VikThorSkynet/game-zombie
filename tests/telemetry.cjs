@@ -17,9 +17,9 @@ module.exports=async(page,assert,quality)=>{
     });
     assert.equal(result.shot.totals.shots,1);assert.equal(result.shot.totals.hitShots,1);
     assert.equal(result.dead.economy.points.earned,525);assert.equal(result.dead.economy.scrap.earned,3);
-    assert.equal(result.dead.economy.points.spent,400);assert.equal(result.dead.totals.plates,1);
-    assert.equal(result.dead.state.points,125);assert.equal(result.dead.totals.deaths,1);
-    assert.equal(result.dead.lastDamage.cause,'dog-lunge');assert.equal(result.previous.state.points,125);
+    assert.equal(result.dead.economy.points.spent,300);assert.equal(result.dead.totals.plates,1);
+    assert.equal(result.dead.state.points,225);assert.equal(result.dead.totals.deaths,1);
+    assert.equal(result.dead.lastDamage.cause,'dog-lunge');assert.equal(result.previous.state.points,225);
     assert.equal(result.reset.totals.shots,0);assert.equal(result.reset.activeSeconds,0);
     if(process.env.P1_SKIP_BENCH){
         await page.evaluate(()=>{window.p1Ends=[];window.p1Off=qa.gameEvents.on('gameEnded',()=>window.p1Ends.push(qa.metrics.report()));});

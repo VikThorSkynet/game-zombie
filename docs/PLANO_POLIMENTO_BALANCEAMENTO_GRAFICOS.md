@@ -4,11 +4,13 @@ Data: **24/09/2026, 08:49:46 — America/Sao_Paulo**.
 Revisão: **24/09/2026, 08:58:45 — America/Sao_Paulo**.
 Base: v25, commit e290f81, branch codex/protocolo-contencao.
 Status: P1 implementada na v26. v27, branch `codex/playtest-progressao-visuais`,
-aplica o feedback humano abaixo; P3–P8 permanecem pendentes.
+aplica o feedback humano abaixo; P4–P8 permanecem pendentes.
 P2.1 implementada na v28, branch `codex/p2-polimento-jogabilidade`.
 P2.2 implementada na v29, branch `codex/p2-tela-inicial`: tela inicial com câmera
 independente, fundo estático, opções agrupadas, instruções, créditos e teclado.
-Próxima entrega: **P3 — armas e economia**.
+P3 implementada na v30, branch `codex/p3-armas-e-economia`; comparação analítica
+e limites em [Armas e economia](P3_ARMAS_E_ECONOMIA.md).
+Próxima entrega: **P4 — ritmo, inimigos, campanha e chefe**.
 Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
 Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
 
@@ -164,6 +166,12 @@ resoluções 1280×720 e 1920×1080; teclado; movimento reduzido; file:// e HTTP
 Aceite: nenhuma falha bloqueadora conhecida nos cenários documentados.
 
 ### P3 — Armas, armadura e economia
+
+Entregue na v30: seis armas (inclui o fuzil existente), atributos com fonte única,
+queda de dano por distância, abastecimento específico, matriz antes/depois e
+projeções de rotas. Preços de placas/coletes/raridades/PaP e recompensas foram
+revisados e mantidos. Validação humana das metas provisórias permanece pendente;
+a rota otimista de objetivos ainda projeta PaP na onda 5.
 
 Entregas:
 - Comparar pistola, SMG, shotgun, sniper e Ray Gun nas ondas 1/5/10/15/20,

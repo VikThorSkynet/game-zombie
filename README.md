@@ -1,14 +1,14 @@
-# Protocolo Sobreviva — v29
+# Protocolo Sobreviva — v30
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version29_24-09-2026_22-51-41.html](game_version29_24-09-2026_22-51-41.html)
+[game_version30_25-09-2026_06-16-03.html](game_version30_25-09-2026_06-16-03.html)
 
-Atualização: **24/09/2026 às 22:51:41**, America/Sao_Paulo (UTC−03:00).
-Versão: **v29 — P2.2: tela inicial e menus**.
-Branch: `codex/p2-tela-inicial`.
+Atualização: **25/09/2026 às 06:16:03**, America/Sao_Paulo (UTC−03:00).
+Versão: **v30 — P3: armas e economia**.
+Branch: `codex/p3-armas-e-economia`.
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -31,7 +31,10 @@ Veja o [registro do playtest e validação](docs/PLAYTEST_V27.md).
 P2.1 implementada na v28: reinício com uma única arma visível, troca de arma e
 avisos congelados na pausa, indicação da última ameaça, prompts de ação bloqueada
 e confirmação antes de dispensar a extração. P2.2 implementada na v29: tela inicial com cidade estática, opções agrupadas,
-instruções, créditos e navegação por teclado. Próxima entrega: **P3 — armas e economia**.
+instruções, créditos e navegação por teclado.
+P3 implementada na v30: atributos centralizados, funções distintas das seis armas,
+dano por distância e abastecimento por arma. Veja a [comparação P3](docs/P3_ARMAS_E_ECONOMIA.md).
+Próxima entrega: **P4 — ritmo, inimigos, campanha e chefe**.
 O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
 em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
@@ -83,7 +86,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version29_24-09-2026_22-51-41.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version30_25-09-2026_06-16-03.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -268,13 +271,18 @@ raridade adicional. As duas Mystery Boxes sorteiam raridade conforme a onda:
 até incomum nas ondas 1–4, rara em 5–9, épica em 10–14 e lendária a partir da 15.
 Trocar uma arma na caixa substitui sua raridade e remove o PaP da arma anterior.
 
-Revisão inicial de combate: SMG com intervalo de 90 ms e carregador de 40; shotgun
-com 18 de dano corporal/36 crítico por pellet (8 pellets); Double Tap reduz o intervalo
+Revisão P3: SMG com intervalo de 80 ms e carregador de 40; shotgun
+com 22 de dano corporal/36 crítico por pellet (8 pellets), dispersão maior e queda
+de dano entre 8 e 28 m. SMG e fuzil também perdem dano à distância; sniper mantém
+precisão e atravessa até três alvos. Ray Gun tem 12 disparos no carregador,
+220/330 de dano corpo/cabeça e atravessa dois alvos. Double Tap reduz o intervalo
 em 25%. Vida dos zumbis preservada até a onda 5, cresce 12% por onda até a 20 e 6%
 depois. O limite de velocidade na onda 15 permanece. Esses valores ainda exigem playtest.
 
-`node tests/economy-report.mjs` imprime uma projeção de pontos, sucata e tiros por alvo.
-Ela não simula deslocamento, erros de mira ou duração das ondas.
+`node tests/economy-report.mjs` compara seis armas, cinco ondas, corpo/cabeça,
+raridades e PaP com hipóteses de precisão de 35%, 60% e 85%.
+`--write` atualiza somente o JSON P3. Não simula deslocamento nem duração das ondas
+e não representa habilidade ou partidas humanas medidas.
 
 ## Bônus e abastecimento
 
@@ -292,8 +300,9 @@ Existem exatamente três depósitos fixos: oeste `(-86, 0)`, leste `(86, 0)` e
 norte `(0, 130)`, separados por pelo menos 155 unidades. Caixas comuns de munição
 não surgem mais aleatoriamente; o bônus Munição Máxima continua disponível.
 
-Depósitos sinalizados **MUNIÇÃO · [E]** abastecem a arma equipada: 250 pontos
-para armas comuns, 1.000 após Pack-a-Punch; Ray Gun custa 1.500/3.000.
+Depósitos sinalizados **MUNIÇÃO · [E]** completam o carregador e quatro reservas
+da arma equipada. Custos normal/PaP: pistola **150/600**, shotgun **250/1.000**,
+SMG **350/1.200**, sniper **400/1.400**, fuzil **300/1.100**, Ray Gun **1.500/3.000**.
 Não cobram quando a munição já está completa. Esses preços são adaptações ao jogo.
 Facada tem alcance de 2,5 unidades, dano 150 e intervalo de 0,55 segundo;
 não atravessa obstáculos e não consome munição.
@@ -316,7 +325,7 @@ para atualizar os blocos incorporados. `node scripts/build-game.mjs --check` ver
 Não edite o bloco gerado diretamente. `node tests/boot.cjs` verifica abertura do HTML
 original por `file://` e HTTP, sem instrumentação, e falha de carregamento do motor.
 
-Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mjs` para regras e métricas.
+Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mjs tests/weapons.test.mjs` para regras, métricas e armas.
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
 `PLAYWRIGHT_MODULE` permite indicar uma instalação existente do Playwright;
@@ -334,7 +343,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_24-09-2026_22-51-41.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_25-09-2026_06-16-03.md)
+
+[Tela inicial P2.2](docs/MEMORIA_PERSISTENTE_24-09-2026_22-51-41.md)
 
 [Polimento P2.1](docs/MEMORIA_PERSISTENTE_24-09-2026_22-24-29.md)
 
