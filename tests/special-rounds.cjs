@@ -20,7 +20,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
         c.noShooters=Array.from({length:500},()=>q.getZombieTypeConfig()).every(t=>!t.isShooter&&!t.isDog);
         q.updateRoundAtmosphere(1);c.fade=q.scene.fog.density>.006&&q.scene.fog.density<.05;
         const fog=q.scene.fog.density;q.controls.isLocked=false;q.updateRoundAtmosphere(10);c.fogPause=q.scene.fog.density===fog;
-        q.controls.isLocked=true;q.updateRoundAtmosphere(10);c.dense=q.scene.fog.density===.05;
+        q.controls.isLocked=true;q.updateRoundAtmosphere(10);c.dense=q.scene.fog.density===.04;
         q.startWave(9);q.updateRoundAtmosphere(10);c.restore=q.scene.fog.density===.006&&q.waveDirector.maxActive===baseCap;
         // Actual bite: warning, no immediate damage, single hit and recovery.
         reset();q.startWave(5);let dog=q.createDog(new T.Vector3(0,0,-3));q.updateZombies(.01);q.updateRoundAtmosphere(0);

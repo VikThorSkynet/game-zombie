@@ -53,7 +53,7 @@ test('special schedule has no adjacent events and caps finite dog populations',(
             assert(lastDog?[5,6].includes(n-lastDog):n===5);lastDog=n;
             assert(p.cap>=4&&p.cap<=8&&p.total>=p.cap&&p.total<=24);
         }
-        if(p.kind==='fog'){assert(n>=8);assert(p.cap<24);assert.equal(p.fogDensity,.05);}
+        if(p.kind==='fog'){assert(n>=8);assert(p.cap<24);assert.equal(p.fogDensity,.04);}
         const d=new WaveDirector(24);d.start(n,p);
         let count=0;while(count<p.total){assert.equal(d.step(1,0),'spawn');d.acknowledgeSpawn(true);count++;}
         assert.equal(d.step(1,1),null);assert.equal(d.step(1,0),'completed');
