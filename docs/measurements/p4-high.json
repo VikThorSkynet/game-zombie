@@ -1,0 +1,41 @@
+{
+  "quality": "high",
+  "kind": "controlled-integration-not-human-playtest",
+  "limitations": "Travel and generators advanced by test hooks. Boss uses stationary perfect body aim, alternates equipped slots per phase, no dodging cost, no live reinforcement combat. Nominal time is cadence plus reload plus shields, excluding weapon switch, not wall-clock time. Extraction enemies removed with fixed damage. Does not validate 90–180s target.",
+  "spawnChecks": 60,
+  "loadouts": [
+    {
+      "ids": [
+        "pistol",
+        "shotgun"
+      ],
+      "rarity": 0,
+      "pap": false,
+      "shots": 45,
+      "reloads": 0,
+      "nominalSeconds": 17
+    },
+    {
+      "ids": [
+        "smg",
+        "sniper"
+      ],
+      "rarity": 2,
+      "pap": true,
+      "shots": 13,
+      "reloads": 0,
+      "nominalSeconds": 8.16
+    },
+    {
+      "ids": [
+        "assault_rifle",
+        "ray_gun"
+      ],
+      "rarity": 3,
+      "pap": true,
+      "shots": 8,
+      "reloads": 0,
+      "nominalSeconds": 7.8
+    }
+  ]
+}

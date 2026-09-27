@@ -51,6 +51,20 @@ export const RARITIES = Object.freeze([
     Object.freeze({ name: 'Lendária', color: '#ffd16b', multiplier: 2.3, cost: 550 })
 ]);
 
+// Fixed encounter rules: equipment never increases boss health during a fight.
+export const BOSS_PHASES = Object.freeze([
+    Object.freeze({name:'Impacto',inner:0,radius:3,windup:1.55,recovery:2.4,damage:20,color:0xffb85e,instruction:'SAIA DO CÍRCULO'}),
+    Object.freeze({name:'Anel',inner:2.5,radius:6,windup:1.8,recovery:2.8,damage:26,color:0x67cfff,instruction:'ENTRE NO CENTRO OU SAIA DO ANEL'}),
+    Object.freeze({name:'Ruptura',inner:0,radius:5,windup:1.6,recovery:2.2,damage:32,color:0xff7449,instruction:'AFASTE-SE DO CÍRCULO MAIOR'})
+]);
+export function bossAttackHits(phase,distance) {
+    const p=BOSS_PHASES[phase-1];
+    return !!p&&distance>=p.inner&&distance<p.radius;
+}
+export function campaignThreatRound(round) {
+    return Math.max(5,Math.min(10,Math.floor(Number.isFinite(round)?round:5)));
+}
+
 export function waveProfile(round, normalCap = BALANCE.waves.maxActiveHigh) {
     let dogRound=5,index=0,previous=-10;
     while(dogRound<round){previous=dogRound;dogRound+=index%2===0?5:6;index++;}
@@ -59,7 +73,7 @@ export function waveProfile(round, normalCap = BALANCE.waves.maxActiveHigh) {
     return Object.freeze({kind:dogs?'dogs':fog?'fog':'normal',
         total:dogs?Math.min(24,6+index*2):BALANCE.waves.baseCount+round*BALANCE.waves.countPerRound,
         cap:dogs?Math.min(normalCap,8,4+index):fog?Math.max(1,Math.floor(normalCap*.65)):normalCap,
-        fogDensity:fog?.05:.006});
+        fogDensity:fog?.04:.006});
 }
 
 export function stepFog(density,target,delta,active=true) {

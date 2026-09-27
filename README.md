@@ -1,14 +1,14 @@
-# Protocolo Sobreviva — v30
+# Protocolo Sobreviva — v31
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version30_25-09-2026_06-16-03.html](game_version30_25-09-2026_06-16-03.html)
+[game_version31_27-09-2026_08-49-16.html](game_version31_27-09-2026_08-49-16.html)
 
-Atualização: **25/09/2026 às 06:16:03**, America/Sao_Paulo (UTC−03:00).
-Versão: **v30 — P3: armas e economia**.
-Branch: `codex/p3-armas-e-economia`.
+Atualização: **27/09/2026 às 08:49:16**, America/Sao_Paulo (UTC−03:00).
+Versão: **v31 — P4: ritmo e campanha**.
+Branch: `codex/p4-ritmo-campanha`.
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -34,7 +34,10 @@ e confirmação antes de dispensar a extração. P2.2 implementada na v29: tela 
 instruções, créditos e navegação por teclado.
 P3 implementada na v30: atributos centralizados, funções distintas das seis armas,
 dano por distância e abastecimento por arma. Veja a [comparação P3](docs/P3_ARMAS_E_ECONOMIA.md).
-Próxima entrega: **P4 — ritmo, inimigos, campanha e chefe**.
+P4 implementada na v31: surgimentos com distância/caminho verificados, névoa
+especial mais legível, ataques distintos do guardião e reforços de campanha com
+ameaça limitada. [Resultados e pendências P4](docs/P4_RITMO_CAMPANHA.md).
+Próxima entrega: **P5 — orçamento gráfico e otimização**.
 O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
 em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
@@ -86,7 +89,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version30_25-09-2026_06-16-03.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version31_27-09-2026_08-49-16.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -125,10 +128,12 @@ variação de FOV ao correr, mantendo o zoom da mira.
 
 O guardião é uma sentinela imóvel com 2.400 de vida, divididos em três fases de
 800. Um golpe não pula fases; o escudo inicial e de transição dura dois segundos.
-Ele marca a posição do jogador com um círculo antes do impacto. Saia do círculo
-ou use as paredes: ataques respeitam linha de visão. A cada fase o círculo cresce
-(3/4/5 m), o aviso encurta (1,55/1,30/1,05 s) e o dano aumenta (20/26/32, antes
-do colete). A fase 2 traz quatro zumbis, a fase 3 quatro cães; sem reposição infinita.
+Ele marca a posição do jogador antes do impacto. Fase 1: círculo de 3 m, aviso
+de 1,55 s. Fase 2: anel de 2,5–6 m, centro seguro, aviso de 1,8 s. Fase 3:
+círculo de 5 m, aviso de 1,6 s. Danos de 20/26/32 antes do colete.
+Textos, formas e cores distinguem os ataques; paredes bloqueiam o impacto.
+A fase 2 traz quatro zumbis, a fase 3 quatro cães, a pelo menos 10 m e com
+1,2 s de chegada sem movimento/ataque; sem reposição infinita.
 Pausa congela ataques e escudo. Munição é reposta no início e nas duas transições;
 nenhuma arma específica de caixa é obrigatória. Nuke elimina reforços, mas não o
 chefe; Morte Instantânea mantém o dano normal contra ele. Pernas não o derrubam.
@@ -325,7 +330,7 @@ para atualizar os blocos incorporados. `node scripts/build-game.mjs --check` ver
 Não edite o bloco gerado diretamente. `node tests/boot.cjs` verifica abertura do HTML
 original por `file://` e HTTP, sem instrumentação, e falha de carregamento do motor.
 
-Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mjs tests/weapons.test.mjs` para regras, métricas e armas.
+Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mjs tests/weapons.test.mjs tests/pacing.test.mjs` para regras, métricas, armas e ritmo.
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
 `PLAYWRIGHT_MODULE` permite indicar uma instalação existente do Playwright;
@@ -343,7 +348,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_25-09-2026_06-16-03.md)
+[Memória atual](docs/MEMORIA_PERSISTENTE_27-09-2026_08-49-16.md)
+
+[Armas e economia P3](docs/MEMORIA_PERSISTENTE_25-09-2026_06-16-03.md)
 
 [Tela inicial P2.2](docs/MEMORIA_PERSISTENTE_24-09-2026_22-51-41.md)
 
