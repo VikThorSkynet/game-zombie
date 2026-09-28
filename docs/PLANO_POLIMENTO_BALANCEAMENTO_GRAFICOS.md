@@ -13,8 +13,9 @@ e limites em [Armas e economia](P3_ARMAS_E_ECONOMIA.md).
 P4 implementada na v31, branch `codex/p4-ritmo-campanha`; metas humanas de
 portão/chefe permanecem sem validação. [Relatório P4](P4_RITMO_CAMPANHA.md).
 P5 implementada na v32, branch `codex/p5-orcamento-grafico`; auditoria repetida
-de recursos está estável em baixa/alta. A comparação de desempenho após mudança
-ficou pendente; veja [orçamento e resultados P5](P5_ORCAMENTO_GRAFICO.md).
+de recursos está estável em baixa/alta. Comparação antes/depois concluída em
+28/09: menos geometrias no cenário cheio, sem aumento de FPS demonstrado;
+veja [orçamento e resultados P5](P5_ORCAMENTO_GRAFICO.md).
 Próxima entrega: **P6 — iluminação, materiais e cenário**.
 Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
 Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
@@ -227,8 +228,10 @@ infinito de objetivos. Metas de tempo ficam sujeitas ao playtest.
 **Concluída na v32.** Cache limitado de geometrias idênticas de inimigos;
 remoção/restauração histerética de detalhe decorativo distante, com FOV da luneta
 considerado; auditoria de vazamentos em morte/reinício/troca de área. Dez ciclos
-por qualidade mantiveram as contagens estáveis. A medição temporal pós-mudança
-não foi obtida, então o ganho de FPS ainda não está demonstrado.
+por qualidade mantiveram as contagens estáveis. Medições antes/depois em 1080p
+confirmam menos recursos no cenário cheio; medianas permanecem próximas de
+16,7 ms. O p95 baixo ainda excede a meta em parte das amostras. Combate ativo e
+sessões prolongadas continuam necessários antes de ampliar o orçamento visual.
 Detalhes e limites para a arte seguinte: [P5](P5_ORCAMENTO_GRAFICO.md).
 
 Entregas:

@@ -29,11 +29,24 @@ P5 passou em baixa/alta: cache compartilhado, alcance, luneta, histerese, geomet
 de hit, rastejantes, ownership e estabilidade. Em cada qualidade, dez ciclos
 mantiveram constantes as contagens de recursos. Testes de área também passaram.
 
-Limitação: a medição temporal pós-alteração foi bloqueada pela revisão automática
-por limite de uso. Não existe `p5-after-*` nem afirmação de ganho de FPS. A medição
-de referência prévia está guardada; repetir com as instruções em
-`docs/P5_ORCAMENTO_GRAFICO.md` para gerar comparação. Esta limitação não invalida
-os testes funcionais/estabilidade, mas deixa o ganho de desempenho sem comprovação.
+Complemento de 28/09 após o pedido de continuar a P5: o bloqueio anterior de
+revisão automática foi resolvido. Benchmark completo da v32 executado com três
+repetições de cidade, limite de inimigos, cães e chefe, em baixa/alta, 1080p,
+2 s de aquecimento e 5 s de coleta. Criados `p5-after-low.json`,
+`p5-after-high.json` e `p5-comparison.json`; referência v31 preservada.
+
+No cenário cheio: geometrias 895 → 585 em baixa e 1164 → 839 em alta;
+chamadas de desenho 914 → 801 e 1156 → 1106. O cache mantém 15 geometrias extras
+após transitar para o chefe. Medianas de quadro 16,7–16,9 ms; não houve aumento
+de FPS demonstrado. p95 baixo ainda excede 25 ms em primeiras repetições de
+cidade/cães. Decoração aleatória e condições externas limitam causalidade entre
+execuções. Combate ativo e sessões longas continuam pendentes.
+
+Boot da v32 sem hooks passou em file/HTTP, incluindo exportação de métricas e
+falha de CDN. Smoke completo passou em baixa/alta, incluindo campanha e os dois
+finais, geradores, armas, reinício sem sobreposição, luneta, dez ciclos de áreas
+e auditoria P5. As novas execuções não alteraram o HTML v32 nem os JSON anteriores.
+README agora aponta esta memória como atual. Plano e relatório P5 atualizados.
 
 ## Continuidade
 
