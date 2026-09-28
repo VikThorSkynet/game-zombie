@@ -351,9 +351,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual](docs/MEMORIA_PERSISTENTE_27-09-2026_08-49-16.md)
+[Memória atual — P5 v32](docs/MEMORIA_PERSISTENTE_28-09-2026_P5.md)
 
-[P5 v32](docs/MEMORIA_PERSISTENTE_28-09-2026_P5.md)
+[Ritmo e campanha P4](docs/MEMORIA_PERSISTENTE_27-09-2026_08-49-16.md)
 
 [Armas e economia P3](docs/MEMORIA_PERSISTENTE_25-09-2026_06-16-03.md)
 

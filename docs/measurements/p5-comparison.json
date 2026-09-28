@@ -1,0 +1,678 @@
+{
+  "method": "3 repetitions per scenario and preset; 2s warm-up + 5s collection; paused actors, fixed gameplay camera, 1920x1080 DPR1, headless Chrome. Range is min/max among repetitions, never a combined percentile.",
+  "limitations": "No human/gameplay FPS claim. Random world decoration and system load are not fully controlled. Inspect draw calls and geometry alongside timings. New camera fix makes these not directly comparable to prior P1 files.",
+  "rows": [
+    {
+      "quality": "low",
+      "scenario": "quiet-city",
+      "before": {
+        "drawCalls": [
+          290,
+          290
+        ],
+        "triangles": [
+          17836,
+          17836
+        ],
+        "geometry": [
+          271,
+          271
+        ],
+        "texture": [
+          78,
+          78
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.9
+        ],
+        "frameP95Ms": [
+          17.1,
+          31.3
+        ],
+        "cpuMedianMs": [
+          5.9,
+          6.3
+        ],
+        "gpuMedianMs": [
+          10.2,
+          10.2
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          291,
+          291
+        ],
+        "triangles": [
+          17856,
+          17856
+        ],
+        "geometry": [
+          272,
+          272
+        ],
+        "texture": [
+          78,
+          78
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.9
+        ],
+        "frameP95Ms": [
+          17.1,
+          31.1
+        ],
+        "cpuMedianMs": [
+          4.4,
+          4.5
+        ],
+        "gpuMedianMs": [
+          10.1,
+          10.4
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    },
+    {
+      "quality": "low",
+      "scenario": "enemy-cap",
+      "before": {
+        "drawCalls": [
+          914,
+          914
+        ],
+        "triangles": [
+          70492,
+          70492
+        ],
+        "geometry": [
+          895,
+          895
+        ],
+        "texture": [
+          81,
+          81
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          17,
+          22.7
+        ],
+        "cpuMedianMs": [
+          10.5,
+          11.2
+        ],
+        "gpuMedianMs": [
+          12.5,
+          12.8
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          801,
+          801
+        ],
+        "triangles": [
+          66948,
+          66948
+        ],
+        "geometry": [
+          585,
+          585
+        ],
+        "texture": [
+          81,
+          81
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          17.1,
+          17.2
+        ],
+        "cpuMedianMs": [
+          8.5,
+          9.1
+        ],
+        "gpuMedianMs": [
+          12.5,
+          12.6
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    },
+    {
+      "quality": "low",
+      "scenario": "dogs",
+      "before": {
+        "drawCalls": [
+          470,
+          479
+        ],
+        "triangles": [
+          37308,
+          37508
+        ],
+        "geometry": [
+          451,
+          457
+        ],
+        "texture": [
+          83,
+          83
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.8
+        ],
+        "frameP95Ms": [
+          17,
+          34
+        ],
+        "cpuMedianMs": [
+          7.7,
+          8
+        ],
+        "gpuMedianMs": [
+          10.9,
+          11
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          471,
+          473
+        ],
+        "triangles": [
+          37328,
+          37360
+        ],
+        "geometry": [
+          296,
+          297
+        ],
+        "texture": [
+          83,
+          83
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.8
+        ],
+        "frameP95Ms": [
+          17.1,
+          32.7
+        ],
+        "cpuMedianMs": [
+          4.9,
+          5.2
+        ],
+        "gpuMedianMs": [
+          10.8,
+          10.8
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    },
+    {
+      "quality": "low",
+      "scenario": "boss",
+      "before": {
+        "drawCalls": [
+          83,
+          83
+        ],
+        "triangles": [
+          4520,
+          4520
+        ],
+        "geometry": [
+          118,
+          118
+        ],
+        "texture": [
+          26,
+          26
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          17,
+          17.1
+        ],
+        "cpuMedianMs": [
+          1.7,
+          2.3
+        ],
+        "gpuMedianMs": [
+          3.9,
+          3.9
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          83,
+          83
+        ],
+        "triangles": [
+          4520,
+          4520
+        ],
+        "geometry": [
+          133,
+          133
+        ],
+        "texture": [
+          26,
+          26
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          17.2,
+          17.4
+        ],
+        "cpuMedianMs": [
+          1.4,
+          1.7
+        ],
+        "gpuMedianMs": [
+          3.8,
+          3.8
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    },
+    {
+      "quality": "high",
+      "scenario": "quiet-city",
+      "before": {
+        "drawCalls": [
+          324,
+          324
+        ],
+        "triangles": [
+          24480,
+          24480
+        ],
+        "geometry": [
+          332,
+          332
+        ],
+        "texture": [
+          97,
+          97
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.9
+        ],
+        "frameP95Ms": [
+          17.3,
+          32.2
+        ],
+        "cpuMedianMs": [
+          7.6,
+          8.6
+        ],
+        "gpuMedianMs": [
+          11.9,
+          12.5
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          312,
+          312
+        ],
+        "triangles": [
+          18502,
+          18502
+        ],
+        "geometry": [
+          322,
+          322
+        ],
+        "texture": [
+          97,
+          97
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.8
+        ],
+        "frameP95Ms": [
+          17,
+          31.5
+        ],
+        "cpuMedianMs": [
+          4.9,
+          5.2
+        ],
+        "gpuMedianMs": [
+          11.4,
+          11.6
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    },
+    {
+      "quality": "high",
+      "scenario": "enemy-cap",
+      "before": {
+        "drawCalls": [
+          1156,
+          1156
+        ],
+        "triangles": [
+          94688,
+          94688
+        ],
+        "geometry": [
+          1164,
+          1164
+        ],
+        "texture": [
+          100,
+          100
+        ],
+        "frameMedianMs": [
+          16.6,
+          16.7
+        ],
+        "frameP95Ms": [
+          17.3,
+          21.3
+        ],
+        "cpuMedianMs": [
+          13.4,
+          15.4
+        ],
+        "gpuMedianMs": [
+          13.4,
+          14
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          1106,
+          1106
+        ],
+        "triangles": [
+          87522,
+          87522
+        ],
+        "geometry": [
+          839,
+          839
+        ],
+        "texture": [
+          100,
+          100
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          18.3,
+          20.1
+        ],
+        "cpuMedianMs": [
+          13.1,
+          13.7
+        ],
+        "gpuMedianMs": [
+          13.9,
+          14.6
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    },
+    {
+      "quality": "high",
+      "scenario": "dogs",
+      "before": {
+        "drawCalls": [
+          504,
+          513
+        ],
+        "triangles": [
+          43952,
+          44152
+        ],
+        "geometry": [
+          512,
+          518
+        ],
+        "texture": [
+          102,
+          102
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          17,
+          34.5
+        ],
+        "cpuMedianMs": [
+          8.7,
+          10
+        ],
+        "gpuMedianMs": [
+          13,
+          13.6
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          492,
+          501
+        ],
+        "triangles": [
+          37974,
+          38174
+        ],
+        "geometry": [
+          346,
+          352
+        ],
+        "texture": [
+          102,
+          102
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.8
+        ],
+        "frameP95Ms": [
+          17.1,
+          32.9
+        ],
+        "cpuMedianMs": [
+          6.1,
+          6.8
+        ],
+        "gpuMedianMs": [
+          12.4,
+          12.7
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    },
+    {
+      "quality": "high",
+      "scenario": "boss",
+      "before": {
+        "drawCalls": [
+          97,
+          97
+        ],
+        "triangles": [
+          4534,
+          4534
+        ],
+        "geometry": [
+          119,
+          119
+        ],
+        "texture": [
+          39,
+          39
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          17,
+          17.1
+        ],
+        "cpuMedianMs": [
+          2.3,
+          2.5
+        ],
+        "gpuMedianMs": [
+          7.7,
+          8.7
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      },
+      "after": {
+        "drawCalls": [
+          97,
+          97
+        ],
+        "triangles": [
+          4534,
+          4534
+        ],
+        "geometry": [
+          134,
+          134
+        ],
+        "texture": [
+          39,
+          39
+        ],
+        "frameMedianMs": [
+          16.7,
+          16.7
+        ],
+        "frameP95Ms": [
+          16.9,
+          17.1
+        ],
+        "cpuMedianMs": [
+          1.7,
+          2
+        ],
+        "gpuMedianMs": [
+          7.4,
+          7.8
+        ],
+        "over50ms": 0,
+        "resolution": [
+          "1920x1080",
+          "1920x1080",
+          "1920x1080"
+        ]
+      }
+    }
+  ]
+}
