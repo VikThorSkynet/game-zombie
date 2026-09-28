@@ -1,8 +1,10 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.join(__dirname,'../docs/measurements'),rows=[];
+const beforePrefix=process.env.GRAPHICS_BEFORE||'p5-before',afterPrefix=process.env.GRAPHICS_AFTER||'p5-after',outputPrefix=process.env.GRAPHICS_OUTPUT||'p5-comparison';
+for(const prefix of [beforePrefix,afterPrefix,outputPrefix])if(!/^[a-z0-9-]+$/.test(prefix))throw Error('Invalid report prefix');
 for(const quality of ['low','high']){
-    const before=JSON.parse(fs.readFileSync(path.join(root,'p5-before-'+quality+'.json')));
-    const after=JSON.parse(fs.readFileSync(path.join(root,'p5-after-'+quality+'.json')));
+    const before=JSON.parse(fs.readFileSync(path.join(root,beforePrefix+'-'+quality+'.json')));
+    const after=JSON.parse(fs.readFileSync(path.join(root,afterPrefix+'-'+quality+'.json')));
     for(const scenario of [...new Set(before.reports.map(r=>r.scenario))]){
         const stats=data=>{
             const samples=data.reports.filter(r=>r.scenario===scenario).map(r=>r.report.performance['benchmark:'+scenario]);
@@ -15,5 +17,6 @@ for(const quality of ['low','high']){
     }
 }
 const result={method:'3 repetitions per scenario and preset; 2s warm-up + 5s collection; paused actors, fixed gameplay camera, 1920x1080 DPR1, headless Chrome. Range is min/max among repetitions, never a combined percentile.',limitations:'No human/gameplay FPS claim. Random world decoration and system load are not fully controlled. Inspect draw calls and geometry alongside timings. New camera fix makes these not directly comparable to prior P1 files.',rows};
-if(process.argv.includes('--write'))fs.writeFileSync(path.join(root,'p5-comparison.json'),JSON.stringify(result,null,2)+'\n');
+result.sources={before:beforePrefix,after:afterPrefix};
+if(process.argv.includes('--write'))fs.writeFileSync(path.join(root,outputPrefix+'.json'),JSON.stringify(result,null,2)+'\n');
 console.table(rows.map(r=>({preset:r.quality,scene:r.scenario,callsBefore:r.before.drawCalls.join('–'),callsAfter:r.after.drawCalls.join('–'),geoBefore:r.before.geometry.join('–'),geoAfter:r.after.geometry.join('–'),p95Before:r.before.frameP95Ms.join('–'),p95After:r.after.frameP95Ms.join('–')})));

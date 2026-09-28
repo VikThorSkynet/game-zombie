@@ -1,14 +1,14 @@
-# Protocolo Sobreviva — v32
+# Protocolo Sobreviva — v33
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version32_27-09-2026_09-01-35.html](game_version32_27-09-2026_09-01-35.html)
+[game_version33_28-09-2026_09-36-10.html](game_version33_28-09-2026_09-36-10.html)
 
-Atualização: **27/09/2026 às 09:01:35**, America/Sao_Paulo (UTC−03:00).
-Versão: **v32 — P5: orçamento gráfico e otimização**.
-Branch: `codex/p5-orcamento-grafico`.
+Atualização: **28/09/2026 às 09:36:10**, America/Sao_Paulo (UTC−03:00).
+Versão: **v33 — P6: iluminação, materiais e cenário**.
+Branch: `codex/p6-iluminacao-materiais`.
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -40,7 +40,10 @@ ameaça limitada. [Resultados e pendências P4](docs/P4_RITMO_CAMPANHA.md).
 P5 implementada na v32: cache limitado para geometrias de inimigos, detalhe
 decorativo adaptativo por distância e auditoria de recursos em repetição.
 Veja o [orçamento e os resultados P5](docs/P5_ORCAMENTO_GRAFICO.md).
-Próxima entrega: **P6 — iluminação, materiais e cenário**.
+P6 implementada na v33: asfalto e painéis com relevo/rugosidade, fachadas por setor,
+iluminação fria/âmbar, bloom mais contido e manchas de contato sob veículos.
+[Capturas, orçamento e validação P6](docs/P6_ILUMINACAO_MATERIAIS_CENARIO.md).
+Próxima entrega: **P7 — modelos, animações e resposta do combate**.
 O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
 em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
@@ -92,7 +95,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version32_27-09-2026_09-01-35.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version33_28-09-2026_09-36-10.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -351,7 +354,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — P5 v32](docs/MEMORIA_PERSISTENTE_28-09-2026_P5.md)
+[Memória atual — P6 v33](docs/MEMORIA_PERSISTENTE_28-09-2026_09-36-10.md)
+
+[Orçamento gráfico P5](docs/MEMORIA_PERSISTENTE_28-09-2026_P5.md)
 
 [Ritmo e campanha P4](docs/MEMORIA_PERSISTENTE_27-09-2026_08-49-16.md)
 

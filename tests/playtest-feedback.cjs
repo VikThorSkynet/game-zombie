@@ -43,7 +43,7 @@ module.exports=async function(page,assert,quality,releaseTag){
         maxGlow=0;model.traverse(o=>{if(o.material?.emissive&&!o.userData.keepOptic)maxGlow=Math.max(maxGlow,o.material.emissiveIntensity);});c.papPulse=maxGlow<=.3;
         w.model=originalModel;w.configId=originalId;model.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
         q.resetGame();q.controls.isLocked=false;
-        c.surfaceCache=q.surfaceMaps.cache.size===6&&[...q.surfaceMaps.cache.values()].every(v=>v.map.userData.sharedSurface&&v.bump.userData.sharedSurface);
+        c.surfaceCache=q.surfaceMaps.cache.size===8&&[...q.surfaceMaps.cache.values()].every(v=>v.map.userData.sharedSurface&&v.bump.userData.sharedSurface&&(!v.roughness||v.roughness.userData.sharedSurface));
         const textures=[];for(let i=0;i<4;i++){q.resetGame();q.controls.isLocked=false;q.camera.position.set(0,1.8,0);q.camera.lookAt(0,1.8,-10);q.renderScene();textures.push(q.renderer.info.memory.textures);}
         c.restartTextures=textures.slice(1).every(n=>n===textures[0]);
         return c;
