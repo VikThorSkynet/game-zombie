@@ -29,7 +29,7 @@ module.exports=async function(page,assert,quality,releaseTag) {
         portal=approach();c.return=await q.travelArea(portal);
         c.city=snapshot()===before&&q.scene===city&&q.staticColliders.length===colliders&&q.powerups.includes(drop)&&drop.userData.life===life&&q.generators.length===3;
         const samples=[];
-        for(let n=0;n<6;n++) {
+        for(let n=0;n<10;n++) {
             await q.travelArea(approach());await q.travelArea(approach());q.renderScene();
             samples.push({...q.renderer.info.memory});
         }

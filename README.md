@@ -1,14 +1,14 @@
-# Protocolo Sobreviva — v31
+# Protocolo Sobreviva — v32
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version31_27-09-2026_08-49-16.html](game_version31_27-09-2026_08-49-16.html)
+[game_version32_27-09-2026_09-01-35.html](game_version32_27-09-2026_09-01-35.html)
 
-Atualização: **27/09/2026 às 08:49:16**, America/Sao_Paulo (UTC−03:00).
-Versão: **v31 — P4: ritmo e campanha**.
-Branch: `codex/p4-ritmo-campanha`.
+Atualização: **27/09/2026 às 09:01:35**, America/Sao_Paulo (UTC−03:00).
+Versão: **v32 — P5: orçamento gráfico e otimização**.
+Branch: `codex/p5-orcamento-grafico`.
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -37,7 +37,10 @@ dano por distância e abastecimento por arma. Veja a [comparação P3](docs/P3_A
 P4 implementada na v31: surgimentos com distância/caminho verificados, névoa
 especial mais legível, ataques distintos do guardião e reforços de campanha com
 ameaça limitada. [Resultados e pendências P4](docs/P4_RITMO_CAMPANHA.md).
-Próxima entrega: **P5 — orçamento gráfico e otimização**.
+P5 implementada na v32: cache limitado para geometrias de inimigos, detalhe
+decorativo adaptativo por distância e auditoria de recursos em repetição.
+Veja o [orçamento e os resultados P5](docs/P5_ORCAMENTO_GRAFICO.md).
+Próxima entrega: **P6 — iluminação, materiais e cenário**.
 O ciclo inclui reformulação da tela inicial e direção de acabamento inspirada
 em jogos AAA, com validação de desempenho antes de expandir os recursos gráficos.
 
@@ -89,7 +92,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version31_27-09-2026_08-49-16.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version32_27-09-2026_09-01-35.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -349,6 +352,8 @@ A instrumentação existe apenas na resposta HTTP do teste.
 ## Memória persistente
 
 [Memória atual](docs/MEMORIA_PERSISTENTE_27-09-2026_08-49-16.md)
+
+[P5 v32](docs/MEMORIA_PERSISTENTE_28-09-2026_P5.md)
 
 [Armas e economia P3](docs/MEMORIA_PERSISTENTE_25-09-2026_06-16-03.md)
 
