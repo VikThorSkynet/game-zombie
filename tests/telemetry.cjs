@@ -37,7 +37,7 @@ module.exports=async(page,assert,quality)=>{
     for(const scenario of scenarios){
         for(let repetition=1;repetition<=3;repetition++){
             await page.evaluate(async({scenario})=>{
-                const q=qa;q.resetGame();q.controls.isLocked=false;q.metricsGPU.contextOverride='benchmark:'+scenario;
+                const q=qa;q.resetGame();q.controls.dispatchEvent({type:'lock'});q.controls.isLocked=false;q.metricsGPU.contextOverride='benchmark:'+scenario;
                 if(scenario==='boss'){
                     for(let n=0;n<3;n++)q.generatorNetwork.completed.add(n);q.generatorNetwork.openDoor();q.setContainmentDoor(true);
                     q.waveDirector.phase='intermission';q.waveDirector.remaining=8;q.camera.position.set(0,1.8,143);q.controls.isLocked=true;await q.travelArea(q.areaPortals[0]);

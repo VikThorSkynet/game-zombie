@@ -1,0 +1,118 @@
+{
+  "quality": "high",
+  "kind": "resource-and-hitbox-regression",
+  "shared": true,
+  "far": true,
+  "scope": true,
+  "unchanged": true,
+  "hysteresis": true,
+  "near": true,
+  "hit": true,
+  "crawl": true,
+  "ownership": true,
+  "stable": true,
+  "samples": [
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 469,
+      "textures": 97,
+      "cache": 28
+    }
+  ],
+  "clean": [
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    },
+    {
+      "geometries": 333,
+      "textures": 97,
+      "cache": 28
+    }
+  ]
+}

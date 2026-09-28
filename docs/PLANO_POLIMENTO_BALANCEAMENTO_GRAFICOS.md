@@ -4,7 +4,7 @@ Data: **24/09/2026, 08:49:46 — America/Sao_Paulo**.
 Revisão: **24/09/2026, 08:58:45 — America/Sao_Paulo**.
 Base: v25, commit e290f81, branch codex/protocolo-contencao.
 Status: P1 implementada na v26. v27, branch `codex/playtest-progressao-visuais`,
-aplica o feedback humano abaixo; P5–P8 permanecem pendentes.
+aplica o feedback humano abaixo.
 P2.1 implementada na v28, branch `codex/p2-polimento-jogabilidade`.
 P2.2 implementada na v29, branch `codex/p2-tela-inicial`: tela inicial com câmera
 independente, fundo estático, opções agrupadas, instruções, créditos e teclado.
@@ -12,7 +12,10 @@ P3 implementada na v30, branch `codex/p3-armas-e-economia`; comparação analít
 e limites em [Armas e economia](P3_ARMAS_E_ECONOMIA.md).
 P4 implementada na v31, branch `codex/p4-ritmo-campanha`; metas humanas de
 portão/chefe permanecem sem validação. [Relatório P4](P4_RITMO_CAMPANHA.md).
-Próxima entrega: **P5 — orçamento gráfico e otimização**.
+P5 implementada na v32, branch `codex/p5-orcamento-grafico`; auditoria repetida
+de recursos está estável em baixa/alta. A comparação de desempenho após mudança
+ficou pendente; veja [orçamento e resultados P5](P5_ORCAMENTO_GRAFICO.md).
+Próxima entrega: **P6 — iluminação, materiais e cenário**.
 Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
 Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
 
@@ -220,6 +223,13 @@ aprimoradas; nenhum item obrigatório de caixa; mortes justificáveis; zero farm
 infinito de objetivos. Metas de tempo ficam sujeitas ao playtest.
 
 ### P5 — Orçamento gráfico e otimização
+
+**Concluída na v32.** Cache limitado de geometrias idênticas de inimigos;
+remoção/restauração histerética de detalhe decorativo distante, com FOV da luneta
+considerado; auditoria de vazamentos em morte/reinício/troca de área. Dez ciclos
+por qualidade mantiveram as contagens estáveis. A medição temporal pós-mudança
+não foi obtida, então o ganho de FPS ainda não está demonstrado.
+Detalhes e limites para a arte seguinte: [P5](P5_ORCAMENTO_GRAFICO.md).
 
 Entregas:
 - Partir dos maiores custos medidos em P1; evitar otimizações sem evidência.
