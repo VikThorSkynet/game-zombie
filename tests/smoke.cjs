@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 require('node:child_process').execFileSync(process.execPath,[path.join(root,'scripts/build-game.mjs'),'--check']);
-const filename = fs.readFileSync(path.join(root, 'README.md'), 'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
+const filename = process.env.QA_GAME_FILE || fs.readFileSync(path.join(root, 'README.md'), 'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
 const releaseTag = 'v' + filename.match(/^game_version(\d+)_/)[1];
 const html = fs.readFileSync(path.join(root, filename), 'utf8');
 assert(!html.includes('createOscillator'), 'only MP3 audio sources');
@@ -51,16 +51,18 @@ const server = http.createServer((req, res) => {
         browser = await chromium.launch({headless: true, ...(process.env.CHROME_PATH ? {executablePath: process.env.CHROME_PATH} : {})});
         const page = await browser.newPage({viewport: {width: 1440, height: 960}});
         const errors = [];
+        if(process.env.QA_P6_ONLY)await page.addInitScript(()=>{let seed=601;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};});
         page.on('requestfailed', r=>console.error('Network:',r.url(),r.failure()?.errorText));
         page.on('pageerror', e => { errors.push(String(e)); console.error(e); });
         for (const quality of ['low', 'high']) {
-            await page.goto(`${url}?quality=${quality}${process.env.QA_P1_ONLY||process.env.QA_METRICS?'&metrics=1&route=automated-controlled':''}`);
+            await page.goto(`${url}?quality=${quality}${process.env.QA_P1_ONLY||process.env.QA_P6_ONLY||process.env.QA_METRICS?'&metrics=1&route=automated-controlled':''}`);
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
             if(process.env.QA_MENU_ONLY){await require('./menu.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P3_ONLY){await require('./weapons.cjs')(page,assert,quality);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P4_ONLY){await require('./pacing.cjs')(page,assert,quality);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P5_ONLY){await require('./graphics.cjs')(page,assert,quality);await require('./areas.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
+            if(process.env.QA_P6_ONLY){await require('./environment.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P2_ONLY){await require('./polish.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_PLAYTEST_ONLY){await require('./playtest-feedback.cjs')(page,assert,quality,releaseTag);await require('./containment.cjs')(page,assert,quality,releaseTag);await require('./special-rounds.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P1_ONLY){await require('./telemetry.cjs')(page,assert,quality);assert.equal(errors.length,0);continue;}
@@ -140,7 +142,7 @@ const server = http.createServer((req, res) => {
             assert.equal(await page.evaluate(() => qa.runStats.criticalHits), 1);
             await page.keyboard.press('Escape');
             await page.waitForFunction(() => !qa.controls.isLocked);
-            assert.equal(await page.evaluate(() => qa.flashlight.intensity), 80);
+            assert.equal(await page.evaluate(() => qa.flashlight.intensity), 60);
             await page.getByRole('button',{name:'OPÇÕES',exact:true}).click();
             assert(await page.locator('#sensitivity').isVisible(), 'settings available on pause');
             await page.keyboard.press('Escape');

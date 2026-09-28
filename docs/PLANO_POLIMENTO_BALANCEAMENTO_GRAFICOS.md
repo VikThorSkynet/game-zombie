@@ -16,7 +16,10 @@ P5 implementada na v32, branch `codex/p5-orcamento-grafico`; auditoria repetida
 de recursos está estável em baixa/alta. Comparação antes/depois concluída em
 28/09: menos geometrias no cenário cheio, sem aumento de FPS demonstrado;
 veja [orçamento e resultados P5](P5_ORCAMENTO_GRAFICO.md).
-Próxima entrega: **P6 — iluminação, materiais e cenário**.
+P6 implementada na v33, branch `codex/p6-iluminacao-materiais`: superfícies,
+identidade de setores, iluminação, contato de veículos e partículas estáticas.
+[Capturas e custos P6](P6_ILUMINACAO_MATERIAIS_CENARIO.md).
+Próxima entrega: **P7 — modelos, animações e resposta do combate**.
 Referência automatizada e limitações: [resultados P1](P1_RESULTADOS.md).
 Partidas humanas de balanceamento seguem o [roteiro P1](P1_ROTEIRO_PLAYTEST.md).
 
@@ -254,6 +257,13 @@ qualquer hardware. Registrar também resolução interna para evitar mascarar
 perda de nitidez. Dez idas/voltas e reinícios sem crescimento contínuo de recursos.
 
 ### P6 — Iluminação, materiais e cenário
+
+**Implementada na v33.** Mapas procedurais compartilhados de cor, altura e
+rugosidade; fachadas por região; painéis industriais e sinalização âmbar;
+exposição, bloom e lanterna revistos; contato sob carros e poeira estática.
+Pares de capturas e auditoria de colisões/luzes em baixa/alta no
+[relatório P6](P6_ILUMINACAO_MATERIAIS_CENARIO.md). Custos temporais continuam
+sujeitos às limitações do benchmark; sessões humanas prolongadas seguem na P8.
 
 Entregas:
 - Rever exposição, contraste, bloom e lanterna para preservar detalhes das
