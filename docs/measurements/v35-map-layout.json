@@ -1,0 +1,599 @@
+{
+  "release": "v35",
+  "quality": "high",
+  "points": [
+    {
+      "name": "Caixa",
+      "x": 78,
+      "z": -82,
+      "approach": [
+        81,
+        0,
+        -82
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "PaP",
+      "x": 78,
+      "z": 88,
+      "approach": [
+        81,
+        0,
+        88
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Juggernog",
+      "x": -78,
+      "z": -46,
+      "approach": [
+        -81,
+        0,
+        -46
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Speed Cola",
+      "x": 78,
+      "z": 38,
+      "approach": [
+        81,
+        0,
+        38
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Double Tap",
+      "x": 36,
+      "z": -91,
+      "approach": [
+        36,
+        0,
+        -94
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Movespeed",
+      "x": -78,
+      "z": 70,
+      "approach": [
+        -81,
+        0,
+        70
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "armor",
+      "x": 18,
+      "z": 8,
+      "approach": [
+        18,
+        0,
+        5
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "arsenal",
+      "x": -78,
+      "z": -82,
+      "approach": [
+        -81,
+        0,
+        -82
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "G1",
+      "x": -88,
+      "z": -24,
+      "approach": [
+        -88,
+        0,
+        -21
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "G2",
+      "x": 88,
+      "z": 64,
+      "approach": [
+        88,
+        0,
+        67
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "G3",
+      "x": -36,
+      "z": 101,
+      "approach": [
+        -36,
+        0,
+        98
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Liquidação 1",
+      "x": -66,
+      "z": -91,
+      "approach": [
+        -66,
+        0,
+        -94
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Liquidação 2",
+      "x": 66,
+      "z": -91,
+      "approach": [
+        66,
+        0,
+        -94
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Liquidação 3",
+      "x": -66,
+      "z": 91,
+      "approach": [
+        -66,
+        0,
+        94
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Liquidação 4",
+      "x": 66,
+      "z": 91,
+      "approach": [
+        66,
+        0,
+        94
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Munição 1",
+      "x": -86,
+      "z": 0,
+      "approach": [
+        -86,
+        0,
+        3
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Munição 2",
+      "x": 86,
+      "z": 0,
+      "approach": [
+        86,
+        0,
+        3
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    },
+    {
+      "name": "Munição 3",
+      "x": 0,
+      "z": 130,
+      "approach": [
+        0,
+        0,
+        133
+      ],
+      "solid": true,
+      "reachable": true,
+      "free": true,
+      "facesRoad": true
+    }
+  ],
+  "routes": [
+    {
+      "from": [
+        -88,
+        0
+      ],
+      "to": [
+        -88,
+        -101
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        -88,
+        -101
+      ],
+      "to": [
+        88,
+        -101
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        88,
+        -101
+      ],
+      "to": [
+        88,
+        101
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        88,
+        101
+      ],
+      "to": [
+        -88,
+        101
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        -88,
+        101
+      ],
+      "to": [
+        -88,
+        40
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        -88,
+        40
+      ],
+      "to": [
+        0,
+        40
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        0,
+        40
+      ],
+      "to": [
+        88,
+        40
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        88,
+        40
+      ],
+      "to": [
+        88,
+        0
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        88,
+        0
+      ],
+      "to": [
+        0,
+        0
+      ],
+      "forward": true,
+      "backward": true
+    },
+    {
+      "from": [
+        0,
+        0
+      ],
+      "to": [
+        -88,
+        0
+      ],
+      "forward": true,
+      "backward": true
+    }
+  ],
+  "circles": [
+    16,
+    16,
+    16
+  ],
+  "records": true,
+  "perks": true,
+  "spawns": [
+    true,
+    true,
+    true
+  ],
+  "stable": true,
+  "buildings": [
+    {
+      "x": -55,
+      "z": -76,
+      "w": 24,
+      "d": 16
+    },
+    {
+      "x": -30,
+      "z": -68,
+      "w": 14,
+      "d": 24
+    },
+    {
+      "x": 55,
+      "z": -76,
+      "w": 24,
+      "d": 16
+    },
+    {
+      "x": 30,
+      "z": -68,
+      "w": 14,
+      "d": 24
+    },
+    {
+      "x": -60,
+      "z": -38,
+      "w": 22,
+      "d": 18
+    },
+    {
+      "x": -33,
+      "z": -32,
+      "w": 16,
+      "d": 20
+    },
+    {
+      "x": 60,
+      "z": -38,
+      "w": 22,
+      "d": 18
+    },
+    {
+      "x": 33,
+      "z": -32,
+      "w": 16,
+      "d": 20
+    },
+    {
+      "x": -60,
+      "z": 15,
+      "w": 24,
+      "d": 18
+    },
+    {
+      "x": -32,
+      "z": 20,
+      "w": 16,
+      "d": 22
+    },
+    {
+      "x": 60,
+      "z": 15,
+      "w": 24,
+      "d": 18
+    },
+    {
+      "x": 32,
+      "z": 20,
+      "w": 16,
+      "d": 22
+    },
+    {
+      "x": -55,
+      "z": 60,
+      "w": 26,
+      "d": 20
+    },
+    {
+      "x": -30,
+      "z": 68,
+      "w": 14,
+      "d": 18
+    },
+    {
+      "x": 55,
+      "z": 60,
+      "w": 26,
+      "d": 20
+    },
+    {
+      "x": 30,
+      "z": 68,
+      "w": 14,
+      "d": 18
+    },
+    {
+      "x": -112,
+      "z": -110,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": -112,
+      "z": -60,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": -112,
+      "z": 0,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": -112,
+      "z": 60,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": -112,
+      "z": 110,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": 112,
+      "z": -110,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": 112,
+      "z": -60,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": 112,
+      "z": 0,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": 112,
+      "z": 60,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": 112,
+      "z": 110,
+      "w": 22,
+      "d": 24
+    },
+    {
+      "x": -64,
+      "z": -123,
+      "w": 21,
+      "d": 22
+    },
+    {
+      "x": -26,
+      "z": -123,
+      "w": 21,
+      "d": 22
+    },
+    {
+      "x": 26,
+      "z": -123,
+      "w": 21,
+      "d": 22
+    },
+    {
+      "x": 64,
+      "z": -123,
+      "w": 21,
+      "d": 22
+    },
+    {
+      "x": -64,
+      "z": 123,
+      "w": 21,
+      "d": 22
+    },
+    {
+      "x": -26,
+      "z": 123,
+      "w": 21,
+      "d": 22
+    },
+    {
+      "x": 26,
+      "z": 123,
+      "w": 21,
+      "d": 22
+    },
+    {
+      "x": 64,
+      "z": 123,
+      "w": 21,
+      "d": 22
+    }
+  ]
+}
