@@ -64,9 +64,9 @@ def export_model(output, length, flip=False, muzzle=None, muzzle_mesh=None):
         obj.parent = None
         obj.matrix_world = Matrix.Identity(4)
         mesh.calc_loop_triangles()
-        if len(mesh.loop_triangles) > 20000:
+        if len(mesh.loop_triangles) > 12000:
             modifier = obj.modifiers.new('Game optimization', 'DECIMATE')
-            modifier.ratio = 20000 / len(mesh.loop_triangles)
+            modifier.ratio = 12000 / len(mesh.loop_triangles)
             bpy.context.view_layer.update()
             mesh = bpy.data.meshes.new_from_object(
                 obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
@@ -93,6 +93,15 @@ def export_model(output, length, flip=False, muzzle=None, muzzle_mesh=None):
             source_muzzle = Matrix.Rotation(math.pi, 4, 'Z') @ source_muzzle
     for obj in objects:
         obj.data.transform(transform)
+    # Static geometry can be submitted once per material instead of per component.
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()
+    merged = bpy.context.object
+    merged.name = output.stem + '_model'
+    objects = [merged]
     bpy.ops.object.empty_add(type='PLAIN_AXES')
     socket = bpy.context.object
     socket.name = 'MuzzleSocket'
