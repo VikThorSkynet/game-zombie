@@ -1,0 +1,166 @@
+[
+  {
+    "id": "z01",
+    "title": "Policial",
+    "source": "animated_zombie_cop_running_loop.glb",
+    "file": "../../assets/enemies/z01.glb",
+    "animations": [
+      "Animation"
+    ],
+    "attribution": {
+      "author": "LasquetiSpice (https://sketchfab.com/LasquetiSpice)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/animated-zombie-cop-running-loop-cd221e2b23b14798abf3afb2f31c123b",
+      "title": "Animated Zombie Cop Running Loop"
+    }
+  },
+  {
+    "id": "z02",
+    "title": "Zombie (1)",
+    "source": "zombie (1).glb",
+    "file": "../../assets/enemies/z02.glb",
+    "animations": [],
+    "attribution": {
+      "author": "L. (https://sketchfab.com/A2555)",
+      "license": "SKETCHFAB Standard (https://sketchfab.com/licenses)",
+      "source": "https://sketchfab.com/3d-models/zombie-2310b4a58eb54833a9f50d96dcac2482",
+      "title": "Zombie"
+    }
+  },
+  {
+    "id": "z03",
+    "title": "Zombie",
+    "source": "zombie.glb",
+    "file": "../../assets/enemies/z03.glb",
+    "animations": [
+      "Armature|mixamo.com|Layer0"
+    ],
+    "attribution": {
+      "author": "David Glynch (https://sketchfab.com/yaveselyigolovastic)",
+      "license": "SKETCHFAB Standard (https://sketchfab.com/licenses)",
+      "source": "https://sketchfab.com/3d-models/zombie-6ff73b06cf63405d9557720c78cf5e0c",
+      "title": "Zombie"
+    }
+  },
+  {
+    "id": "z04",
+    "title": "Infectado",
+    "source": "zombie_creature_infected.glb",
+    "file": "../../assets/enemies/z04.glb",
+    "animations": [],
+    "attribution": {
+      "author": "senithmalavige (https://sketchfab.com/senithmalavige)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/zombie-creature-infected-95bc7415669d4a2d8910f6ed0777845d",
+      "title": "Zombie creature_INFECTED"
+    }
+  },
+  {
+    "id": "z05",
+    "title": "Zombie Girl",
+    "source": "zombie_girl.glb",
+    "file": "../../assets/enemies/z05.glb",
+    "animations": [
+      "GltfAnimation 0"
+    ],
+    "attribution": {
+      "author": "LostBoyz2078 (https://sketchfab.com/LostModels2025)",
+      "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+      "source": "https://sketchfab.com/3d-models/zombie-girl-c011768a4ebf4b0dbb0733cb55064aba",
+      "title": "Zombie Girl"
+    }
+  },
+  {
+    "id": "z06",
+    "title": "Múmia",
+    "source": "zombie_smoke_mummy_character_12_mb.glb",
+    "file": "../../assets/enemies/z06.glb",
+    "animations": [],
+    "attribution": {
+      "author": "Mehdi Shahsavan (https://sketchfab.com/ahmagh2e)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/zombie-smoke-mummy-character-12-mb-855ade268167415e954f4377ed4519c5",
+      "title": "Zombie_Smoke_Mummy_Character_12_MB"
+    }
+  },
+  {
+    "id": "z07",
+    "title": "Zombie Walk",
+    "source": "zombie_walk_test.glb",
+    "file": "../../assets/enemies/z07.glb",
+    "animations": [
+      "ANIMATION ZOMBIE"
+    ],
+    "attribution": {
+      "author": "OSCAR CREATIVO (https://sketchfab.com/oscar_creativo)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/zombie-walk-test-165fd9342c364216bfdd8c2f1102223c",
+      "title": "Zombie Walk Test"
+    }
+  },
+  {
+    "id": "z08",
+    "title": "PhychoZombie",
+    "source": "Phychozomb.fbx",
+    "file": "../../assets/enemies/z08.glb",
+    "animations": [],
+    "attribution": {}
+  },
+  {
+    "id": "d01",
+    "title": "Cão 1",
+    "source": "zombie_dog.glb",
+    "file": "../../assets/enemies/d01.glb",
+    "animations": [],
+    "attribution": {
+      "author": "Long Nguyá»…n (https://sketchfab.com/LongNguyen89)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/zombie-dog-a0570f82ac974a6bb3214364b0e2b16d",
+      "title": "Zombie Dog"
+    }
+  },
+  {
+    "id": "d02",
+    "title": "Cão 2",
+    "source": "zombie_dog (1).glb",
+    "file": "../../assets/enemies/d02.glb",
+    "animations": [
+      "GltfAnimation 0"
+    ],
+    "attribution": {
+      "author": "LostBoyz2078 (https://sketchfab.com/LostModels2025)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/zombie-dog-b06341d813b0422d900efb5fd07a7551",
+      "title": "Zombie Dog"
+    }
+  },
+  {
+    "id": "p01",
+    "title": "Personagem principal",
+    "source": "main character.glb",
+    "file": "../../assets/enemies/p01.glb",
+    "animations": [
+      "IdleV4.2(maya_head)"
+    ],
+    "attribution": {
+      "author": "soni.ravi206 (https://sketchfab.com/soni.ravi206)",
+      "license": "SKETCHFAB Standard (https://sketchfab.com/licenses)",
+      "source": "https://sketchfab.com/3d-models/indian-man-with-suit-720635f58afc408795d5b3e73c5bb8c5",
+      "title": "Indian man with suit"
+    }
+  },
+  {
+    "id": "w01",
+    "title": "AK47",
+    "source": "AK47.obj",
+    "file": "../../assets/weapons/ak47.glb",
+    "animations": []
+  },
+  {
+    "id": "b01",
+    "title": "Caixa misteriosa",
+    "source": "Weapon box.obj",
+    "file": "../../assets/props/mystery-box.glb",
+    "animations": []
+  }
+]

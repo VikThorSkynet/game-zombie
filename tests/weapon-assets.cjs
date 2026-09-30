@@ -67,8 +67,8 @@ const server = http.createServer((req,res)=>{
         for(const quality of ['low','high']){
             await page.goto(`http://127.0.0.1:${server.address().port}/game.html?quality=${quality}`);
             await page.waitForFunction(()=>window.gameBootComplete&&window.assetQA);
-            assert.equal(await page.evaluate(()=>assetQA.templates.size),2);
-            for(const id of ['pistol','smg'])for(const pap of [false,true]){
+            assert.equal(await page.evaluate(()=>assetQA.templates.size),3);
+            for(const id of ['pistol','smg','assault_rifle'])for(const pap of [false,true]){
                 await page.evaluate(([id,pap])=>assetQA.equip(id,pap),[id,pap]);
                 const result=await page.evaluate(([id,pap])=>assetQA.verify(id,pap),[id,pap]);
                 assert.equal(result.asset,id);assert.equal(result.pap,pap);
@@ -79,7 +79,7 @@ const server = http.createServer((req,res)=>{
                 console.log(JSON.stringify({quality,id,...result}));
                 if(captures&&!pap)for(const aim of [false,true]){
                     await page.evaluate(aim=>assetQA.pose(aim),aim);
-                    await page.screenshot({path:path.join(captures,`v34-${id}-${aim?'ads':'hip'}-${quality}.png`)});
+                    await page.screenshot({path:path.join(captures,`v36-${id}-${aim?'ads':'hip'}-${quality}.png`)});
                 }
             }
             const resources=await page.evaluate(()=>assetQA.resources());

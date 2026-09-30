@@ -1,23 +1,31 @@
-# Protocolo Sobreviva — v35
+# Protocolo Sobreviva — v36
 
-FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, Beretta M9 e Thompson II importadas, demais modelos procedurais e MP3 locais.
+FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, armas e cães importados, cenário procedural e MP3 locais.
 
 ## Versão atual
 
-[game_version35_30-09-2026_17-17-35.html](game_version35_30-09-2026_17-17-35.html)
+[game_version36_30-09-2026_19-46-59.html](game_version36_30-09-2026_19-46-59.html)
 
-Atualização: **30/09/2026 às 17:17:35**, America/Sao_Paulo (UTC−03:00).
-Versão: **v35 — serviços e objetivos distribuídos pelos setores da cidade**.
-Branch: `codex/distribuicao-setores-mapa`.
-Base atual do GitHub: v34, commit `c4c4744` de `origin/main`.
-Máquinas em pontos fixos nas ruas laterais e no sul/norte; geradores a oeste,
-leste e norte. Colete próximo ao início, Arsenal no sudoeste, caixa no sudeste
-e Pack-a-Punch no nordeste. Duas ruas transversais, placas e setor no HUD
-ajudam a percorrer os circuitos. Veja [distribuição e rotas](docs/MAPA_SETORES_V35.md).
-Beretta M9 substitui a pistola e Thompson II substitui a SMG nas duas caixas.
-Os atributos P3, campanha, gráficos P6, sons e aquisição de armas são preservados.
-GLBs e texturas são incorporados pelo build para funcionar também por dois cliques.
-Veja [assets e conversão](docs/ARMAS_IMPORTADAS_V34.md).
+Atualização: **30/09/2026 às 19:46:59**, America/Sao_Paulo (UTC−03:00).
+Versão: **v36 — cães importados, AK47, caixa e galeria de zumbis**.
+Branch: `codex/assets-inimigos-galeria`.
+Base: v35, commit `3ef92b3`.
+
+Os dois cães fornecidos alternam nas rodadas e nos reforços de cães. A AK47
+substitui o fuzil e a nova caixa mantém sorteio, tampa animada e Liquidação.
+Os modelos do jogo ficam incorporados no HTML para abertura por dois cliques.
+A distribuição por setores da v35 continua disponível.
+
+**Escolha dos zumbis:** abra `abrir-galeria.cmd` por dois cliques, ou consulte
+[o catálogo](docs/asset-gallery/catalogo.png). A galeria interativa tem os oito
+zumbis Z01–Z08, cães, personagem principal, AK47 e caixa. Arraste para girar,
+role para aproximar e selecione animações ou tipos. As escolhas ficam salvas
+no navegador e podem ser exportadas em JSON. Os zumbis ainda aguardam a
+classificação do usuário para entrar na partida; P01 está somente na galeria.
+
+Veja [integração e validação](docs/ASSETS_V36.md),
+[autores e fontes](docs/ASSET_CREDITS_V36.md) e
+[distribuição pelo mapa](docs/MAPA_SETORES_V35.md).
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -104,7 +112,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version35_30-09-2026_17-17-35.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version36_30-09-2026_19-46-59.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -366,7 +374,7 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — mapa por setores v35](docs/MEMORIA_PERSISTENTE_30-09-2026_17-17-35.md)
+[Memória atual — assets e galeria v36](docs/MEMORIA_PERSISTENTE_30-09-2026_19-46-59.md)
 
 [Armas importadas v34](docs/MEMORIA_PERSISTENTE_30-09-2026_16-53-32.md)
 
