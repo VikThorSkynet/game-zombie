@@ -1,14 +1,19 @@
-# Protocolo Sobreviva — v33
+# Protocolo Sobreviva — v34
 
-FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, modelos procedurais e MP3 locais.
+FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, Beretta M9 e Thompson II importadas, demais modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version33_28-09-2026_09-36-10.html](game_version33_28-09-2026_09-36-10.html)
+[game_version34_30-09-2026_16-53-32.html](game_version34_30-09-2026_16-53-32.html)
 
-Atualização: **28/09/2026 às 09:36:10**, America/Sao_Paulo (UTC−03:00).
-Versão: **v33 — P6: iluminação, materiais e cenário**.
-Branch: `codex/p6-iluminacao-materiais`.
+Atualização: **30/09/2026 às 16:53:32**, America/Sao_Paulo (UTC−03:00).
+Versão: **v34 — Beretta M9 e Thompson II sobre P6**.
+Branch: `codex/beretta-thompson-assets`.
+Base atual baixada do GitHub: v33, commit `c46ffa1` de `origin/main`.
+Beretta M9 substitui a pistola e Thompson II substitui a SMG nas duas caixas.
+Os atributos P3, campanha, gráficos P6, sons e aquisição de armas são preservados.
+GLBs e texturas são incorporados pelo build para funcionar também por dois cliques.
+Veja [assets e conversão](docs/ARMAS_IMPORTADAS_V34.md).
 Base jogável preservada: [v25](game_version25_24-09-2026_08-20-03.html).
 
 Etapa 1: regras centrais de balanceamento, eventos de combate e controlador de ondas.
@@ -95,7 +100,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version33_28-09-2026_09-36-10.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version34_30-09-2026_16-53-32.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -335,6 +340,9 @@ Após editar `game-systems.mjs` ou `telemetry.mjs`, execute `node scripts/build-
 para atualizar os blocos incorporados. `node scripts/build-game.mjs --check` verifica sincronização.
 Não edite o bloco gerado diretamente. `node tests/boot.cjs` verifica abertura do HTML
 original por `file://` e HTTP, sem instrumentação, e falha de carregamento do motor.
+Após reexportar os GLBs, rode o build para atualizar os assets incorporados.
+`node tests/weapon-assets.cjs` verifica Beretta/Thompson, mira, PaP e reinícios;
+veja [instruções e capturas da v34](docs/ARMAS_IMPORTADAS_V34.md).
 
 Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mjs tests/weapons.test.mjs tests/pacing.test.mjs` para regras, métricas, armas e ritmo.
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
@@ -354,7 +362,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — P6 v33](docs/MEMORIA_PERSISTENTE_28-09-2026_09-36-10.md)
+[Memória atual — armas importadas v34](docs/MEMORIA_PERSISTENTE_30-09-2026_16-53-32.md)
+
+[Base P6 v33](docs/MEMORIA_PERSISTENTE_28-09-2026_09-36-10.md)
 
 [Orçamento gráfico P5](docs/MEMORIA_PERSISTENTE_28-09-2026_P5.md)
 
