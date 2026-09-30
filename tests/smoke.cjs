@@ -23,7 +23,8 @@ const api = `window.qa = { get enemyGeometryCache(){return typeof enemyGeometryC
  get isReloading(){return isReloading}, get currentWeaponIndex(){return currentWeaponIndex}, get mysteryBox(){return mysteryBox},
  getZombieBaseSpeed, zombieTypeConfigs, applyLegDamage, findNavigationPath, loadAudioAsset,
  spawnPowerup, createBonusModel, floatingLabel, bonusNames, powerupTypes, applyPowerup, updatePowerups, powerups, ammoStations, saleBoxes, interactSupply, nearestSupply, ammoPrice, getMysteryPrice, updateSaleBoxes, meleeAttack, updateMelee, createZombie, updateWeapon, renderScene,
- get renderer(){return renderer},
+ get renderer(){return renderer}, get papMachine(){return papMachine},
+ get cityServiceLayout(){return typeof cityServiceLayout==='undefined'?null:cityServiceLayout},
  get flashlight(){return flashlight}, get fireSaleTimer(){return fireSaleTimer}, set score(v){score=v},
  createZombieHitEffect, updateCombatEffects, resetGame, showHitmarker, startReload, finishReload, updateUI, updateZombies,
  get score(){return score}, get health(){return health}, get camera(){return camera}, get scene(){return scene},
@@ -58,6 +59,11 @@ const server = http.createServer((req, res) => {
             await page.goto(`${url}?quality=${quality}${process.env.QA_P1_ONLY||process.env.QA_P6_ONLY||process.env.QA_METRICS?'&metrics=1&route=automated-controlled':''}`);
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
+            if(await page.evaluate(()=>!!qa.cityServiceLayout)){
+                await require('./map-layout.cjs')(page,assert,quality,releaseTag);
+                assert.equal(errors.length,0);
+                if(process.env.QA_MAP_ONLY)continue;
+            }
             if(process.env.QA_MENU_ONLY){await require('./menu.cjs')(page,assert,quality,releaseTag);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P3_ONLY){await require('./weapons.cjs')(page,assert,quality);assert.equal(errors.length,0);continue;}
             if(process.env.QA_P4_ONLY){await require('./pacing.cjs')(page,assert,quality);assert.equal(errors.length,0);continue;}

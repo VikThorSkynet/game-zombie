@@ -1,15 +1,19 @@
-# Protocolo Sobreviva — v34
+# Protocolo Sobreviva — v35
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, Beretta M9 e Thompson II importadas, demais modelos procedurais e MP3 locais.
 
 ## Versão atual
 
-[game_version34_30-09-2026_16-53-32.html](game_version34_30-09-2026_16-53-32.html)
+[game_version35_30-09-2026_17-17-35.html](game_version35_30-09-2026_17-17-35.html)
 
-Atualização: **30/09/2026 às 16:53:32**, America/Sao_Paulo (UTC−03:00).
-Versão: **v34 — Beretta M9 e Thompson II sobre P6**.
-Branch: `codex/beretta-thompson-assets`.
-Base atual baixada do GitHub: v33, commit `c46ffa1` de `origin/main`.
+Atualização: **30/09/2026 às 17:17:35**, America/Sao_Paulo (UTC−03:00).
+Versão: **v35 — serviços e objetivos distribuídos pelos setores da cidade**.
+Branch: `codex/distribuicao-setores-mapa`.
+Base atual do GitHub: v34, commit `c4c4744` de `origin/main`.
+Máquinas em pontos fixos nas ruas laterais e no sul/norte; geradores a oeste,
+leste e norte. Colete próximo ao início, Arsenal no sudoeste, caixa no sudeste
+e Pack-a-Punch no nordeste. Duas ruas transversais, placas e setor no HUD
+ajudam a percorrer os circuitos. Veja [distribuição e rotas](docs/MAPA_SETORES_V35.md).
 Beretta M9 substitui a pistola e Thompson II substitui a SMG nas duas caixas.
 Os atributos P3, campanha, gráficos P6, sons e aquisição de armas são preservados.
 GLBs e texturas são incorporados pelo build para funcionar também por dois cliques.
@@ -100,7 +104,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version34_30-09-2026_16-53-32.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version35_30-09-2026_17-17-35.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -257,7 +261,7 @@ chegar à onda 5. Pausa e morte congelam a defesa, reinício limpa toda a progre
 
 ## Armadura, economia e raridades — etapa 2
 
-Duas estações próximas ao centro da cidade: **COLETE** (azul) e **ARSENAL** (dourado).
+Duas estações: **COLETE** (azul), perto do início, e **ARSENAL** (dourado), no sudoeste.
 O HUD informa proteção, placas guardadas, sucata e raridade da arma equipada.
 
 - Colete começa com capacidade para uma placa, vazio. Cada placa oferece 50 de proteção
@@ -362,7 +366,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — armas importadas v34](docs/MEMORIA_PERSISTENTE_30-09-2026_16-53-32.md)
+[Memória atual — mapa por setores v35](docs/MEMORIA_PERSISTENTE_30-09-2026_17-17-35.md)
+
+[Armas importadas v34](docs/MEMORIA_PERSISTENTE_30-09-2026_16-53-32.md)
 
 [Base P6 v33](docs/MEMORIA_PERSISTENTE_28-09-2026_09-36-10.md)
 
