@@ -1,15 +1,19 @@
-# Protocolo Sobreviva — v38
+# Protocolo Sobreviva — v39
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, armas e cães importados, cenário procedural e MP3 locais.
 
 ## Versão atual
 
-[game_version38_01-10-2026_19-10-52.html](game_version38_01-10-2026_19-10-52.html)
+[game_version39_01-10-2026_19-31-28.html](game_version39_01-10-2026_19-31-28.html)
 
-Atualização: **01/10/2026 às 19:10:52**, America/Sao_Paulo (UTC−03:00).
-Versão: **v38 — hitboxes dos modelos animados**.
-Branch: `codex/hitboxes-zumbis`.
-Base: v37, commit `6c074cb`, com os zumbis escolhidos e sangue.
+Atualização: **01/10/2026 às 19:31:28**, America/Sao_Paulo (UTC−03:00).
+Versão: **v39 — queda e rastejamento sem encolher os modelos**.
+Branch: `codex/zumbis-rastejando`.
+Base: v38, commit `a74e397`, com hitboxes animadas.
+
+Ao perder as pernas, os humanoides fazem uma queda de 0,75 segundo e passam
+a rastejar, com braços alternados, cabeça erguida e proporções preservadas.
+A postura é adaptada aos oito rigs e mantém as hitboxes na malha animada.
 
 Os tiros agora atingem a superfície animada dos zumbis e cães, com cabeça,
 corpo e pernas identificados pelo rig. Espaços fora da silhueta não recebem dano.
@@ -113,7 +117,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version38_01-10-2026_19-10-52.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version39_01-10-2026_19-31-28.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -361,6 +365,8 @@ Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mj
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
 `node tests/enemy-hitboxes.cjs` confere a silhueta animada dos dez modelos e
 o dano por região com balas e laser em qualidade baixa e alta.
+`node tests/crawling.cjs` verifica queda, movimento, proporções e contato com
+o chão dos oito modelos e salva capturas em `docs/captures/crawl-v39`.
 `enemy-hitboxes.mjs` é a fonte das hitboxes, incorporada pelo build.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
 `PLAYWRIGHT_MODULE` permite indicar uma instalação existente do Playwright;
@@ -378,7 +384,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — hitboxes v38](docs/MEMORIA_PERSISTENTE_01-10-2026_19-10-52.md)
+[Memória atual — rastejamento v39](docs/MEMORIA_PERSISTENTE_01-10-2026_19-31-28.md)
+
+[Hitboxes v38](docs/MEMORIA_PERSISTENTE_01-10-2026_19-10-52.md)
 
 [Zumbis e sangue v37](docs/MEMORIA_PERSISTENTE_01-10-2026_10-43-03.md)
 

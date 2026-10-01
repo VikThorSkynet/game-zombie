@@ -45,7 +45,7 @@ export function createEnemyHitboxes(THREE) {
     }
     function boneRegion(name,dog) {
         if(/head|jaw|eye|tongue|muzzle|(?:^|_)ear(?:_|$)/i.test(name))return 'head';
-        if(/upleg|thigh|calf|ankle|foot|toe|dogleg/i.test(name)||(!dog&&/^(left|right)?leg(?:_|$)/i.test(name.split(':').pop())))return 'leg';
+        if(/upleg|thigh|calf|ankle|foot|toe|dogleg/i.test(name)||(!dog&&/(?:left|right)leg(?:_|$)/i.test(name.split(':').pop())))return 'leg';
         if(dog&&/upperarm|forearm|wrist|fingers/i.test(name))return 'leg';
         return 'body';
     }
