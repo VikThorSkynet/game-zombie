@@ -3,7 +3,7 @@ module.exports=async(page,assert,quality)=>{
         const q=qa,T=q.THREE;const samples=[];
         q.resetGame();q.controls.dispatchEvent({type:'lock'});q.controls.isLocked=false;
         q.camera.position.set(0,1.8,0);q.camera.rotation.set(0,0,0);
-        q.createZombie(new T.Vector3(0,0,-40));q.createZombie(new T.Vector3(3,0,-40));
+        q.createZombie(new T.Vector3(0,0,-40),{...q.zombieTypeConfigs.normal,assetId:'z07'});q.createZombie(new T.Vector3(3,0,-40),{...q.zombieTypeConfigs.normal,assetId:'z07'});
         const z=q.zombies[0],other=q.zombies[1],hits=z.userData.hitMeshes;
         const geometry=hits.map(m=>m.geometry.uuid),transforms=hits.map(m=>[m.position.toArray(),m.scale.toArray()]);
         const shared=hits[0].geometry===other.userData.hitMeshes[0].geometry;
