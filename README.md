@@ -1,15 +1,19 @@
-# Protocolo Sobreviva — v37
+# Protocolo Sobreviva — v38
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, armas e cães importados, cenário procedural e MP3 locais.
 
 ## Versão atual
 
-[game_version37_01-10-2026_10-43-03.html](game_version37_01-10-2026_10-43-03.html)
+[game_version38_01-10-2026_19-10-52.html](game_version38_01-10-2026_19-10-52.html)
 
-Atualização: **01/10/2026 às 10:43:03**, America/Sao_Paulo (UTC−03:00).
-Versão: **v37 — zumbis escolhidos e efeitos de sangue**.
-Branch: `codex/zumbis-escolhidos-sangue`.
-Base: `origin/main`, commit `0d28523`, com a v36 já integrada.
+Atualização: **01/10/2026 às 19:10:52**, America/Sao_Paulo (UTC−03:00).
+Versão: **v38 — hitboxes dos modelos animados**.
+Branch: `codex/hitboxes-zumbis`.
+Base: v37, commit `6c074cb`, com os zumbis escolhidos e sangue.
+
+Os tiros agora atingem a superfície animada dos zumbis e cães, com cabeça,
+corpo e pernas identificados pelo rig. Espaços fora da silhueta não recebem dano.
+Veja [correção e testes das hitboxes](docs/HITBOXES_V38.md).
 
 Os modelos seguem `escolhas-zumbis.json` e a confirmação do usuário:
 Z07/Z08 são comuns; Z02/Z04/Z06 são corredores; Z05 é o Bruto (tanque);
@@ -109,7 +113,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version37_01-10-2026_10-43-03.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version38_01-10-2026_19-10-52.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -355,6 +359,9 @@ veja [instruções e capturas da v34](docs/ARMAS_IMPORTADAS_V34.md).
 
 Com Node.js, execute `node --test tests/systems.test.mjs tests/telemetry.test.mjs tests/weapons.test.mjs tests/pacing.test.mjs` para regras, métricas, armas e ritmo.
 Com Playwright e seu Chromium instalados, execute também `node tests/smoke.cjs`.
+`node tests/enemy-hitboxes.cjs` confere a silhueta animada dos dez modelos e
+o dano por região com balas e laser em qualidade baixa e alta.
+`enemy-hitboxes.mjs` é a fonte das hitboxes, incorporada pelo build.
 O teste serve o HTML em uma porta local temporária e requer internet para o Three.js.
 `PLAYWRIGHT_MODULE` permite indicar uma instalação existente do Playwright;
 `CHROME_PATH` permite usar um Chrome instalado. `QA_SCREENSHOTS` define uma pasta
@@ -371,7 +378,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — zumbis e sangue v37](docs/MEMORIA_PERSISTENTE_01-10-2026_10-43-03.md)
+[Memória atual — hitboxes v38](docs/MEMORIA_PERSISTENTE_01-10-2026_19-10-52.md)
+
+[Zumbis e sangue v37](docs/MEMORIA_PERSISTENTE_01-10-2026_10-43-03.md)
 
 [Armas importadas v34](docs/MEMORIA_PERSISTENTE_30-09-2026_16-53-32.md)
 
