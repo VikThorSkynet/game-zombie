@@ -16,7 +16,7 @@ const results=await p.evaluate(()=>{
   for(const other of q.zombies)if(other!==z)other.position.x=100;
   const regions=new Set(),samples={},resultsByPose=[];let damageChecks=0;
   for(let pose=0;pose<3;pose++){
-   if(z.userData.importedHumanoid){if(pose===2)q.applyLegDamage(z,1e6);q.humanoidVisuals.update(z.userData.importedHumanoid,.4,z.userData,4);}
+   if(z.userData.importedHumanoid){if(pose===2)q.applyLegDamage(z,1e6);q.humanoidVisuals.update(z.userData.importedHumanoid,pose===2?1:.4,z.userData,4);}
    else q.animateImportedDog(z.userData.importedDog,pose*1.9,pose===2?'lunge':'pursue');
    z.updateWorldMatrix(true,false);z.updateMatrixWorld(true);
    const reference=meshes.map(m=>{m.computeBoundingBox();m.computeBoundingSphere();return{m,box:m.boundingBox.clone(),sphere:m.boundingSphere.clone()}});
