@@ -1,15 +1,17 @@
-# Protocolo Sobreviva — v39
+# Protocolo Sobreviva — v40
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, armas e cães importados, cenário procedural e MP3 locais.
 
 ## Versão atual
 
-[game_version39_01-10-2026_19-31-28.html](game_version39_01-10-2026_19-31-28.html)
+[game_version40_01-10-2026_20-01-13.html](game_version40_01-10-2026_20-01-13.html)
 
-Atualização: **01/10/2026 às 19:31:28**, America/Sao_Paulo (UTC−03:00).
-Versão: **v39 — queda e rastejamento sem encolher os modelos**.
-Branch: `codex/zumbis-rastejando`.
-Base: v38, commit `a74e397`, com hitboxes animadas.
+Atualização: **01/10/2026 às 20:01:13**, America/Sao_Paulo (UTC−03:00).
+Versão: **v40 — AK47 maior e reposicionada**.
+Branch: `codex/ak47-tamanho`.
+Base: v39, commit `0a1d363`, com queda e rastejamento.
+
+AK47 ampliada em 35%, com posição da arma, empunhadura e mira ajustadas.
 
 Ao perder as pernas, os humanoides fazem uma queda de 0,75 segundo e passam
 a rastejar, com braços alternados, cabeça erguida e proporções preservadas.
@@ -117,7 +119,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version39_01-10-2026_19-31-28.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version40_01-10-2026_20-01-13.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -384,7 +386,9 @@ A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — rastejamento v39](docs/MEMORIA_PERSISTENTE_01-10-2026_19-31-28.md)
+[Memória atual — AK47 v40](docs/MEMORIA_PERSISTENTE_01-10-2026_20-01-13.md)
+
+[Rastejamento v39](docs/MEMORIA_PERSISTENTE_01-10-2026_19-31-28.md)
 
 [Hitboxes v38](docs/MEMORIA_PERSISTENTE_01-10-2026_19-10-52.md)
 
