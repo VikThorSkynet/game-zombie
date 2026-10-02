@@ -36,8 +36,20 @@ export function createEnemyHitboxes(THREE) {
             mesh.userData.parentZombie=zombie;mesh.userData.animatedHitbox=true;
             if(mesh.isSkinnedMesh){
                 const boxes=boneEnvelopes(mesh);
-                mesh.boundingBox=new THREE.Box3();mesh.boundingSphere=new THREE.Sphere();
-                mesh.raycast=function(raycaster,hits){refreshBounds(this,boxes);THREE.SkinnedMesh.prototype.raycast.call(this,raycaster,hits)};
+                // Keep the prepared model bounds until the first animated ray.
+                mesh.boundingBox=mesh.boundingBox?.clone()||new THREE.Box3();
+                mesh.boundingSphere=mesh.boundingSphere?.clone()||new THREE.Sphere();
+                // A triangle list reuses vertices. Skin each vertex once per ray,
+                // retaining exact triangles and anatomical classification.
+                let positions=null,stamps=null,version=1,cacheActive=false;
+                mesh.getVertexPosition=function(index,target){
+                    if(!cacheActive)return THREE.SkinnedMesh.prototype.getVertexPosition.call(this,index,target);
+                    if(!positions){positions=new Float64Array(this.geometry.attributes.position.count*3);stamps=new Uint32Array(this.geometry.attributes.position.count);}
+                    const offset=index*3;
+                    if(stamps[index]!==version){THREE.SkinnedMesh.prototype.getVertexPosition.call(this,index,target);positions[offset]=target.x;positions[offset+1]=target.y;positions[offset+2]=target.z;stamps[index]=version;}
+                    return target.set(positions[offset],positions[offset+1],positions[offset+2]);
+                };
+                mesh.raycast=function(raycaster,hits){version=(version+1)>>>0;if(!version){stamps?.fill(0);version=1;}refreshBounds(this,boxes);cacheActive=true;try{THREE.SkinnedMesh.prototype.raycast.call(this,raycaster,hits)}finally{cacheActive=false;}};
             }
             meshes.push(mesh);
         });
@@ -73,8 +85,9 @@ export function createEnemyHitboxes(THREE) {
     }
     function intersect(raycaster,zombies,meshes) {
         // Shots can happen between render frames, after movement or a pose change.
-        for(const zombie of zombies){zombie.updateWorldMatrix(true,false);zombie.updateMatrixWorld(true);}
+        for(const zombie of zombies)zombie.updateWorldMatrix(true,true);
         return raycaster.intersectObjects(meshes,false);
     }
-    return {attach,region,intersect};
+    function prepare(visual){visual.traverse(mesh=>{if(mesh.isSkinnedMesh)boneEnvelopes(mesh);});}
+    return {attach,region,intersect,prepare};
 }

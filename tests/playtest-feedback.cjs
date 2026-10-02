@@ -19,7 +19,7 @@ module.exports=async function(page,assert,quality,releaseTag){
         for(let i=0;i<3;i++)q.generatorNetwork.completed.add(i);q.generatorNetwork.openDoor();q.setContainmentDoor(true);
         for(const n of q.campaignNodes.filter(n=>n.userData.role==='record')){near(n);press();}
         c.records=q.campaign.records.size===3&&q.campaign.stage==='parts';
-        c.collected=q.campaignNodes.filter(n=>n.userData.role==='record').every(n=>n.visible&&n.userData.check.visible&&q.campaignPrompt(n).includes('COLETADO'));
+        c.collected=q.campaignNodes.filter(n=>n.userData.role==='record').every(n=>!n.visible&&q.campaignPrompt(n).includes('COLETADO'));
         const radio=q.campaignNodes.find(n=>n.userData.role==='extract');near(radio);press();
         c.radio=q.campaignPrompt(radio).includes('confirmados 3/3')&&q.campaignPrompt(radio).includes('INSTALAÇÃO');
         q.createZombie(new T.Vector3(0,0,130));q.applyLegDamage(q.zombies[0],999);
@@ -34,8 +34,8 @@ module.exports=async function(page,assert,quality,releaseTag){
         q.resetGame();c.resetMarks=q.campaignNodes.filter(n=>n.userData.check).every(n=>!n.userData.check.visible);
         q.controls.isLocked=true;q.camera.position.set(0,1.8,0);q.camera.lookAt(0,1.8,-10);
         q.fireLaser(10,7,0,1);const tracer=q.tracers.at(-1);
-        c.rayCreation=tracer.laser&&tracer.impactLight.intensity<=1.1&&tracer.glowTrail.material.opacity<=.28&&tracer.flash.geometry.parameters.radius===.12;
-        q.updateTracers(.01);c.rayFade=tracer.impactLight.intensity<=1.1&&tracer.glowTrail.material.opacity<=.28&&tracer.flash.material.opacity<=.45;
+        c.rayCreation=tracer.laser&&q.scene.getObjectByName('combat-impact-light').intensity<=1.1&&tracer.glowTrail.material.opacity<=.28&&tracer.flashSize===.24;
+        q.updateTracers(.01);c.rayFade=q.scene.getObjectByName('combat-impact-light').intensity<=1.1&&tracer.glowTrail.material.opacity<=.28&&tracer.flash.material.opacity<=.45;
         const model=q.createPaPWeaponModel(q.weaponConfigs.ray_gun);let luminous=0,maxGlow=0;
         model.traverse(o=>{if(o.material?.emissive){luminous++;maxGlow=Math.max(maxGlow,o.material.emissiveIntensity);}});
         c.pap=luminous>0&&maxGlow<=.28;

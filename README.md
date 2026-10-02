@@ -1,15 +1,27 @@
-# Protocolo Sobreviva — v40
+# Protocolo Sobreviva — v41
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, armas e cães importados, cenário procedural e MP3 locais.
 
 ## Versão atual
 
-[game_version40_01-10-2026_20-01-13.html](game_version40_01-10-2026_20-01-13.html)
+[game_version41_02-10-2026_16-21-36.html](game_version41_02-10-2026_16-21-36.html)
 
-Atualização: **01/10/2026 às 20:01:13**, America/Sao_Paulo (UTC−03:00).
-Versão: **v40 — AK47 maior e reposicionada**.
-Branch: `codex/ak47-tamanho`.
-Base: v39, commit `0a1d363`, com queda e rastejamento.
+Atualização: **02/10/2026 às 16:21:36**, America/Sao_Paulo (UTC−03:00).
+Versão: **v41 — diário, geradores e otimização do combate**.
+Branch: `codex/versao-41`.
+Base: v40, commit `7cf866a`; v40 preservada.
+
+V41: barra elétrica de carga no topo central; diário como livro aberto, com
+próximo passo e registros; desafios anunciados no intervalo e ativados automaticamente;
+geradores 20% maiores com nome na carcaça; arquivos como papéis no chão;
+sinalização flutuante removida. Efeitos de tiro reutilizados, iluminação fixa e
+criação/acertos de inimigos otimizados.
+
+HUD de vida, fôlego e colete no canto superior esquerdo. A tela de Game Over
+oferece REINICIAR e VOLTAR AO MENU INICIAL; voltar limpa a partida encerrada
+e deixa JOGAR disponível na tela inicial.
+
+Veja [alterações, medição comparativa e capturas da v41](docs/V41_OTIMIZACAO.md).
 
 AK47 ampliada em 50%, com coronha fora do enquadramento, apenas a mão de disparo,
 manga oliva e mira alinhada à posição da arma.
@@ -152,7 +164,7 @@ variação de FOV ao correr, mantendo o zoom da mira.
 3. Ative os três terminais ao fundo na ordem indicada pelos registros:
    **TRIÂNGULO → CÍRCULO → QUADRADO**. Erros reiniciam apenas a sequência, sem custo.
 4. Prepare armas/colete e use E no NÚCLEO durante um intervalo sem inimigos ou
-   desafio ativo. Ativá-lo inicia o chefe e bloqueia a saída até o fim do confronto.
+   defesa de gerador ativa. Ativá-lo inicia o chefe e bloqueia a saída até o fim do confronto.
 5. Derrote o GUARDIÃO DO NÚCLEO e os reforços restantes. No núcleo, E escolhe
    sobrevivência infinita e dispensa a extração. Para extrair, volte à cidade
    entre ondas e use E no RÁDIO do pátio norte, também durante intervalo livre.
@@ -184,21 +196,20 @@ prolongado. Modelos procedurais, sem assets de Call of Duty ou novos sons sintet
 ## Diário e desafios — etapa 6
 
 **J** abre o diário e pausa a partida. Também há um botão no menu. J, Esc ou
-VOLTAR AO MENU fecha o diário; CONTINUAR retoma o jogo. O HUD mostra a próxima
+FECHAR DIÁRIO fecha o diário; CONTINUAR retoma o jogo. O HUD mostra a próxima
 meta: restaurar geradores, abrir o acesso norte e explorar a instalação.
 Cada gerador, o portão e a primeira visita interna acrescentam registros únicos.
 
-Há um desafio opcional por onda, aceito no diário: três eliminações com faca nas
-ondas normais 1–3, três eliminações na cabeça nas ondas normais pares seguintes
-se houver uma arma convencional, ou cinco eliminações nas demais. Caçadas e
-névoa pedem eliminações sem exigir uma arma específica. Apenas mortes diretas
-após aceitar contam; Nuke não conta. Termine antes do fim da onda para receber
-300 pontos fixos, sem duplicação por Pontos Duplos e sem sucata adicional.
-Aceitar tarde pode deixar poucos alvos: falhar ou abandonar não tira recursos
-nem bloqueia a história. Não se pode retomar um desafio abandonado na mesma onda.
+Há um desafio opcional por onda, ativado automaticamente. O próximo aparece
+no intervalo de dez segundos: três eliminações com faca nas ondas normais 1–3,
+três eliminações na cabeça nas ondas normais pares seguintes se houver uma arma
+convencional, ou cinco eliminações nas demais. Caçadas e névoa pedem eliminações
+sem exigir uma arma específica. Apenas mortes diretas da onda do desafio contam;
+Nuke e inimigos sem recompensa não contam. Termine antes do fim da onda para
+receber 300 pontos fixos, sem duplicação por Pontos Duplos nem sucata adicional.
+Não há botão de aceitar ou abandonar nem penalidade por não concluir. O desafio
+não impede iniciar a defesa do gerador no intervalo.
 
-Somente uma atividade secundária por vez: desafio ativo impede iniciar defesa
-de gerador; uma defesa impede aceitar desafio. O diário permite abandonar.
 Progresso fica fora das cenas e resiste à troca de área; reiniciar limpa o diário.
 Recordes de ondas concluídas, eliminações e desafios por partida são gravados
 localmente ao concluir ondas/desafios e ao morrer. Não concedem bônus permanentes.
@@ -383,11 +394,17 @@ hitboxes, Munição Máxima, névoa, ausência de Atiradores e reinício.
 `tests/areas.cjs` verifica passagem, preservação, falhas e repetição entre áreas.
 `tests/journal.cjs` verifica diário, pausa, desafios, recompensa única e recordes.
 `tests/campaign.cjs` verifica cadeia, painel, fases, ataques, extração e reinício.
+`node tests/v41.cjs` verifica carga central, gerador maior, papéis, desafios
+automáticos, diário responsivo e reutilização dos efeitos; salva as capturas v41.
+`node tests/v41-performance.cjs` mede criação e consultas de tiro. `QA_GAME_FILE`
+escolhe o HTML e `QA_PERF_REPORT` salva o JSON da amostra.
 A instrumentação existe apenas na resposta HTTP do teste.
 
 ## Memória persistente
 
-[Memória atual — AK47 v40](docs/MEMORIA_PERSISTENTE_01-10-2026_20-01-13.md)
+[Memória atual — v41](docs/MEMORIA_PERSISTENTE_V41.md)
+
+[AK47 e HUD v40](docs/MEMORIA_PERSISTENTE_01-10-2026_20-01-13.md)
 
 [Rastejamento v39](docs/MEMORIA_PERSISTENTE_01-10-2026_19-31-28.md)
 

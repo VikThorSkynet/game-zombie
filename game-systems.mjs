@@ -121,15 +121,16 @@ export class ContainmentCampaign {
 
 export class FieldJournal {
     constructor(){this.reset();}
-    reset(){this.entries=[];this.discoveries=new Set();this.contract=null;this.completed=0;this.bestWave=0;this.seen=new Set();}
+    reset(){this.entries=[];this.discoveries=new Set();this.contract=null;this.lastContract=null;this.completed=0;this.bestWave=0;this.seen=new Set();}
     discover(id,text){if(this.discoveries.has(id))return false;this.discoveries.add(id);this.entries.push(text);return true;}
     offer(wave,kind='normal',canHeadshot=true){
         if(this.contract?.wave===wave)return;
-        this.finish();this.seen.clear();
+        this.finish();if(this.contract)this.lastContract={...this.contract};this.seen.clear();
         const type=kind==='normal'&&wave<=3?'melee':kind==='normal'&&wave%2===0&&canHeadshot?'head':'kills';
-        this.contract={wave,type,target:type==='melee'?3:type==='head'?3:5,progress:0,status:'offered',reward:300};
+        this.contract={wave,type,target:type==='melee'?3:type==='head'?3:5,progress:0,status:'upcoming',reward:300};
     }
-    accept(eligible=true){if(!eligible||this.contract?.status!=='offered')return false;this.contract.status='active';return true;}
+    start(wave,kind='normal',canHeadshot=true){this.offer(wave,kind,canHeadshot);if(this.contract?.wave===wave&&this.contract.status==='upcoming'){this.contract.status='active';return true;}return false;}
+    accept(){return false;}
     abandon(){if(this.contract?.status!=='active')return false;this.contract.status='abandoned';return true;}
     kill(event){
         const c=this.contract;
@@ -140,7 +141,7 @@ export class FieldJournal {
         if(c.progress<c.target)return 0;
         c.status='completed';this.completed++;return c.reward;
     }
-    finish(){if(this.contract&&['active','offered'].includes(this.contract.status))this.contract.status=this.contract.status==='active'?'failed':'expired';}
+    finish(){if(this.contract&&['active','upcoming'].includes(this.contract.status))this.contract.status=this.contract.status==='active'?'failed':'expired';}
 }
 
 export function readRecords(value){

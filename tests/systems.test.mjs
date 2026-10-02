@@ -21,15 +21,15 @@ test('campaign requires ordered discoveries, recoverable code, three phases and 
 });
 
 test('journal contracts are finite, optional, equipment-aware and pay only once',()=>{
-    const j=new FieldJournal();j.offer(1);assert.equal(j.contract.type,'melee');assert.equal(j.accept(false),false);assert(j.accept());
+    const j=new FieldJournal();j.offer(1);assert.equal(j.contract.type,'melee');assert.equal(j.contract.status,'upcoming');assert.equal(j.kill({wave:1,enemyId:10,reward:125,cause:'melee'}),0);assert(j.start(1));assert.equal(j.accept(),false);
     const kill=(id,extra={})=>j.kill({enemyId:id,wave:1,cause:'melee',reward:125,...extra});
     assert.equal(kill(0,{reward:0}),0);assert.equal(j.contract.progress,0);
     assert.equal(kill(1),0);assert.equal(kill(1),0);assert.equal(kill(2,{cause:'bullet'}),0);
     assert.equal(kill(3,{wave:2}),0);assert.equal(kill(4),0);assert.equal(kill(5),300);assert.equal(kill(6),0);
     assert.equal(j.completed,1);j.offer(1);assert.equal(j.contract.status,'completed');
-    j.offer(4,'normal',false);assert.equal(j.contract.type,'kills');j.accept();j.finish();assert.equal(j.contract.status,'failed');
-    j.offer(6);assert.equal(j.contract.type,'head');j.accept();j.abandon();assert.equal(j.accept(),false);
-    j.offer(5,'dogs');assert.equal(j.contract.type,'kills');j.finish();assert.equal(j.contract.status,'expired');
+    j.offer(4,'normal',false);assert.equal(j.contract.type,'kills');j.start(4,'normal',false);j.finish();assert.equal(j.contract.status,'failed');
+    j.offer(6);assert.equal(j.contract.type,'head');j.start(6);j.abandon();assert.equal(j.accept(),false);
+    j.offer(5,'dogs');assert.equal(j.contract.type,'kills');assert.equal(j.contract.status,'upcoming');j.finish();assert.equal(j.contract.status,'expired');
     assert(j.discover('gate','Gate'));assert(!j.discover('gate','Duplicate'));assert.equal(j.entries.length,1);
     j.reset();assert.equal(j.completed,0);assert.equal(j.entries.length,0);assert.equal(j.contract,null);
 });
