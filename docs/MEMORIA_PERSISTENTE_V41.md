@@ -121,3 +121,21 @@ retorno e início de nova partida; boot sem hooks aprovado por arquivo e HTTP,
 com métricas e falha de CDN. Capturas finais inspecionadas; build/diff --check
 aprovados. Commit/envio autorizado após a apresentação dessas capturas.
 O envio corresponde à branch codex/versao-41; a main permanece na v40.
+
+## Correção de sobreposição no intervalo
+
+Após fetch, base remota/local confirmada em `2f628ca`. O usuário mostrou
+o texto do desafio sobreposto à contagem para a próxima onda.
+O desafio tinha top fixo em pixels, enquanto a contagem usava top de 22%
+da janela. Em alturas menores, os dois blocos ocupavam a mesma linha.
+
+Avisos, desafio e contagem agora ficam no contêiner `intermission-hud`, em
+fluxo vertical com gap de 14 px (12 px em telas estreitas), sem posições
+independentes. Textos longos quebram linha e empurram o próximo bloco.
+As regras e o cronômetro das ondas permanecem iguais.
+Suíte visual v41 aprovada em baixa/alta; build/diff --check aprovados.
+Boot sem hooks aprovado por arquivo e HTTP, métricas e falha de CDN.
+Capturas em 1366x600, 640x360 e 420x700 conferidas; separação de 24 px
+no desktop e 22 px nas telas estreitas entre o texto do desafio e a contagem.
+Capturas específicas: `docs/captures/v41/interval-layout-*.png`.
+Prévia apresentada e aprovada; usuário autorizou commit e envio com “faça commit”. Novo fetch confirmou a branch codex/versao-41 sem divergência da base 2f628ca. Envio desta correção autorizado para essa branch.
