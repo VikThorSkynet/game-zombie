@@ -1,6 +1,7 @@
 // Imported humanoid visuals. Gameplay and damage regions remain owned by the game.
 export function createHumanoidVisuals(THREE, cloneSkeleton, scenes, clips) {
     const templates = new Map();
+    const materialVariants=new WeakMap();
     const choices = {Normal:['z07','z08'],Corredor:['z02','z04','z06'],Bruto:['z05'],Atirador:['z03'],Detonador:['z03']};
     const counts = new Map();
     const v = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
@@ -23,7 +24,10 @@ export function createHumanoidVisuals(THREE, cloneSkeleton, scenes, clips) {
         const root=new THREE.Group();root.add(holder);root.updateMatrixWorld(true);
         let skinned=false;root.traverse(o=>{if(o.isSkinnedMesh)skinned=true;});
         if(!skinned) makeStaticRig(root);
-        root.traverse(o=>{if(o.isMesh){o.geometry.userData.sharedEnemy=true;o.userData.importedEnemy=true;o.frustumCulled=false;}});
+        root.traverse(o=>{if(o.isMesh){
+            if(o.isSkinnedMesh&&!o.boundingBox){o.computeBoundingBox();o.computeBoundingSphere();}
+            o.geometry.userData.sharedEnemy=true;o.userData.importedEnemy=true;o.frustumCulled=false;
+        }});
         templates.set(id,{root,clips:nativeClips,procedural:!nativeClips.length,crawl:prepareCrawl(root)});
     }
     function makeStaticRig(root) {
@@ -60,9 +64,17 @@ export function createHumanoidVisuals(THREE, cloneSkeleton, scenes, clips) {
             const existing=rigs.find(r=>r.bones.length===o.skeleton.bones.length&&r.bones.every((bone,i)=>bone===o.skeleton.bones[i]&&r.boneInverses[i].equals(o.skeleton.boneInverses[i])));
             if(existing)o.skeleton=existing;else rigs.push(o.skeleton);
         });
-        root.traverse(o=>{if(o.isMesh){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();for(const m of(Array.isArray(o.material)?o.material:[o.material])){
-            if(id==='z03'){m.color.multiply(new THREE.Color(type==='Detonador'?0xffad6a:0x91df9e));m.emissive.set(type==='Detonador'?0x631800:0x063b0b);m.emissiveIntensity=.22;}
-        }}});
+        function sharedMaterial(source){
+            let variants=materialVariants.get(source);if(!variants){variants=new Map();materialVariants.set(source,variants);}
+            const key=id==='z03'?(type==='Detonador'?'exploder':'shooter'):'base';
+            if(!variants.has(key)){
+                const m=source.clone();m.userData.sharedEnemyMaterial=true;
+                if(id==='z03'){m.color.multiply(new THREE.Color(type==='Detonador'?0xffad6a:0x91df9e));m.emissive.set(type==='Detonador'?0x631800:0x063b0b);m.emissiveIntensity=.22;}
+                variants.set(key,m);
+            }
+            return variants.get(key);
+        }
+        root.traverse(o=>{if(o.isMesh)o.material=Array.isArray(o.material)?o.material.map(sharedMaterial):sharedMaterial(o.material);});
         const mixer=template.clips.length?new THREE.AnimationMixer(root):null;
         if(mixer)mixer.clipAction(template.clips[0]).play();
         root.updateMatrixWorld(true);const joints=[];

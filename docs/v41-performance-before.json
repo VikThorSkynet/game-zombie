@@ -1,0 +1,15 @@
+{
+  "file": "game_version40_01-10-2026_20-01-13.html",
+  "spawnMs": {
+    "median": 2.7999999970197678,
+    "p95": 11.5,
+    "max": 11.5
+  },
+  "raycastMs": {
+    "median": 4.5,
+    "p95": 9.599999994039536,
+    "max": 10.199999988079071
+  },
+  "meshCount": 34,
+  "triangleStats": null
+}

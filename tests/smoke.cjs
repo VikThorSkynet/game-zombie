@@ -58,6 +58,7 @@ const server = http.createServer((req, res) => {
         for (const quality of ['low', 'high']) {
             await page.goto(`${url}?quality=${quality}${process.env.QA_P1_ONLY||process.env.QA_P6_ONLY||process.env.QA_METRICS?'&metrics=1&route=automated-controlled':''}`);
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
+            await page.waitForFunction(() => window.gameBootComplete, null, {timeout:90000});
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
             if(await page.evaluate(()=>!!qa.cityServiceLayout)){
                 await require('./map-layout.cjs')(page,assert,quality,releaseTag);
@@ -92,6 +93,7 @@ const server = http.createServer((req, res) => {
             await page.locator('#reduced-motion').check();
             await page.reload();
             await page.waitForFunction(() => window.qa?.weapons[0]?.model);
+            await page.waitForFunction(() => window.gameBootComplete, null, {timeout:90000});
             assert.deepEqual(await page.evaluate(() => ({...qa.settings})), {sensitivity: 1.5, volume: 0.3, reducedMotion: true});
             if (process.env.QA_SCREENSHOTS) {
                 fs.mkdirSync(process.env.QA_SCREENSHOTS, {recursive: true});
@@ -110,6 +112,7 @@ const server = http.createServer((req, res) => {
             });
             assert(pool.bounded && pool.reused && pool.active === 0);
             await page.getByRole('button', {name: 'JOGAR',exact:true}).click();
+            await page.waitForFunction(() => qa.controls.isLocked);
             assert(await page.evaluate(async()=>{const clip=await qa.loadAudioAsset('melee');return clip?.duration>0;}),'melee MP3 decodes');
             await page.mouse.down({button: 'right'});
             await page.waitForFunction(() => document.body.classList.contains('aiming') && qa.camera.fov < 56 && qa.flashlight.intensity < 0.6, null, {timeout:15000});
@@ -152,6 +155,7 @@ const server = http.createServer((req, res) => {
             await page.getByRole('button',{name:'OPÇÕES',exact:true}).click();
             assert(await page.locator('#sensitivity').isVisible(), 'settings available on pause');
             await page.keyboard.press('Escape');
+            await page.waitForFunction(()=>!document.querySelector('.menu-dialog'));
             // Attack across a building must be blocked, but the same shooter in clear space fires.
             const attacks = await page.evaluate(() => {
                 const q = qa, z = q.zombies[0], b = q.layout.buildings[0];
