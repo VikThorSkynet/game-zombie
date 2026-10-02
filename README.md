@@ -11,7 +11,8 @@ Versão: **v40 — AK47 maior e reposicionada**.
 Branch: `codex/ak47-tamanho`.
 Base: v39, commit `0a1d363`, com queda e rastejamento.
 
-AK47 ampliada em 35%, com posição da arma, empunhadura e mira ajustadas.
+AK47 ampliada em 50%, com coronha fora do enquadramento, apenas a mão de disparo,
+manga oliva e mira alinhada à posição da arma.
 
 Ao perder as pernas, os humanoides fazem uma queda de 0,75 segundo e passam
 a rastejar, com braços alternados, cabeça erguida e proporções preservadas.

@@ -29,7 +29,7 @@ const hooks = `window.assetQA = {
         const reloaded=w.ammoInMag===(pap?Math.ceil(cfg.magSize*papMagMultiplier):cfg.magSize)&&!isReloading;
         document.dispatchEvent(new MouseEvent('mousedown',{button:2}));
         for(let i=0;i<90;i++)updateWeapon(1/60);
-        const aimed=model.userData.optic.visible&&Math.abs(model.position.x+.28)<.001&&Math.abs(model.position.y+model.userData.sightY)<.001;
+        const aimed=model.userData.optic.visible&&Math.abs(model.position.x+model.userData.sightX)<.001&&Math.abs(model.position.y+model.userData.sightY)<.001;
         document.dispatchEvent(new MouseEvent('mouseup',{button:2}));resetAim();
         const muzzle=model.userData.muzzleLocal.toArray();controls.isLocked=false;renderScene();
         return {asset:model.userData.assetId,pap:!!model.userData.isPaP,independent,maps,normals,meshCount,triangles,fired,reloaded,aimed,muzzle,
