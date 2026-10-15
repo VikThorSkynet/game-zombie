@@ -64,3 +64,8 @@ O teste visual foi ampliado para quatro perks e três bônus simultâneos, sete 
 Correção durante a revisão: o usuário pediu explicitamente vida em cima à direita, com a imagem das três barras. O bloco de vida/fôlego/colete foi movido ao canto superior direito; rodada e perks continuam embaixo à esquerda. O teste de HUD passou a verificar a posição das barras em todos os sete tamanhos.
 
 A revisão do HUD continua a autorização anterior de commit local após os ajustes. Nenhum push foi realizado. O HTML da v41 e a implementação dos spawns foram preservados; as mudanças novas são de apresentação e seus testes.
+
+
+## Publicação no GitHub — 15/10/2026
+
+Após autorização explícita do usuário, a branch `codex/building-spawns-v42` foi enviada a `https://github.com/VikThorSkynet/game-zombie.git`. O código publicado é `5a8c3cadd49d3ed5baaa17a4d1720d5cd6c9cbc5`, incluindo o commit de spawns `35ad323`. O SHA da branch remota foi conferido após o push. A branch acompanha `origin/codex/building-spawns-v42`; não foi feito merge na main. Os registros de ausência de push nas seções anteriores descrevem as etapas anteriores à autorização.
