@@ -12,7 +12,7 @@ const html = fs.readFileSync(path.join(root, filename), 'utf8');
 assert(!html.includes('createOscillator'), 'only MP3 audio sources');
 assert(!html.includes('updateAmmoSpawner'), 'automatic ammo spawner must be removed');
 // Test hooks are injected in the response only, never in the released HTML.
-const api = `window.qa = { get enemyGeometryCache(){return typeof enemyGeometryCache==='function'?enemyGeometryCache():null}, updateEnemyDetail, BOSS_PHASES, bossAttackHits, campaignThreatRound, createCampaignEnemy, spawnCampaignReinforcements, startCampaignBoss, WEAPON_STATS, weaponRangeMultiplier, weaponAmmoPrice, playAudioElementAsset, activeAudioElements, applySettings, get metricsGPU(){return metricsGPU}, metrics, metricsState, get metricsPrevious(){return metricsPrevious}, get metricsRender(){return metricsRender}, metricsContext, THREE, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
+const api = `window.qa = { get buildingEntrances(){return buildingEntrances}, get enemyGeometryCache(){return typeof enemyGeometryCache==='function'?enemyGeometryCache():null}, updateEnemyDetail, BOSS_PHASES, bossAttackHits, campaignThreatRound, createCampaignEnemy, spawnCampaignReinforcements, startCampaignBoss, WEAPON_STATS, weaponRangeMultiplier, weaponAmmoPrice, playAudioElementAsset, activeAudioElements, applySettings, get metricsGPU(){return metricsGPU}, metrics, metricsState, get metricsPrevious(){return metricsPrevious}, get metricsRender(){return metricsRender}, metricsContext, THREE, showMainMenu, settings, runStats, worldLODs, buildMysteryCrate, weaponConfigs, resetAim, impactParticles, impactPool, maxImpactEffects,
  updateNotices, showWaveMessage, updateObjectiveHud, recoverStuckZombie, updateWeaponSwitch, get isSwitchingWeapon(){return isSwitchingWeapon}, get weaponSwitchTimer(){return weaponSwitchTimer}, campaignPrompt, supplyPrompt, createPaPWeaponModel, updatePaPWeaponEffects, updateTracers, get tracers(){return tracers}, surfaceMaps, updateInteractionIntermission, BALANCE, campaign, campaignNodes, interactCampaign, updateCampaign, get campaignBoss(){return campaignBoss}, get bossWarning(){return bossWarning}, get gameOver(){return gameOver}, waveDirector, gameEvents, journal, openJournal, closeJournal, acceptContract, get records(){return records}, startWave, updateWave, damageEnemy, killZombie, applyDamage,
  createDog, updateRoundAtmosphere, getZombieTypeConfig, enemyHealth, zombieHitMeshes,
  areaRuntime, areaPortals, travelArea, travelReason, setContainmentDoor, getSpawnPosition, perkMachines,
@@ -57,7 +57,7 @@ const server = http.createServer((req, res) => {
         page.on('pageerror', e => { errors.push(String(e)); console.error(e); });
         for (const quality of ['low', 'high']) {
             await page.goto(`${url}?quality=${quality}${process.env.QA_P1_ONLY||process.env.QA_P6_ONLY||process.env.QA_METRICS?'&metrics=1&route=automated-controlled':''}`);
-            await page.waitForFunction(() => window.qa?.weapons[0]?.model);
+            await page.waitForFunction(() => window.qa?.weapons[0]?.model, null, {timeout:90000});
             await page.waitForFunction(() => window.gameBootComplete, null, {timeout:90000});
             assert.equal(await page.evaluate(() => qa.score), 0, 'fresh game economy');
             if(await page.evaluate(()=>!!qa.cityServiceLayout)){
@@ -92,7 +92,7 @@ const server = http.createServer((req, res) => {
             await page.locator('#volume').fill('0.3');
             await page.locator('#reduced-motion').check();
             await page.reload();
-            await page.waitForFunction(() => window.qa?.weapons[0]?.model);
+            await page.waitForFunction(() => window.qa?.weapons[0]?.model, null, {timeout:90000});
             await page.waitForFunction(() => window.gameBootComplete, null, {timeout:90000});
             assert.deepEqual(await page.evaluate(() => ({...qa.settings})), {sensitivity: 1.5, volume: 0.3, reducedMotion: true});
             if (process.env.QA_SCREENSHOTS) {
@@ -159,6 +159,8 @@ const server = http.createServer((req, res) => {
             // Attack across a building must be blocked, but the same shooter in clear space fires.
             const attacks = await page.evaluate(() => {
                 const q = qa, z = q.zombies[0], b = q.layout.buildings[0];
+                q.buildingEntrances.releaseZombie(z);
+                z.userData.spawnState = 'street';
                 Object.assign(z.userData, {isShooter: true, attackCooldown: 0, speed: 0});
                 z.position.set(b.x - b.w/2 - 1, 0, b.z);
                 q.camera.position.set(b.x + b.w/2 + 1, 1.8, b.z);
@@ -234,14 +236,22 @@ const server = http.createServer((req, res) => {
                 q.killZombie(target,{cause:'melee'});
                 const once=kills.length===1&&hits.length===1&&hits[0].amount===100&&kills[0].cause==='melee'&&paid>before&&q.score===paid;
                 offKill();offHit();q.resetGame();q.controls.isLocked=true;
+                // Isolate director capacity here; door traversal is exercised in building-spawns.cjs.
+                const advanceDirector=()=>{
+                    q.buildingEntrances.update(1);q.updateWave(1);
+                    for(const z of q.zombies)if(z.userData.spawnEntry&&z.userData.spawnState!=='street'){
+                        const exit=z.userData.spawnEntry.exit.clone();
+                        q.buildingEntrances.releaseZombie(z);z.userData.spawnState='street';z.position.copy(exit);
+                    }
+                };
                 q.startWave(20);
-                for(let i=0;i<100;i++)q.updateWave(1);
+                for(let i=0;i<100;i++)advanceDirector();
                 const cap=q.zombies.length===q.waveDirector.maxActive&&q.waveDirector.spawned===q.zombies.length;
                 const count=q.waveDirector.spawned;q.updateWave(100);
                 const noBurst=q.waveDirector.spawned===count;
                 q.resetGame();q.controls.isLocked=true;
                 // Exhaust a real wave through the game adapter, then kill its remaining enemies.
-                for(let i=0;i<100&&q.waveDirector.spawned<q.waveDirector.total;i++)q.updateWave(1);
+                for(let i=0;i<100&&q.waveDirector.spawned<q.waveDirector.total;i++)advanceDirector();
                 [...q.zombies].forEach(z=>q.killZombie(z,{awardScore:false,allowPowerup:false}));
                 q.updateWave(0);const countdown=q.waveDirector.phase==='intermission'&&q.waveDirector.remaining===10&&!document.getElementById('wave-break').hidden;
                 q.controls.isLocked=false;q.updateWave(20);
@@ -300,7 +310,7 @@ const server = http.createServer((req, res) => {
         }
         await page.evaluate(() => localStorage.setItem('sobreviva.settings.v1', '{broken'));
         await page.reload();
-        await page.waitForFunction(() => window.qa?.weapons[0]?.model);
+        await page.waitForFunction(() => window.qa?.weapons[0]?.model, null, {timeout:90000});
         assert.equal(await page.evaluate(() => qa.settings.sensitivity), 1, 'corrupt storage fallback');
         assert.deepEqual(errors, []);
     } finally {

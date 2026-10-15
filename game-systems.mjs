@@ -377,3 +377,123 @@ export class WaveDirector {
         return null;
     }
 }
+
+// Rules shared by the game and the regression tests. No rendering dependency.
+export const SPAWN_RULES = Object.freeze({
+    activeBuildings: 4,
+    minDistance: 12,
+    preferredDistance: 45,
+    boardCount: 5,
+    breakSeconds: 1.2,
+    repairSeconds: 0.8,
+    repairRange: 3.6,
+    exitSeconds: 0.8,
+    intermissionSeconds: 10,
+    maxAlive: 32
+});
+
+export function selectSpawnEntries(entries, player, random = Math.random, rules = SPAWN_RULES) {
+    const distance = entry => Math.hypot(entry.exit.x - player.x, entry.exit.z - player.z);
+    const candidates = entries.filter(entry => entry.valid && distance(entry) >= rules.minDistance);
+    if (candidates.length < rules.activeBuildings) {
+        throw new Error('Não há quatro entradas acessíveis a uma distância segura.');
+    }
+    const nearby = candidates.filter(entry => distance(entry) <= rules.preferredDistance);
+    const distant = candidates.filter(entry => distance(entry) > rules.preferredDistance);
+    const selected = [];
+    for (const pool of [nearby, distant]) {
+        while (pool.length && selected.length < rules.activeBuildings) {
+            const weights = pool.map(entry => 1 / Math.max(1, distance(entry)));
+            let roll = random() * weights.reduce((sum, value) => sum + value, 0);
+            let index = 0;
+            while (index < weights.length - 1 && (roll -= weights[index]) > 0) index++;
+            selected.push(pool.splice(index, 1)[0]);
+        }
+    }
+    return selected;
+}
+
+export function distributeWave(total, entries, chooseType, random = Math.random) {
+    const queues = new Map(entries.map(entry => [entry, []]));
+    const order = [...entries];
+    for (let index = order.length - 1; index > 0; index--) {
+        const other = Math.floor(random() * (index + 1));
+        [order[index], order[other]] = [order[other], order[index]];
+    }
+    for (let index = 0; index < total; index++) queues.get(order[index % order.length]).push(chooseType());
+    return queues;
+}
+
+export class Barricade {
+    constructor(rules = SPAWN_RULES) {
+        this.rules = rules;
+        this.reset();
+    }
+    reset() {
+        this.boards = Array(this.rules.boardCount).fill(true);
+        this.attacker = null;
+        this.occupant = null;
+        this.breakTime = 0;
+        this.repairTime = 0;
+    }
+    get remaining() { return this.boards.filter(Boolean).length; }
+    get canRepair() { return !this.attacker && !this.occupant && this.remaining < this.boards.length; }
+    attack(id, delta) {
+        if (this.occupant || (this.attacker && this.attacker !== id) || !this.remaining) return [];
+        this.attacker = id;
+        this.repairTime = 0;
+        this.breakTime += delta;
+        const changed = [];
+        while (this.remaining && this.breakTime + 1e-8 >= this.rules.breakSeconds) {
+            this.breakTime = Math.max(0, this.breakTime - this.rules.breakSeconds);
+            const index = this.boards.findIndex(Boolean);
+            this.boards[index] = false;
+            changed.push(index);
+        }
+        return changed;
+    }
+    reservePassage(id) {
+        if (this.remaining || (this.occupant && this.occupant !== id)) return false;
+        this.release(id);
+        this.occupant = id;
+        return true;
+    }
+    repair(delta) {
+        if (!this.canRepair) { this.repairTime = 0; return []; }
+        this.repairTime += delta;
+        const changed = [];
+        while (this.canRepair && this.repairTime + 1e-8 >= this.rules.repairSeconds) {
+            this.repairTime = Math.max(0, this.repairTime - this.rules.repairSeconds);
+            const index = this.boards.findIndex(value => !value);
+            this.boards[index] = true;
+            changed.push(index);
+        }
+        if (this.remaining === this.boards.length) this.repairTime = 0;
+        return changed;
+    }
+    release(id) {
+        if (this.attacker === id) { this.attacker = null; this.breakTime = 0; }
+        if (this.occupant === id) this.occupant = null;
+    }
+}
+
+// Swept, conservative clearance for routes and fast movement, including thin walls.
+export function segmentClear(from, to, colliders, radius = 0) {
+    for (const box of colliders) {
+        let start = 0, end = 1;
+        for (const axis of ['x', 'z']) {
+            const offset = to[axis] - from[axis];
+            const lower = box[axis === 'x' ? 'minX' : 'minZ'] - radius;
+            const upper = box[axis === 'x' ? 'maxX' : 'maxZ'] + radius;
+            if (Math.abs(offset) < 1e-9) {
+                if (from[axis] < lower || from[axis] > upper) { start = 2; break; }
+            } else {
+                const a = (lower - from[axis]) / offset, b = (upper - from[axis]) / offset;
+                start = Math.max(start, Math.min(a, b));
+                end = Math.min(end, Math.max(a, b));
+            }
+        }
+        if (start <= end && end >= 0 && start <= 1) return false;
+    }
+    return true;
+}
