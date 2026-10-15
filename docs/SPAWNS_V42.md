@@ -27,11 +27,11 @@ Reforços específicos de geradores e campanha mantêm seus próprios encontros.
 
 O intervalo padrão já era de dez segundos e foi preservado, incluindo N para antecipar e as pausas de interação com terminais/campanha. Pausa e morte congelam as novas ações. Trocas de área mantêm as barricadas da cidade.
 
-## Avisos e intervalo
+## HUD e intervalo
 
-Após a prévia, o usuário apontou sobreposição entre a contagem e o desafio. Os avisos centrais agora compartilham um fluxo vertical: gerador, painel de preparação e mensagens temporárias. A preparação agrupa o número da próxima onda, os segundos e a tecla N; o desafio aparece abaixo de um divisor, com título e meta separados. O estado de espera substitui a contagem quando uma interação impede o avanço.
+O usuário revisou o HUD com referências de Zombies após a primeira prévia. A caixa central foi removida. O intervalo aparece em texto discreto junto à rodada, no canto inferior esquerdo; detalhes do desafio automático ficam no diário (J). A carga do gerador é uma barra pequena sem caixa, e os avisos são temporários.
 
-A posição e os espaçamentos se adaptam a telas menores. O desafio desaparece junto com o painel ao começar o combate, e o menu oculta os avisos. Não há mudança nas regras de recompensa, prioridade de alertas ou antecipação por N. `tests/announcements.cjs` verifica a geometria real dos avisos, transições e ausência de corte/sobreposição.
+Regras de recompensa, prioridade, pausa e antecipação por N foram preservadas. Arte, composição atual e verificações estão em [HUD_CLASSICO_V42.md](HUD_CLASSICO_V42.md). Capturas anteriores na pasta superior documentam etapas anteriores; o novo HUD está em `docs/captures/v42/hud-classic`.
 
 ## Estrutura e desempenho
 

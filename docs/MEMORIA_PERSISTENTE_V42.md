@@ -48,3 +48,19 @@ Os avisos passaram para `#hud-announcements`, uma coluna compartilhada. O painel
 ## Commit e publicação
 
 O usuário autorizou explicitamente o commit depois do ajuste de layout. A entrega fica na branch `codex/building-spawns-v42`, com prévia e documentação atualizadas. O pedido atual autoriza commit local; nenhum push ao GitHub foi solicitado ou executado.
+
+
+## Revisão com referências de Zombies — HUD sem caixas
+
+Após o commit `35ad323`, o usuário forneceu seis imagens e pediu HUD baseado nelas, retirando a caixa central por excesso de informação. A branch já contém a main remota atualizada (`d94516e`); novo fetch confirmou ausência de mudanças remotas.
+
+O HUD anterior com painel central foi substituído: rodada vermelha/perks/barras no canto inferior esquerdo; pontos e munição à direita; bônus temporários como emblemas brancos na parte inferior. Rodadas têm apresentação curta em vermelho, o intervalo usa texto pequeno e o desafio fica no diário. O gerador e os avisos são sem caixa; FPS fica restrito ao modo de medições.
+
+Arte vetorial original em `hud-visuals.mjs`, incorporada pelo build no HTML atual para preservar file://. Detalhes e testes em [HUD_CLASSICO_V42.md](HUD_CLASSICO_V42.md). As capturas novas ficam em `docs/captures/v42/hud-classic`; as anteriores documentam etapas anteriores.
+
+O teste visual foi ampliado para quatro perks e três bônus simultâneos, sete tamanhos, expiração real, pausa, diário, reinício e marcas/números nas rodadas 1/5/10/11/100. Passou nas qualidades baixa e alta; os 35 testes unitários também passaram. Boot por arquivo/HTTP (incluindo métricas, MP3 e falha recuperável de CDN) e regressão completa `tests/smoke.cjs` terminaram com código 0 nas duas qualidades após a revisão do HUD. Build e diff passaram. A regressão específica `tests/v41.cjs` de diário, desafios, geradores, efeitos, reinício e menus também passou em baixa/alta. Depois da solicitação de vida em cima à direita, somente a posição/estilo do bloco vital e a distribuição responsiva dos avisos foram alterados; a verificação visual foi repetida e aprovada em baixa/alta para essa posição final, incluindo avisos de gerador/alerta em 427×360 sem sobrepor as barras.
+
+
+Correção durante a revisão: o usuário pediu explicitamente vida em cima à direita, com a imagem das três barras. O bloco de vida/fôlego/colete foi movido ao canto superior direito; rodada e perks continuam embaixo à esquerda. O teste de HUD passou a verificar a posição das barras em todos os sete tamanhos.
+
+A revisão do HUD continua a autorização anterior de commit local após os ajustes. Nenhum push foi realizado. O HTML da v41 e a implementação dos spawns foram preservados; as mudanças novas são de apresentação e seus testes.

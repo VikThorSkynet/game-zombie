@@ -17,9 +17,12 @@ Atividade indicada por luz discreta e vozes locais. Mantém modelos, campanha,
 caçadas e instalação. Regras em `game-systems.mjs`; integração visual em
 `building-entrances.mjs`, incorporada pelo build para preservar file://.
 
-Avisos de onda, desafio e gerador usam uma coluna compartilhada no topo.
-A contagem tem destaque, o desafio fica abaixo de um divisor e o intervalo
-mostra “Em espera” quando uma interação impede o início da próxima onda.
+HUD inspirado nas referências de Zombies: marcas vermelhas de rodada e perks
+no canto inferior esquerdo; pontos e munição à direita; bônus temporários
+como emblemas na parte inferior. A apresentação da rodada é breve e não há
+painel central de desafio. Os detalhes ficam no diário (J); o intervalo usa
+texto discreto junto à rodada. FPS só aparece no modo de medições.
+Veja [HUD sem caixas e verificações](docs/HUD_CLASSICO_V42.md).
 
 V41: barra elétrica de carga no topo central; diário como livro aberto, com
 próximo passo e registros; desafios anunciados no intervalo e ativados automaticamente;
@@ -27,7 +30,7 @@ geradores 20% maiores com nome na carcaça; arquivos como papéis no chão;
 sinalização flutuante removida. Efeitos de tiro reutilizados, iluminação fixa e
 criação/acertos de inimigos otimizados.
 
-HUD de vida, fôlego e colete no canto superior esquerdo. A tela de Game Over
+HUD de vida, fôlego e colete no canto superior direito. A tela de Game Over
 oferece REINICIAR e VOLTAR AO MENU INICIAL; voltar limpa a partida encerrada
 e deixa JOGAR disponível na tela inicial.
 
