@@ -1,15 +1,28 @@
-# Protocolo Sobreviva — v41
+# Protocolo Sobreviva — v42
 
 FPS de zumbis em HTML com Three.js, regras em `game-systems.mjs`, armas e cães importados, cenário procedural e MP3 locais.
 
 ## Versão atual
 
-[game_version41_02-10-2026_16-21-36.html](game_version41_02-10-2026_16-21-36.html)
+[game_version42_15-10-2026_18-44-03.html](game_version42_15-10-2026_18-44-03.html)
 
-Atualização: **02/10/2026 às 16:21:36**, America/Sao_Paulo (UTC−03:00).
-Versão: **v41 — diário, geradores e otimização do combate**.
-Branch: `codex/versao-41`.
-Base: v40, commit `7cf866a`; v40 preservada.
+Atualização: **15/10/2026 às 18:44:03**, America/Sao_Paulo (UTC−03:00).
+Versão: **v42 — prédios de spawn e portas barricadas**.
+Branch: `codex/building-spawns-v42`.
+Base: main atualizada, commit `d94516e`; v41 preservada.
+
+V42: quatro prédios ativos por onda na cidade, tábuas persistentes,
+saída individual e reparo segurando E, sem pontos e bloqueado por atacantes.
+Atividade indicada por luz discreta e vozes locais. Mantém modelos, campanha,
+caçadas e instalação. Regras em `game-systems.mjs`; integração visual em
+`building-entrances.mjs`, incorporada pelo build para preservar file://.
+
+HUD inspirado nas referências de Zombies: marcas vermelhas de rodada e perks
+no canto inferior esquerdo; pontos e munição à direita; bônus temporários
+como emblemas na parte inferior. A apresentação da rodada é breve e não há
+painel central de desafio. Os detalhes ficam no diário (J); o intervalo usa
+texto discreto junto à rodada. FPS só aparece no modo de medições.
+Veja [HUD sem caixas e verificações](docs/HUD_CLASSICO_V42.md).
 
 V41: barra elétrica de carga no topo central; diário como livro aberto, com
 próximo passo e registros; desafios anunciados no intervalo e ativados automaticamente;
@@ -17,7 +30,7 @@ geradores 20% maiores com nome na carcaça; arquivos como papéis no chão;
 sinalização flutuante removida. Efeitos de tiro reutilizados, iluminação fixa e
 criação/acertos de inimigos otimizados.
 
-HUD de vida, fôlego e colete no canto superior esquerdo. A tela de Game Over
+HUD de vida, fôlego e colete no canto superior direito. A tela de Game Over
 oferece REINICIAR e VOLTAR AO MENU INICIAL; voltar limpa a partida encerrada
 e deixa JOGAR disponível na tela inicial.
 
@@ -132,7 +145,7 @@ Também é possível servir a raiz por HTTP:
 python -m http.server 8000
 ```
 
-Abra [o jogo pelo servidor](http://localhost:8000/game_version40_01-10-2026_20-01-13.html).
+Abra [o jogo pelo servidor](http://localhost:8000/game_version42_15-10-2026_18-44-03.html).
 O Three.js 0.160.0 é carregado por CDN e requer internet.
 
 - Automática: ajusta a resolução durante a partida.
@@ -400,9 +413,23 @@ automáticos, diário responsivo e reutilização dos efeitos; salva as capturas
 escolhe o HTML e `QA_PERF_REPORT` salva o JSON da amostra.
 A instrumentação existe apenas na resposta HTTP do teste.
 
+A v42 tem cobertura adicional de entradas, barricadas e ciclo de ondas:
+
+```sh
+node --test tests/building-spawns.test.mjs
+node tests/building-spawns.cjs
+node tests/announcements.cjs
+```
+
+A integração usa Playwright e salva capturas em `docs/captures/v42`.
+
 ## Memória persistente
 
-[Memória atual — v41](docs/MEMORIA_PERSISTENTE_V41.md)
+[Memória atual — v42](docs/MEMORIA_PERSISTENTE_V42.md)
+
+[Prédios, barricadas e testes da v42](docs/SPAWNS_V42.md)
+
+[Memória anterior — v41](docs/MEMORIA_PERSISTENTE_V41.md)
 
 [AK47 e HUD v40](docs/MEMORIA_PERSISTENTE_01-10-2026_20-01-13.md)
 

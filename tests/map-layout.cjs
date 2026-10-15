@@ -71,6 +71,6 @@ module.exports = async (page, assert, quality, release) => {
             },view);
             await page.screenshot({path:path.join(process.env.QA_SCREENSHOTS,`${release}-${view}-${quality}.png`)});
         }
-        await page.evaluate(()=>{qa.resetGame();qa.controls.isLocked=false;});
+        await page.evaluate(()=>{qa.resetGame();qa.controls.isLocked=false;qa.showMainMenu?.();});
     }
 };

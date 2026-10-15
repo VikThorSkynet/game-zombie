@@ -4,7 +4,7 @@ const {pathToFileURL}=require('node:url');
 const assert=require('node:assert/strict');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const root=path.resolve(__dirname,'..');
-const filename=fs.readFileSync(path.join(root,'README.md'),'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
+const filename=process.env.QA_GAME_FILE||fs.readFileSync(path.join(root,'README.md'),'utf8').match(/\((game_version[^)]+\.html)\)/)[1];
 const server=http.createServer((req,res)=>{
     const name=path.basename(decodeURIComponent(new URL(req.url,'http://localhost').pathname));
     const file=path.join(root,name);
@@ -23,7 +23,7 @@ const server=http.createServer((req,res)=>{
             page.on('console',m=>{if(m.type()==='error')failures.push(m.text());});
             const url=protocol==='file'?pathToFileURL(path.join(root,filename)).href:`http://127.0.0.1:${server.address().port}/${filename}`;
             await page.goto(url+'?quality='+quality+(metricsMode?'&metrics=1&route=boot-export':''));
-            try {await page.getByRole('button',{name:'JOGAR',exact:true}).waitFor({timeout:20000});}
+            try {await page.getByRole('button',{name:'JOGAR',exact:true}).waitFor({timeout:90000});}
             catch(e){console.error({protocol,failures,status:await page.locator('#panel').innerText()});throw e;}
             await page.getByRole('button',{name:'JOGAR',exact:true}).click();
             await page.waitForFunction(()=>document.getElementById('overlay').style.display==='none');

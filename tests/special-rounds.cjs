@@ -3,14 +3,14 @@ module.exports=async function(page,assert,quality,releaseTag) {
         const q=qa,T=q.THREE,c={};const reset=()=>{q.resetGame();q.controls.isLocked=true;q.camera.position.set(0,1.8,0);q.camera.rotation.set(0,0,0);};
         reset();q.startWave(5);
         c.profile=q.waveDirector.profile.kind==='dogs'&&q.waveDirector.total===6&&q.waveDirector.maxActive===4;
-        for(let i=0;i<20;i++)q.updateWave(1);
+        for(let i=0;i<20;i++){q.buildingEntrances?.update(1);q.updateWave(1);}
         c.cap=q.zombies.length===4&&q.waveDirector.spawned===4&&q.zombies.every(z=>z.userData.isDog&&z.userData.maxHealth===q.enemyHealth(5,q.BALANCE.dogs.healthMultiplier));
         c.model=q.zombies.every(z=>z.userData.legs.length===4&&z.userData.hitMeshes.every(m=>m.userData.parentZombie===z));
         const g=q.generators[0];q.camera.position.copy(g.position).add(new T.Vector3(0,1.8,2));q.interact();c.noOverlap=!q.generatorNetwork.active;
         let rewards=0;const off=q.gameEvents.on('dogRoundReward',()=>rewards++);
         for(const z of [...q.zombies])q.killZombie(z,{allowPowerup:false});
         c.noEarlyReward=q.powerups.length===0;
-        for(let i=0;i<20;i++)q.updateWave(1);
+        for(let i=0;i<20;i++){q.buildingEntrances?.update(1);q.updateWave(1);}
         const last=q.zombies.at(-1);q.applyPowerup('nuke');q.killZombie(last);
         c.reward=rewards===1&&q.powerups.filter(p=>p.userData.type==='max_ammo').length===1;
         q.updateWave(0);q.updateWave(1);c.complete=q.waveDirector.phase==='intermission'&&rewards===1;
